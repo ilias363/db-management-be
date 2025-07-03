@@ -1,8 +1,8 @@
 package ma.ilias.dbmanagementbe.service;
 
-import ma.ilias.dbmanagementbe.dto.AppUserDto;
-import ma.ilias.dbmanagementbe.dto.NewAppUserDto;
-import ma.ilias.dbmanagementbe.dto.UpdateAppUserDto;
+import ma.ilias.dbmanagementbe.dto.appuser.AppUserDto;
+import ma.ilias.dbmanagementbe.dto.appuser.NewAppUserDto;
+import ma.ilias.dbmanagementbe.dto.appuser.UpdateAppUserDto;
 
 import java.util.List;
 

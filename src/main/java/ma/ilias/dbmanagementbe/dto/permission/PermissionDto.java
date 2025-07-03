@@ -1,12 +1,8 @@
-package ma.ilias.dbmanagementbe.dto;
+package ma.ilias.dbmanagementbe.dto.permission;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
-
-import java.util.ArrayList;
-import java.util.Collection;
 
 @AllArgsConstructor
 @NoArgsConstructor

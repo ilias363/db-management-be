@@ -1,18 +1,22 @@
-package ma.ilias.dbmanagementbe.dto;
+package ma.ilias.dbmanagementbe.dto.appuser;
 
 import jakarta.validation.constraints.*;
 import lombok.*;
+import ma.ilias.dbmanagementbe.dto.role.RoleDto;
 import ma.ilias.dbmanagementbe.validation.ExistingRoles;
 import ma.ilias.dbmanagementbe.validation.UniqueUsername;
 
 import java.util.ArrayList;
 import java.util.Collection;
 
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 @Data
 @Builder
-public class UpdateAppUserDto {
+public class AppUserDto {
+    @NotNull(message = "Id is required")
+    private Long id;
+
     @NotBlank(message = "Username is required")
     @Size(min = 3, max = 20, message = "Username must be between 3 and 20 characters")
     @UniqueUsername
@@ -28,5 +32,5 @@ public class UpdateAppUserDto {
     @NotEmpty(message = "At least one role is required")
     @ExistingRoles
     @ToString.Exclude
-    private Collection<Long> roles = new ArrayList<>();
+    private Collection<RoleDto> roles = new ArrayList<>();
 }

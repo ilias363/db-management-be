@@ -1,4 +1,4 @@
-package ma.ilias.dbmanagementbe.dto;
+package ma.ilias.dbmanagementbe.dto.permission;
 
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;

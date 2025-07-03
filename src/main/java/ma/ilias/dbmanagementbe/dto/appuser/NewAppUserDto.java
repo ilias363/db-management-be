@@ -1,7 +1,10 @@
-package ma.ilias.dbmanagementbe.dto;
+package ma.ilias.dbmanagementbe.dto.appuser;
 
 import jakarta.validation.constraints.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import ma.ilias.dbmanagementbe.validation.ExistingRoles;
 import ma.ilias.dbmanagementbe.validation.UniqueUsername;
 
@@ -12,10 +15,7 @@ import java.util.Collection;
 @NoArgsConstructor
 @Data
 @Builder
-public class AppUserDto {
-    @NotNull(message = "Id is required")
-    private Long id;
-
+public class NewAppUserDto {
     @NotBlank(message = "Username is required")
     @Size(min = 3, max = 20, message = "Username must be between 3 and 20 characters")
     @UniqueUsername
@@ -28,8 +28,11 @@ public class AppUserDto {
     @NotNull(message = "Active status is required")
     private Boolean active;
 
+    @NotBlank(message = "Password is required")
+    @Size(min = 8, message = "Password must be at least 8 characters")
+    private String password;
+
     @NotEmpty(message = "At least one role is required")
     @ExistingRoles
-    @ToString.Exclude
-    private Collection<RoleDto> roles = new ArrayList<>();
+    private Collection<Long> roles = new ArrayList<>();
 }

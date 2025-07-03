@@ -1,4 +1,4 @@
-package ma.ilias.dbmanagementbe.dto;
+package ma.ilias.dbmanagementbe.dto.role;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;

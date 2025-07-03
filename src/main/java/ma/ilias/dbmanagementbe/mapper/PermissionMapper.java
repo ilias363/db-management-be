@@ -2,8 +2,8 @@ package ma.ilias.dbmanagementbe.mapper;
 
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dao.entities.Permission;
-import ma.ilias.dbmanagementbe.dto.NewAppUserDto;
-import ma.ilias.dbmanagementbe.dto.PermissionDto;
+import ma.ilias.dbmanagementbe.dto.appuser.NewAppUserDto;
+import ma.ilias.dbmanagementbe.dto.permission.PermissionDto;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
 

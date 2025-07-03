@@ -2,8 +2,8 @@ package ma.ilias.dbmanagementbe.mapper;
 
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dao.entities.AppUser;
-import ma.ilias.dbmanagementbe.dto.AppUserDto;
-import ma.ilias.dbmanagementbe.dto.NewAppUserDto;
+import ma.ilias.dbmanagementbe.dto.appuser.AppUserDto;
+import ma.ilias.dbmanagementbe.dto.appuser.NewAppUserDto;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
 
