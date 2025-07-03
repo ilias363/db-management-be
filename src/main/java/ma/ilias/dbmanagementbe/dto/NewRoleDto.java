@@ -1,0 +1,27 @@
+package ma.ilias.dbmanagementbe.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import ma.ilias.dbmanagementbe.validation.ExistingPermissions;
+import ma.ilias.dbmanagementbe.validation.UniqueRoleName;
+
+import java.util.ArrayList;
+import java.util.Collection;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Data
+@Builder
+public class NewRoleDto {
+    @NotBlank(message = "Role name is required")
+    @UniqueRoleName
+    private String name;
+    private String description;
+    @NotEmpty(message = "At least one permission is required")
+    @ExistingPermissions
+    private Collection<Long> permissionIds = new ArrayList<>();
+}
