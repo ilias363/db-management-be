@@ -1,9 +1,6 @@
 package ma.ilias.dbmanagementbe.dto;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -28,11 +25,14 @@ public class NewAppUserDto {
     @Email(message = "Email should be valid")
     private String email;
 
+    @NotNull(message = "Active status is required")
+    private Boolean active;
+
     @NotBlank(message = "Password is required")
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
 
     @NotEmpty(message = "At least one role is required")
     @ExistingRoles
-    private Collection<Long> roleIds = new ArrayList<>();
+    private Collection<Long> roles = new ArrayList<>();
 }

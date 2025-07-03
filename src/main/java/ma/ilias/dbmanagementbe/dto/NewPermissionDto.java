@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 public class NewPermissionDto {
     private String schemaName; // null for all schemas
     private String tableName; // null for all tables in schema
+
     @Pattern(
             regexp = "READ|WRITE|DELETE|CREATE",
             message = "Permission status is not valid"

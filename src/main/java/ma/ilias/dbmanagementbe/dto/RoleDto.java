@@ -1,16 +1,32 @@
 package ma.ilias.dbmanagementbe.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.ToString;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
+import ma.ilias.dbmanagementbe.validation.ExistingPermissions;
+import ma.ilias.dbmanagementbe.validation.UniqueRoleName;
 
 import java.util.ArrayList;
 import java.util.Collection;
 
+@AllArgsConstructor
+@NoArgsConstructor
+@Data
+@Builder
 public class RoleDto {
+    @NotNull(message = "Id is required")
     private Long id;
+
+    @NotBlank(message = "Role name is required")
+    @UniqueRoleName
     private String name; // ADMIN, VIEWER, CUSTOM_ROLE_NAME
+
     private String description;
-    private Boolean isSystemRole; // true for ADMIN/VIEWER
+
+    @NotEmpty(message = "At least one permission is required")
+    @ExistingPermissions
     @ToString.Exclude
     @JsonIgnoreProperties("roles")
     private Collection<PermissionDto> permissions = new ArrayList<>();

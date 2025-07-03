@@ -20,8 +20,10 @@ public class NewRoleDto {
     @NotBlank(message = "Role name is required")
     @UniqueRoleName
     private String name;
+
     private String description;
+
     @NotEmpty(message = "At least one permission is required")
     @ExistingPermissions
-    private Collection<Long> permissionIds = new ArrayList<>();
+    private Collection<Long> permissions = new ArrayList<>();
 }
