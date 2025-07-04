@@ -3,6 +3,7 @@ package ma.ilias.dbmanagementbe.mapper;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dao.entities.Role;
 import ma.ilias.dbmanagementbe.dto.appuser.NewAppUserDto;
+import ma.ilias.dbmanagementbe.dto.role.NewRoleDto;
 import ma.ilias.dbmanagementbe.dto.role.RoleDto;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
@@ -20,7 +21,7 @@ public class RoleMapper {
         return modelMapper.map(roleDto, Role.class);
     }
 
-    public Role toEntity(NewAppUserDto newAppUserDto) {
-        return modelMapper.map(newAppUserDto, Role.class);
+    public Role toEntity(NewRoleDto newRoleDto) {
+        return modelMapper.map(newRoleDto, Role.class);
     }
 }

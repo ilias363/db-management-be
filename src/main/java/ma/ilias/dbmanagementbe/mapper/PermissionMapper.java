@@ -3,6 +3,7 @@ package ma.ilias.dbmanagementbe.mapper;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dao.entities.Permission;
 import ma.ilias.dbmanagementbe.dto.appuser.NewAppUserDto;
+import ma.ilias.dbmanagementbe.dto.permission.NewPermissionDto;
 import ma.ilias.dbmanagementbe.dto.permission.PermissionDto;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Component;
@@ -20,7 +21,7 @@ public class PermissionMapper {
         return modelMapper.map(permissionDto, Permission.class);
     }
 
-    public Permission toEntity(NewAppUserDto newAppUserDto) {
-        return modelMapper.map(newAppUserDto, Permission.class);
+    public Permission toEntity(NewPermissionDto newPermissionDto) {
+        return modelMapper.map(newPermissionDto, Permission.class);
     }
 }
