@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import ma.ilias.dbmanagementbe.validation.ValidPermissionType;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -18,9 +19,7 @@ public class UpdatePermissionDto {
     @NotEmpty(message = "Table name is required")
     private String tableName; // '*' for all tables in schema
 
-    @Pattern(
-            regexp = "READ|WRITE|DELETE|CREATE",
-            message = "Permission status is not valid"
-    )
+    @ValidPermissionType
+    @NotEmpty(message = "Permission type is required")
     private String permissionType;
 }
