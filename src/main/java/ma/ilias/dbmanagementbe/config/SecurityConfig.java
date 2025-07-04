@@ -28,9 +28,9 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests((requests) -> requests
-//                        .requestMatchers("/api/login").permitAll()
-//                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-//                        .requestMatchers("/api/viewer/**").hasAnyRole("VIEWER", "ADMIN")
+//                        .requestMatchers("/api/auth/login", "/api/auth/isloggedin").permitAll()
+//                        .requestMatchers("/api/users/**").hasRole("ADMIN")
+//                        .requestMatchers("/api/permissions/**").hasAnyRole("VIEWER", "ADMIN")
 //                        .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 )
