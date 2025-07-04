@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 @Builder
-public class NewPermissionDto {
+public class UpdatePermissionDto {
     @NotEmpty(message = "Schema name is required")
     private String schemaName; // '*' for all schemas
 

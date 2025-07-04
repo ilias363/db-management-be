@@ -24,9 +24,11 @@ public class Permission {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String schemaName; // null for all schemas
+    @Column(nullable = false)
+    private String schemaName; // '*' for all schemas
 
-    private String tableName; // null for all tables in schema
+    @Column(nullable = false)
+    private String tableName; // '*' for all tables in schema
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
