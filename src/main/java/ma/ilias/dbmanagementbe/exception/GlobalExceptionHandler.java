@@ -10,8 +10,6 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
-
 @ControllerAdvice
 @RestController
 public class GlobalExceptionHandler {
@@ -34,7 +32,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleUserNotFoundException(UserNotFoundException ex) {
+    public ResponseEntity<ApiResponse<Void>> handleEntityNotFoundException(EntityNotFoundException ex) {
         return new ResponseEntity<>(ApiResponse.<Void>builder()
                 .message(ex.getMessage())
                 .success(false)

@@ -30,18 +30,26 @@ public class DbManagementBeApplication {
             PasswordEncoder passwordEncoder) {
         return args -> {
             Permission permission1 = Permission.builder()
+                    .schemaName("*")
+                    .tableName("*")
                     .permissionType(PermissionType.READ)
                     .build();
 
             Permission permission2 = Permission.builder()
+                    .schemaName("*")
+                    .tableName("*")
                     .permissionType(PermissionType.WRITE)
                     .build();
 
             Permission permission3 = Permission.builder()
+                    .schemaName("*")
+                    .tableName("*")
                     .permissionType(PermissionType.CREATE)
                     .build();
 
             Permission permission4 = Permission.builder()
+                    .schemaName("*")
+                    .tableName("*")
                     .permissionType(PermissionType.DELETE)
                     .build();
 
