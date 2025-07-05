@@ -13,13 +13,13 @@ import java.util.Collection;
 @NoArgsConstructor
 @Data
 @Builder
+@UniqueUsername
 public class AppUserDto implements AppUserDtoBase {
     @NotNull(message = "Id is required")
     private Long id;
 
     @NotBlank(message = "Username is required")
     @Size(min = 3, max = 20, message = "Username must be between 3 and 20 characters")
-    @UniqueUsername
     private String username;
 
     @NotBlank(message = "Email is required")
