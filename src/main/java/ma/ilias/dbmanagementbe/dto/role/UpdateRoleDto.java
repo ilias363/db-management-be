@@ -14,7 +14,7 @@ import java.util.Collection;
 @NoArgsConstructor
 @Data
 @Builder
-public class UpdateRoleDto {
+public class UpdateRoleDto implements RoleDtoBase {
     @NotNull(message = "Id is required")
     private Long id;
 

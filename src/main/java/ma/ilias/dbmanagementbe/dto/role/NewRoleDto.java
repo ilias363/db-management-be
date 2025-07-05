@@ -16,7 +16,7 @@ import java.util.Collection;
 @NoArgsConstructor
 @Data
 @Builder
-public class NewRoleDto {
+public class NewRoleDto implements RoleDtoBase {
     @NotBlank(message = "Role name is required")
     @UniqueRoleName
     private String name;
@@ -26,4 +26,9 @@ public class NewRoleDto {
     @NotEmpty(message = "At least one permission is required")
     @ExistingPermissions
     private Collection<Long> permissions = new ArrayList<>();
+
+    @Override
+    public Long getId() {
+        return null;
+    }
 }
