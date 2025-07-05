@@ -14,12 +14,12 @@ import java.util.Collection;
 @NoArgsConstructor
 @Data
 @Builder
+@UniqueRoleName
 public class UpdateRoleDto implements RoleDtoBase {
     @NotNull(message = "Id is required")
     private Long id;
 
     @NotBlank(message = "Role name is required")
-    @UniqueRoleName
     private String name; // ADMIN, VIEWER, CUSTOM_ROLE_NAME
 
     private String description;

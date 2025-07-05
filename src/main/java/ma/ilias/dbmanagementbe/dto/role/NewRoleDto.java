@@ -16,9 +16,9 @@ import java.util.Collection;
 @NoArgsConstructor
 @Data
 @Builder
+@UniqueRoleName
 public class NewRoleDto implements RoleDtoBase {
     @NotBlank(message = "Role name is required")
-    @UniqueRoleName
     private String name;
 
     private String description;

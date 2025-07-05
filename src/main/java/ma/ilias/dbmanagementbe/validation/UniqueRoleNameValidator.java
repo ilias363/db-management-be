@@ -2,19 +2,29 @@ package ma.ilias.dbmanagementbe.validation;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import ma.ilias.dbmanagementbe.dao.entities.Role;
 import ma.ilias.dbmanagementbe.dao.repositories.RoleRepository;
+import ma.ilias.dbmanagementbe.dto.role.RoleDtoBase;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class UniqueRoleNameValidator implements ConstraintValidator<UniqueRoleName, String> {
+import java.util.Optional;
+
+public class UniqueRoleNameValidator implements ConstraintValidator<UniqueRoleName, RoleDtoBase> {
 
     @Autowired
     private RoleRepository roleRepository;
 
     @Override
-    public boolean isValid(String roleName, ConstraintValidatorContext context) {
-        if (roleName == null) {
+    public boolean isValid(RoleDtoBase dto, ConstraintValidatorContext context) {
+        if (dto.getName() == null) {
             return true; // Let @NotBlank handle this
         }
-        return roleRepository.findByName(roleName).isEmpty();
+        // for NewAppUserDto
+        if (dto.getId() == null) {
+            return roleRepository.findByName(dto.getName()).isEmpty();
+        }
+        // for UpdateAppUserDto
+        Optional<Role> result = roleRepository.findByName(dto.getName());
+        return result.map(appUser -> appUser.getId().equals(dto.getId())).orElse(true);
     }
 }
