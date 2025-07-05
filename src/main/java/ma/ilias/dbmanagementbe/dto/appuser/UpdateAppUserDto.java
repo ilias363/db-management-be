@@ -13,6 +13,9 @@ import java.util.Collection;
 @Data
 @Builder
 public class UpdateAppUserDto {
+    @NotNull(message = "Id is required")
+    private Long id;
+
     @NotBlank(message = "Username is required")
     @Size(min = 3, max = 20, message = "Username must be between 3 and 20 characters")
     @UniqueUsername
