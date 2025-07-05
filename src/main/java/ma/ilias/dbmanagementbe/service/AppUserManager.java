@@ -34,7 +34,7 @@ public class AppUserManager implements AppUserService {
         appUser.setActive(newAppUserDto.getActive());
         appUser.setRoles(newAppUserDto.getRoles().stream()
                 .map(roleId -> roleRepository.findById(roleId)
-                        .orElseThrow(() -> new RuntimeException("Role not found with ID: " + roleId)))
+                        .orElseThrow(() -> new RoleNotFoundException("Role not found with ID: " + roleId)))
                 .collect(Collectors.toList()));
         AppUser savedAppUser = appUserRepository.save(appUser);
         return appUserMapper.toDto(savedAppUser);
