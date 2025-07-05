@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -57,6 +58,12 @@ public class RoleManager implements RoleService {
 
     @Override
     public RoleDto update(Long id, UpdateRoleDto updateRoleDto) {
+        if (!Objects.equals(id, updateRoleDto.getId())) {
+            throw new RuntimeException(
+                    "Path variable ID=" + id + " does not match request body entity ID=" + updateRoleDto.getId()
+            );
+        }
+
         Role existingRole = roleRepository.findById(id)
                 .orElseThrow(() -> new RoleNotFoundException("Role not found with ID: " + id));
 

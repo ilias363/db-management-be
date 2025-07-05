@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ma.ilias.dbmanagementbe.enums.PermissionType;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -62,6 +63,12 @@ public class PermissionManager implements PermissionService {
 
     @Override
     public PermissionDto update(Long id, UpdatePermissionDto updatePermissionDto) {
+        if (!Objects.equals(id, updatePermissionDto.getId())) {
+            throw new RuntimeException(
+                    "Path variable ID=" + id + " does not match request body entity ID=" + updatePermissionDto.getId()
+            );
+        }
+
         Permission existingPermission = permissionRepository.findById(id)
                 .orElseThrow(() -> new PermissionNotFoundException("Permission not found with ID: " + id));
 

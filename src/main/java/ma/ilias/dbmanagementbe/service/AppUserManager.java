@@ -15,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import ma.ilias.dbmanagementbe.exception.RoleNotFoundException;
 import ma.ilias.dbmanagementbe.exception.UserNotFoundException;
+
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -63,6 +65,12 @@ public class AppUserManager implements AppUserService {
 
     @Override
     public AppUserDto update(Long id, UpdateAppUserDto updateAppUserDto) {
+        if (!Objects.equals(id, updateAppUserDto.getId())) {
+            throw new RuntimeException(
+                    "Path variable ID=" + id + " does not match request body entity ID=" + updateAppUserDto.getId()
+            );
+        }
+
         AppUser existingAppUser = appUserRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
 
