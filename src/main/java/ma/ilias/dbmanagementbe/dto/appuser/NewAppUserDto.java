@@ -15,7 +15,7 @@ import java.util.Collection;
 @NoArgsConstructor
 @Data
 @Builder
-public class NewAppUserDto {
+public class NewAppUserDto implements AppUserDtoBase {
     @NotBlank(message = "Username is required")
     @Size(min = 3, max = 20, message = "Username must be between 3 and 20 characters")
     @UniqueUsername
@@ -35,4 +35,9 @@ public class NewAppUserDto {
     @NotEmpty(message = "At least one role is required")
     @ExistingRoles
     private Collection<Long> roles = new ArrayList<>();
+
+    @Override
+    public Long getId() {
+        return null;
+    }
 }

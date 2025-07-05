@@ -13,7 +13,7 @@ import java.util.Collection;
 @NoArgsConstructor
 @Data
 @Builder
-public class AppUserDto {
+public class AppUserDto implements AppUserDtoBase {
     @NotNull(message = "Id is required")
     private Long id;
 
