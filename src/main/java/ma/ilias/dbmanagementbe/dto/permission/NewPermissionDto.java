@@ -1,6 +1,7 @@
 package ma.ilias.dbmanagementbe.dto.permission;
 
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,12 +14,15 @@ import ma.ilias.dbmanagementbe.validation.ValidPermissionType;
 @Builder
 public class NewPermissionDto {
     @NotEmpty(message = "Schema name is required")
-    private String schemaName; // '*' for all schemas
+    private String schemaName; // null for all schemas
 
     @NotEmpty(message = "Table name is required")
-    private String tableName; // '*' for all tables in schema
+    private String tableName; // null for all tables in schema
 
     @ValidPermissionType
     @NotEmpty(message = "Permission type is required")
     private String permissionType;
+
+    @NotNull(message = "Role is required")
+    private Long role;
 }
