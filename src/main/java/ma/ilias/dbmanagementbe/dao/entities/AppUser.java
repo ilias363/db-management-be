@@ -51,11 +51,6 @@ public class AppUser implements UserDetails {
     )
     private Set<Role> roles = new HashSet<>();
 
-    @OneToMany(mappedBy = "user")
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private Collection<AuditLog> auditLogs = new ArrayList<>();
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName())).toList();
