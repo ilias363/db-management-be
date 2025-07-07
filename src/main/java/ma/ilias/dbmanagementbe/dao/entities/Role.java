@@ -37,11 +37,6 @@ public class Role {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "role_permissions",
-            joinColumns = @JoinColumn(name = "role_id"),
-            inverseJoinColumns = @JoinColumn(name = "permission_id")
-    )
+    @OneToMany(mappedBy = "role")
     private Set<Permission> permissions = new HashSet<>();
 }

@@ -24,22 +24,21 @@ public class Permission {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String schemaName; // '*' for all schemas
+    private String schemaName; // null for all schemas
 
-    @Column(nullable = false)
-    private String tableName; // '*' for all tables in schema
+    private String tableName; // null for all tables in schema
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PermissionType permissionType;
-
-    @ManyToMany(mappedBy = "permissions")
-    private Collection<Role> roles = new ArrayList<>();
 
     @CreationTimestamp
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @ManyToOne
+    @JoinColumn(name = "role_id")
+    private Role role;
 }

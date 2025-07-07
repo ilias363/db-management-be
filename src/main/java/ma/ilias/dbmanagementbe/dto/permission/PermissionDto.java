@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import ma.ilias.dbmanagementbe.dto.role.RoleDto;
 import ma.ilias.dbmanagementbe.validation.ValidPermissionType;
 
 @AllArgsConstructor
@@ -25,4 +26,6 @@ public class PermissionDto {
     @ValidPermissionType
     @NotEmpty(message = "Permission type is required")
     private String permissionType;
+
+    private RoleDto role;
 }
