@@ -1,5 +1,6 @@
 package ma.ilias.dbmanagementbe.dao.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,8 +11,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -45,5 +44,6 @@ public class Permission {
     @JoinColumn(name = "role_id")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
+    @JsonIgnoreProperties("permissions")
     private Role role;
 }

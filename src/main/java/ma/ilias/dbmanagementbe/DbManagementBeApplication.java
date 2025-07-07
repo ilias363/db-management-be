@@ -34,9 +34,7 @@ public class DbManagementBeApplication {
             AuditLogRepository auditLogRepository,
             PasswordEncoder passwordEncoder) {
         return args -> {
-            System.out.println("Starting CommandLineRunner...");
 
-            System.out.println("Saving roles...");
             Role role1 = Role.builder()
                     .name("ADMIN")
                     .description("desc")
@@ -50,9 +48,7 @@ public class DbManagementBeApplication {
                     .build();
 
             roleRepository.saveAll(List.of(role1, role2));
-            System.out.println("Roles saved.");
 
-            System.out.println("Saving permissions...");
             Permission permission1 = Permission.builder()
                     .permissionType(PermissionType.READ)
                     .role(role1)
@@ -77,9 +73,7 @@ public class DbManagementBeApplication {
             permissionRepository.saveAll(List.of(
                     permission1, permission2,permission3, permission4, permission5
             ));
-            System.out.println("Permissions saved.");
 
-            System.out.println("Saving app users...");
             AppUser appUser1 = AppUser.builder()
                     .username("theadmin")
                     .password(passwordEncoder.encode("password"))
@@ -95,9 +89,7 @@ public class DbManagementBeApplication {
                     .build();
 
             appUserRepository.saveAll(List.of(appUser1, appUser2));
-            System.out.println("App users saved.");
 
-            System.out.println("Saving audit logs...");
             AuditLog auditLog1 = AuditLog.builder()
                     .user(appUser1)
                     .actionType(ActionType.CREATE_TABLE)
@@ -159,8 +151,6 @@ public class DbManagementBeApplication {
                     .build();
 
             auditLogRepository.saveAll(List.of(auditLog1, auditLog2, auditLog3, auditLog4, auditLog5, auditLog6, auditLog7));
-            System.out.println("Audit logs saved.");
-            System.out.println("CommandLineRunner finished.");
         };
     }
 }

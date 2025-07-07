@@ -14,9 +14,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor

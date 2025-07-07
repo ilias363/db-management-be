@@ -29,6 +29,6 @@ public class RoleDto implements RoleDtoBase {
     @NotEmpty(message = "At least one permission is required")
     @ExistingPermissions
     @ToString.Exclude
-    @JsonIgnoreProperties("roles")
+    @JsonIgnoreProperties("role")
     private Set<PermissionDto> permissions = new HashSet<>();
 }

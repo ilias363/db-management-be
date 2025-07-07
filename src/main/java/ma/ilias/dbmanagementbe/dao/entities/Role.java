@@ -1,5 +1,6 @@
 package ma.ilias.dbmanagementbe.dao.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,6 +12,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -43,5 +45,20 @@ public class Role {
     @OneToMany(mappedBy = "role")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
+    @JsonIgnoreProperties("role")
     private Set<Permission> permissions = new HashSet<>();
+
+    public Set<Permission> getPermissionsWithoutRole() {
+        if (permissions != null) {
+            return permissions.stream()
+                    .map(permission -> Permission.builder()
+                            .id(permission.getId())
+                            .schemaName(permission.getSchemaName())
+                            .tableName(permission.getTableName())
+                            .permissionType(permission.getPermissionType())
+                            .build())
+                    .collect(Collectors.toSet());
+        }
+        return new HashSet<>();
+    }
 }
