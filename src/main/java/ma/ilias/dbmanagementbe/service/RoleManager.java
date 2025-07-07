@@ -36,7 +36,7 @@ public class RoleManager implements RoleService {
                 newRoleDto.getPermissions().stream()
                         .map( permissionId -> permissionRepository.findById(permissionId)
                                 .orElseThrow(() -> new PermissionNotFoundException("Permission not found with ID: " + permissionId)))
-                        .collect(Collectors.toList())
+                        .collect(Collectors.toSet())
         );
 
         return roleMapper.toDto(roleRepository.save(role));
@@ -73,7 +73,7 @@ public class RoleManager implements RoleService {
                 updateRoleDto.getPermissions().stream()
                         .map(permissionId -> permissionRepository.findById(permissionId)
                                 .orElseThrow(() -> new PermissionNotFoundException("Permission not found with ID: " + permissionId)))
-                        .collect(Collectors.toList())
+                        .collect(Collectors.toSet())
         );
         Role updatedRole = roleRepository.save(existingRole);
         return roleMapper.toDto(updatedRole);
