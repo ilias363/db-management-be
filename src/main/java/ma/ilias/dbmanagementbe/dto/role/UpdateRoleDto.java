@@ -7,8 +7,8 @@ import lombok.*;
 import ma.ilias.dbmanagementbe.validation.ExistingPermissions;
 import ma.ilias.dbmanagementbe.validation.UniqueRoleName;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -26,5 +26,5 @@ public class UpdateRoleDto implements RoleDtoBase {
 
     @NotEmpty(message = "At least one permission is required")
     @ExistingPermissions
-    private Collection<Long> permissions = new ArrayList<>();
+    private Set<Long> permissions = new HashSet<>();
 }

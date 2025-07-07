@@ -9,8 +9,8 @@ import ma.ilias.dbmanagementbe.dto.permission.PermissionDto;
 import ma.ilias.dbmanagementbe.validation.ExistingPermissions;
 import ma.ilias.dbmanagementbe.validation.UniqueRoleName;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -30,5 +30,5 @@ public class RoleDto implements RoleDtoBase {
     @ExistingPermissions
     @ToString.Exclude
     @JsonIgnoreProperties("roles")
-    private Collection<PermissionDto> permissions = new ArrayList<>();
+    private Set<PermissionDto> permissions = new HashSet<>();
 }
