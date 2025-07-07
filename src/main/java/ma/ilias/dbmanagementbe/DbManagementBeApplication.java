@@ -1,11 +1,14 @@
 package ma.ilias.dbmanagementbe;
 
 import ma.ilias.dbmanagementbe.dao.entities.AppUser;
+import ma.ilias.dbmanagementbe.dao.entities.AuditLog;
 import ma.ilias.dbmanagementbe.dao.entities.Permission;
 import ma.ilias.dbmanagementbe.dao.entities.Role;
 import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
+import ma.ilias.dbmanagementbe.dao.repositories.AuditLogRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.PermissionRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.RoleRepository;
+import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.enums.PermissionType;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -28,65 +31,136 @@ public class DbManagementBeApplication {
             AppUserRepository appUserRepository,
             RoleRepository roleRepository,
             PermissionRepository permissionRepository,
+            AuditLogRepository auditLogRepository,
             PasswordEncoder passwordEncoder) {
         return args -> {
-            Permission permission1 = Permission.builder()
-                    .schemaName("*")
-                    .tableName("*")
-                    .permissionType(PermissionType.READ)
-                    .build();
+            System.out.println("Starting CommandLineRunner...");
 
-            Permission permission2 = Permission.builder()
-                    .schemaName("*")
-                    .tableName("*")
-                    .permissionType(PermissionType.WRITE)
-                    .build();
-
-            Permission permission3 = Permission.builder()
-                    .schemaName("*")
-                    .tableName("*")
-                    .permissionType(PermissionType.CREATE)
-                    .build();
-
-            Permission permission4 = Permission.builder()
-                    .schemaName("*")
-                    .tableName("*")
-                    .permissionType(PermissionType.DELETE)
-                    .build();
-
-            permissionRepository.saveAll(List.of(permission1, permission2, permission3, permission4));
-
+            System.out.println("Saving roles...");
             Role role1 = Role.builder()
                     .name("ADMIN")
                     .description("desc")
                     .isSystemRole(true)
-                    .permissions(List.of(permission1, permission2, permission3, permission4))
                     .build();
 
             Role role2 = Role.builder()
                     .name("VIEWER")
                     .description("desc")
                     .isSystemRole(true)
-                    .permissions(List.of(permission1))
                     .build();
 
             roleRepository.saveAll(List.of(role1, role2));
+            System.out.println("Roles saved.");
 
+            System.out.println("Saving permissions...");
+            Permission permission1 = Permission.builder()
+                    .permissionType(PermissionType.READ)
+                    .role(role1)
+                    .build();
+            Permission permission2 = Permission.builder()
+                    .permissionType(PermissionType.WRITE)
+                    .role(role1)
+                    .build();
+            Permission permission3 = Permission.builder()
+                    .permissionType(PermissionType.CREATE)
+                    .role(role1)
+                    .build();
+            Permission permission4 = Permission.builder()
+                    .permissionType(PermissionType.DELETE)
+                    .role(role1)
+                    .build();
+            Permission permission5 = Permission.builder()
+                    .permissionType(PermissionType.READ)
+                    .role(role2)
+                    .build();
+
+            permissionRepository.saveAll(List.of(
+                    permission1, permission2,permission3, permission4, permission5
+            ));
+            System.out.println("Permissions saved.");
+
+            System.out.println("Saving app users...");
             AppUser appUser1 = AppUser.builder()
-                    .username("ilias")
+                    .username("theadmin")
                     .password(passwordEncoder.encode("password"))
                     .active(true)
                     .roles(Set.of(role1))
                     .build();
 
             AppUser appUser2 = AppUser.builder()
-                    .username("messi")
+                    .username("theviewer")
                     .password(passwordEncoder.encode("password"))
                     .active(true)
                     .roles(Set.of(role2))
                     .build();
 
             appUserRepository.saveAll(List.of(appUser1, appUser2));
+            System.out.println("App users saved.");
+
+            System.out.println("Saving audit logs...");
+            AuditLog auditLog1 = AuditLog.builder()
+                    .user(appUser1)
+                    .actionType(ActionType.CREATE_TABLE)
+                    .schemaName("public")
+                    .tableName("customers")
+                    .successful(true)
+                    .build();
+
+            AuditLog auditLog2 = AuditLog.builder()
+                    .user(appUser1)
+                    .actionType(ActionType.UPDATE_TABLE)
+                    .schemaName("public")
+                    .tableName("customers")
+                    .actionDetails("SET name = 'new name' WHERE id = 1")
+                    .successful(true)
+                    .build();
+
+            AuditLog auditLog3 = AuditLog.builder()
+                    .user(appUser1)
+                    .actionType(ActionType.DELETE_TABLE)
+                    .schemaName("public")
+                    .tableName("orders")
+                    .successful(true)
+                    .build();
+
+            AuditLog auditLog4 = AuditLog.builder()
+                    .user(appUser1)
+                    .actionType(ActionType.CREATE_INDEX)
+                    .schemaName("public")
+                    .tableName("customers")
+                    .objectName("idx_customer_name")
+                    .successful(true)
+                    .build();
+
+            AuditLog auditLog5 = AuditLog.builder()
+                    .user(appUser2)
+                    .actionType(ActionType.DELETE_TABLE)
+                    .schemaName("public")
+                    .tableName("products")
+                    .successful(false)
+                    .errorMessage("User does not have permission to delete tables.")
+                    .build();
+
+            AuditLog auditLog6 = AuditLog.builder()
+                    .user(appUser2)
+                    .actionType(ActionType.CREATE_RECORD)
+                    .schemaName("public")
+                    .tableName("customers")
+                    .successful(true)
+                    .build();
+
+            AuditLog auditLog7 = AuditLog.builder()
+                    .user(appUser2)
+                    .actionType(ActionType.CREATE_RECORD)
+                    .schemaName("public")
+                    .tableName("products")
+                    .successful(false)
+                    .errorMessage("Table does not exist.")
+                    .build();
+
+            auditLogRepository.saveAll(List.of(auditLog1, auditLog2, auditLog3, auditLog4, auditLog5, auditLog6, auditLog7));
+            System.out.println("Audit logs saved.");
+            System.out.println("CommandLineRunner finished.");
         };
     }
 }
