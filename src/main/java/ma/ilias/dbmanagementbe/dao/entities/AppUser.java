@@ -14,6 +14,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
@@ -49,6 +52,8 @@ public class AppUser implements UserDetails {
     private Set<Role> roles = new HashSet<>();
 
     @OneToMany(mappedBy = "user")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Collection<AuditLog> auditLogs = new ArrayList<>();
 
     @Override

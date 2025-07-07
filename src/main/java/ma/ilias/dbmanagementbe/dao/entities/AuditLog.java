@@ -10,6 +10,9 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
@@ -23,6 +26,8 @@ public class AuditLog {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private AppUser user;
 
     @Enumerated(EnumType.STRING)

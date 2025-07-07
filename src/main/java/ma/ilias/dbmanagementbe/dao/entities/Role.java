@@ -12,6 +12,9 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
 @Entity
 @Table(name = "roles")
 @NoArgsConstructor
@@ -38,5 +41,7 @@ public class Role {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "role")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Set<Permission> permissions = new HashSet<>();
 }

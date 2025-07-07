@@ -13,6 +13,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
 @Entity
 @Table(name = "permissions")
 @NoArgsConstructor
@@ -40,5 +43,7 @@ public class Permission {
 
     @ManyToOne
     @JoinColumn(name = "role_id")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Role role;
 }
