@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
+import java.util.Set;
 
 @SpringBootApplication
 public class DbManagementBeApplication {
@@ -73,18 +74,16 @@ public class DbManagementBeApplication {
 
             AppUser appUser1 = AppUser.builder()
                     .username("ilias")
-                    .email("ilias@example.com")
-                    .passwordHash(passwordEncoder.encode("password"))
+                    .password(passwordEncoder.encode("password"))
                     .active(true)
-                    .roles(List.of(role1))
+                    .roles(Set.of(role1))
                     .build();
 
             AppUser appUser2 = AppUser.builder()
                     .username("messi")
-                    .email("messi@example.com")
-                    .passwordHash(passwordEncoder.encode("password"))
+                    .password(passwordEncoder.encode("password"))
                     .active(true)
-                    .roles(List.of(role2))
+                    .roles(Set.of(role2))
                     .build();
 
             appUserRepository.saveAll(List.of(appUser1, appUser2));

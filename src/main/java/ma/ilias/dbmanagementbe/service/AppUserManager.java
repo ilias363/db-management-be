@@ -32,12 +32,12 @@ public class AppUserManager implements AppUserService {
     @Override
     public AppUserDto save(NewAppUserDto newAppUserDto) {
         AppUser appUser = appUserMapper.toEntity(newAppUserDto);
-        appUser.setPasswordHash(passwordEncoder.encode(newAppUserDto.getPassword()));
+        appUser.setPassword(passwordEncoder.encode(newAppUserDto.getPassword()));
         appUser.setActive(newAppUserDto.getActive());
         appUser.setRoles(newAppUserDto.getRoles().stream()
                 .map(roleId -> roleRepository.findById(roleId)
                         .orElseThrow(() -> new RoleNotFoundException("Role not found with ID: " + roleId)))
-                .collect(Collectors.toList()));
+                .collect(Collectors.toSet()));
         AppUser savedAppUser = appUserRepository.save(appUser);
         return appUserMapper.toDto(savedAppUser);
     }
@@ -75,12 +75,11 @@ public class AppUserManager implements AppUserService {
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
 
         existingAppUser.setUsername(updateAppUserDto.getUsername());
-        existingAppUser.setEmail(updateAppUserDto.getEmail());
         existingAppUser.setActive(updateAppUserDto.getActive());
         existingAppUser.setRoles(updateAppUserDto.getRoles().stream()
                 .map(roleId -> roleRepository.findById(roleId)
                         .orElseThrow(() -> new RoleNotFoundException("Role not found with ID: " + roleId)))
-                .collect(Collectors.toList()));
+                .collect(Collectors.toSet()));
 
         AppUser updatedAppUser = appUserRepository.save(existingAppUser);
         return appUserMapper.toDto(updatedAppUser);
