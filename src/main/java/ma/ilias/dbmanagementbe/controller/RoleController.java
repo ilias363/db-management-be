@@ -62,4 +62,18 @@ public class RoleController {
                 .data(updatedRole)
                 .build());
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteRole(@PathVariable Long id) {
+        return roleService.deleteById(id) ?
+                ResponseEntity.ok(ApiResponse.<Void>builder()
+                        .message("Role deleted successfully")
+                        .success(true)
+                        .build())
+                :
+                ResponseEntity.ok(ApiResponse.<Void>builder()
+                        .message("Role has not been deleted")
+                        .success(false)
+                        .build());
+    }
 }
