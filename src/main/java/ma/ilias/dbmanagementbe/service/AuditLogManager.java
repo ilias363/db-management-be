@@ -2,9 +2,11 @@ package ma.ilias.dbmanagementbe.service;
 
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dao.entities.AuditLog;
+import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.AuditLogRepository;
 import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogDto;
 import ma.ilias.dbmanagementbe.exception.AuditLogNotFoundException;
+import ma.ilias.dbmanagementbe.exception.UserNotFoundException;
 import ma.ilias.dbmanagementbe.mapper.AuditLogMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
 public class AuditLogManager implements AuditLogService {
 
     private final AuditLogRepository auditLogRepository;
+    private final AppUserRepository appUserRepository;
     private final AuditLogMapper auditLogMapper;
 
     @Override
@@ -36,6 +39,9 @@ public class AuditLogManager implements AuditLogService {
 
     @Override
     public List<AuditLogDto> findByUserId(Long userId) {
+        if (!appUserRepository.existsById(userId)) {
+            throw new UserNotFoundException("User not found with ID: " + userId);
+        }
         return auditLogRepository.findByUser_Id(userId).stream()
                 .map(auditLogMapper::toDto)
                 .collect(Collectors.toList());
