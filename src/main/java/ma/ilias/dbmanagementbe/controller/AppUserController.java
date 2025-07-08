@@ -60,6 +60,16 @@ public class AppUserController {
                 .build());
     }
 
+    @GetMapping("/active")
+    public ResponseEntity<ApiResponse<List<AppUserDto>>> getAllActiveUsers() {
+        List<AppUserDto> appUsers = appUserService.findAllActive();
+        return ResponseEntity.ok(ApiResponse.<List<AppUserDto>>builder()
+                .message("Active users fetched successfully")
+                .success(true)
+                .data(appUsers)
+                .build());
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<AppUserDto>> updateUser(
             @PathVariable Long id,
@@ -85,5 +95,23 @@ public class AppUserController {
                         .message("User has not been deleted")
                         .success(false)
                         .build());
+    }
+
+    @PutMapping("/{id}/deactivate")
+    public ResponseEntity<ApiResponse<Void>> deactivateUser(@PathVariable Long id) {
+        appUserService.deactivateById(id);
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .message("User deactivated successfully")
+                .success(true)
+                .build());
+    }
+
+    @PutMapping("/{id}/activate")
+    public ResponseEntity<ApiResponse<Void>> activateUser(@PathVariable Long id) {
+        appUserService.activateById(id);
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .message("User activated successfully")
+                .success(true)
+                .build());
     }
 }
