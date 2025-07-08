@@ -72,5 +72,21 @@ public class PermissionController {
                 updatedPermission
         ));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deletePermission(@PathVariable Long id) {
+        return permissionService.deleteById(id) ?
+                ResponseEntity.ok(new ApiResponse<>(
+                        "Permission deleted successfully",
+                        true,
+                        null
+                ))
+                :
+                ResponseEntity.ok(new ApiResponse<>(
+                        "Permission has not been deleted",
+                        false,
+                        null
+                ));
+    }
 }
 

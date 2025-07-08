@@ -81,4 +81,14 @@ public class PermissionManager implements PermissionService {
         Permission updatedPermission = permissionRepository.save(existingPermission);
         return permissionMapper.toDto(updatedPermission);
     }
+
+    @Override
+    public Boolean deleteById(Long id) {
+        if (!permissionRepository.existsById(id)) {
+            throw new PermissionNotFoundException("Permission not found with ID: " + id);
+        }
+
+        permissionRepository.deleteById(id);
+        return !permissionRepository.existsById(id);
+    }
 }

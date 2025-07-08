@@ -12,4 +12,5 @@ public interface PermissionService {
     PermissionDto findById(Long id);
     List<PermissionDto> findByPermissionType(String type);
     PermissionDto update(Long id, UpdatePermissionDto updatePermissionDto);
+    Boolean deleteById(Long id);
 }
