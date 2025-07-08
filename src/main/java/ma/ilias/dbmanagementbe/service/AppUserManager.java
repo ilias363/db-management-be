@@ -92,14 +92,14 @@ public class AppUserManager implements AppUserService {
         return appUserMapper.toDto(updatedAppUser);
     }
 
-    @Override
-    public Boolean deleteById(Long id) {
-        if (!appUserRepository.existsById(id)) {
-            throw new UserNotFoundException("User not found with ID: " + id);
-        }
-        appUserRepository.deleteById(id);
-        return !appUserRepository.existsById(id);
-    }
+//    @Override
+//    public Boolean deleteById(Long id) {
+//        if (!appUserRepository.existsById(id)) {
+//            throw new UserNotFoundException("User not found with ID: " + id);
+//        }
+//        appUserRepository.deleteById(id);
+//        return !appUserRepository.existsById(id);
+//    }
 
     @Override
     public void deactivateById(Long id) {

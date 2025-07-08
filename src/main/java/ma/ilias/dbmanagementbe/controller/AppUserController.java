@@ -83,19 +83,19 @@ public class AppUserController {
                 .build());
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
-        return appUserService.deleteById(id) ?
-                ResponseEntity.ok(ApiResponse.<Void>builder()
-                        .message("User deleted successfully")
-                        .success(true)
-                        .build())
-                :
-                ResponseEntity.ok(ApiResponse.<Void>builder()
-                        .message("User has not been deleted")
-                        .success(false)
-                        .build());
-    }
+//    @DeleteMapping("/{id}")
+//    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
+//        return appUserService.deleteById(id) ?
+//                ResponseEntity.ok(ApiResponse.<Void>builder()
+//                        .message("User deleted successfully")
+//                        .success(true)
+//                        .build())
+//                :
+//                ResponseEntity.ok(ApiResponse.<Void>builder()
+//                        .message("User has not been deleted")
+//                        .success(false)
+//                        .build());
+//    }
 
     @PutMapping("/{id}/deactivate")
     public ResponseEntity<ApiResponse<Void>> deactivateUser(@PathVariable Long id) {
