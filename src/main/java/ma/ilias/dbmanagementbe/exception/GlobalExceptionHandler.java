@@ -13,6 +13,14 @@ import org.springframework.web.bind.annotation.RestController;
 @ControllerAdvice
 @RestController
 public class GlobalExceptionHandler {
+    @ExceptionHandler(UnauthorizedActionException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUnauthorizedActionException(UnauthorizedActionException ex) {
+        return new ResponseEntity<>(ApiResponse.<Void>builder()
+                .message(ex.getMessage())
+                .success(false)
+                .build(), HttpStatus.UNAUTHORIZED);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleValidationExceptions(MethodArgumentNotValidException ex) {
         StringBuilder errorMessage = new StringBuilder();
@@ -42,7 +50,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
         return new ResponseEntity<>(ApiResponse.<Void>builder()
-                .message("An unexpected error occurred: " + ex.getMessage())
+                .message("An error occurred: " + ex.getMessage())
                 .success(false)
                 .build(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
