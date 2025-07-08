@@ -11,4 +11,5 @@ public interface RoleService {
     RoleDto findById(Long id);
     List<RoleDto> findAll();
     RoleDto update(Long id, UpdateRoleDto updateRoleDto);
+    Boolean deleteById(Long id);
 }

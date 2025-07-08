@@ -2,6 +2,7 @@ package ma.ilias.dbmanagementbe.service;
 
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dao.entities.Role;
+import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.PermissionRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.RoleRepository;
 import ma.ilias.dbmanagementbe.dto.role.NewRoleDto;
@@ -9,6 +10,7 @@ import ma.ilias.dbmanagementbe.dto.role.RoleDto;
 import ma.ilias.dbmanagementbe.dto.role.UpdateRoleDto;
 import ma.ilias.dbmanagementbe.exception.PermissionNotFoundException;
 import ma.ilias.dbmanagementbe.exception.RoleNotFoundException;
+import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
 import ma.ilias.dbmanagementbe.mapper.RoleMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,7 @@ public class RoleManager implements RoleService {
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
     private final RoleMapper roleMapper;
+    private final AppUserRepository appUserRepository;
 
     @Override
     public RoleDto save(NewRoleDto newRoleDto) {
@@ -77,5 +80,24 @@ public class RoleManager implements RoleService {
         );
         Role updatedRole = roleRepository.save(existingRole);
         return roleMapper.toDto(updatedRole);
+    }
+
+    @Override
+    public Boolean deleteById(Long id) {
+        Role role = roleRepository.findById(id)
+                .orElseThrow(() -> new RoleNotFoundException("Role not found with ID: " + id));
+        
+        if (role.getIsSystemRole()) {
+            throw new UnauthorizedActionException("Cannot delete system role: " + role.getName());
+        }
+        
+        if (appUserRepository.existsByRolesId(id)) {
+            throw new UnauthorizedActionException(
+                    "Cannot delete role that is assigned to users. Remove the role from all users first."
+            );
+        }
+        
+        roleRepository.deleteById(id);
+        return !roleRepository.existsById(id);
     }
 }
