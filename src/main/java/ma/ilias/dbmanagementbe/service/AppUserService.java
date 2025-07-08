@@ -11,6 +11,9 @@ public interface AppUserService {
     AppUserDto findById(Long id);
     AppUserDto findByUsername(String username);
     List<AppUserDto> findAll();
+    List<AppUserDto> findAllActive();
     AppUserDto update(Long id, UpdateAppUserDto appUserDto);
     Boolean deleteById(Long id);
+    void deactivateById(Long id);
+    void activateById(Long id);
 }

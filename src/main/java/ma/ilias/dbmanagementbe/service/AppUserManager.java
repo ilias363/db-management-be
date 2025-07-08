@@ -64,6 +64,13 @@ public class AppUserManager implements AppUserService {
     }
 
     @Override
+    public List<AppUserDto> findAllActive() {
+        return appUserRepository.findByActive(true).stream()
+                .map(appUserMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public AppUserDto update(Long id, UpdateAppUserDto updateAppUserDto) {
         if (!Objects.equals(id, updateAppUserDto.getId())) {
             throw new RuntimeException(
@@ -92,5 +99,23 @@ public class AppUserManager implements AppUserService {
         }
         appUserRepository.deleteById(id);
         return !appUserRepository.existsById(id);
+    }
+
+    @Override
+    public void deactivateById(Long id) {
+        AppUser user = appUserRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
+        
+        user.setActive(false);
+        appUserRepository.save(user);
+    }
+
+    @Override
+    public void activateById(Long id) {
+        AppUser user = appUserRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
+        
+        user.setActive(true);
+        appUserRepository.save(user);
     }
 }
