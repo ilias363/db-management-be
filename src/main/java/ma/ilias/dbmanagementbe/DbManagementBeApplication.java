@@ -10,6 +10,7 @@ import ma.ilias.dbmanagementbe.dao.repositories.PermissionRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.RoleRepository;
 import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.enums.PermissionType;
+import ma.ilias.dbmanagementbe.util.AuditDescriptionBuilder;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -151,6 +152,13 @@ public class DbManagementBeApplication {
                     .build();
 
             auditLogRepository.saveAll(List.of(auditLog1, auditLog2, auditLog3, auditLog4, auditLog5, auditLog6, auditLog7));
+
+            System.out.println(AuditDescriptionBuilder.build(ActionType.LOGIN, "john.doe"));
+            System.out.println(AuditDescriptionBuilder.build(ActionType.CREATE_SCHEMA, "finance"));
+            System.out.println(AuditDescriptionBuilder.build(ActionType.DELETE_TABLE, "finance", "accounts"));
+            System.out.println(AuditDescriptionBuilder.build(ActionType.UPDATE_RECORD, "hr", "employees", 101));
+            System.out.println(AuditDescriptionBuilder.build(ActionType.CREATE_INDEX, "hr", "employees", "idx_emp_salary"));
+            System.out.println(AuditDescriptionBuilder.build(ActionType.CREATE_USER, "newUser"));
         };
     }
 }
