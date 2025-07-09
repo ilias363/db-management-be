@@ -3,11 +3,13 @@ package ma.ilias.dbmanagementbe.metadata.dto.column;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
+import ma.ilias.dbmanagementbe.validation.ValidColumnDefinition;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 @Builder
+@ValidColumnDefinition
 public class NewColumnDto {
     @NotBlank(message = "Column name cannot be blank")
     private String columnName;
