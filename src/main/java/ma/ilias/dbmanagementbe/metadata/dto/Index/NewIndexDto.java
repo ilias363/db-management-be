@@ -20,6 +20,9 @@ public class NewIndexDto {
     @NotBlank(message = "Index name cannot be blank")
     private String indexName;
 
+    @NotBlank(message = "Schema name cannot be blank")
+    private String schemaName;
+
     @NotBlank(message = "Table name cannot be blank")
     private String tableName;
 
