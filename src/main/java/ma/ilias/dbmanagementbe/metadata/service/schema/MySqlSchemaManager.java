@@ -104,7 +104,7 @@ public class MySqlSchemaManager implements SchemaMetadataService {
         }
 
         return SchemaMetadataDto.builder()
-                .schemaName(schemaName)
+                .schemaName(schemaName.toLowerCase())
                 .isSystemSchema(isSystemSchemaByName(schemaName))
                 .creationDate(null)
                 .tables(queryTablesForSchema(schemaName))
@@ -113,10 +113,10 @@ public class MySqlSchemaManager implements SchemaMetadataService {
 
     @Override
     public SchemaMetadataDto createSchema(NewSchemaDto newSchema) {
-        jdbcTemplate.execute("CREATE DATABASE " + newSchema.getSchemaName());
+        jdbcTemplate.execute("CREATE DATABASE " + newSchema.getSchemaName().toLowerCase());
 
         return SchemaMetadataDto.builder()
-                .schemaName(newSchema.getSchemaName())
+                .schemaName(newSchema.getSchemaName().toLowerCase())
                 .isSystemSchema(false)
                 .creationDate(null)
                 .tables(new ArrayList<>())
