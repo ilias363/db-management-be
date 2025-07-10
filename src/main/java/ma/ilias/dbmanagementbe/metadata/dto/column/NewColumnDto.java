@@ -13,7 +13,7 @@ import ma.ilias.dbmanagementbe.validation.ValidColumnDefinition;
 @Data
 @Builder
 @ValidColumnDefinition
-public class NewColumnDto {
+public class NewColumnDto implements ColumnDataTypeDefinition {
     @NotBlank(message = "Schema name cannot be blank")
     private String schemaName;
 

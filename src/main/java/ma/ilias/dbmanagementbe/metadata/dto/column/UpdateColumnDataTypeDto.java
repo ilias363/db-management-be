@@ -3,10 +3,11 @@ package ma.ilias.dbmanagementbe.metadata.dto.column;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
+import ma.ilias.dbmanagementbe.validation.ValidColumnDefinition;
 
 @Data
-
-public class UpdateColumnDataTypeDto {
+@ValidColumnDefinition
+public class UpdateColumnDataTypeDto implements ColumnDataTypeDefinition {
     @NotBlank(message = "Schema name cannot be blank")
     private String schemaName;
 

@@ -2,12 +2,12 @@ package ma.ilias.dbmanagementbe.validation;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import ma.ilias.dbmanagementbe.metadata.dto.column.NewColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.ColumnDataTypeDefinition;
 
-public class ValidColumnDefinitionValidator implements ConstraintValidator<ValidColumnDefinition, NewColumnDto> {
+public class ValidColumnDefinitionValidator implements ConstraintValidator<ValidColumnDefinition, ColumnDataTypeDefinition> {
 
     @Override
-    public boolean isValid(NewColumnDto dto, ConstraintValidatorContext context) {
+    public boolean isValid(ColumnDataTypeDefinition dto, ConstraintValidatorContext context) {
         if (dto == null || dto.getDataType() == null) {
             return true; // Handled by @NotBlank on the field itself
         }
@@ -23,7 +23,7 @@ public class ValidColumnDefinitionValidator implements ConstraintValidator<Valid
         };
     }
 
-    private boolean isVarcharOrCharValid(NewColumnDto dto, ConstraintValidatorContext context) {
+    private boolean isVarcharOrCharValid(ColumnDataTypeDefinition dto, ConstraintValidatorContext context) {
         context.disableDefaultConstraintViolation();
         if (dto.getCharacterMaxLength() == null) {
             context.buildConstraintViolationWithTemplate("characterMaxLength is required for VARCHAR/CHAR types")
@@ -38,7 +38,7 @@ public class ValidColumnDefinitionValidator implements ConstraintValidator<Valid
         return areNumericFieldsNull(dto, context);
     }
 
-    private boolean isDecimalOrNumericValid(NewColumnDto dto, ConstraintValidatorContext context) {
+    private boolean isDecimalOrNumericValid(ColumnDataTypeDefinition dto, ConstraintValidatorContext context) {
         context.disableDefaultConstraintViolation();
         boolean isValid = true;
         if (dto.getNumericPrecision() == null) {
@@ -76,16 +76,17 @@ public class ValidColumnDefinitionValidator implements ConstraintValidator<Valid
         return isValid && isCharFieldNull(dto, context);
     }
 
-    private boolean areNumericFieldsNull(NewColumnDto dto, ConstraintValidatorContext context) {
+    private boolean areNumericFieldsNull(ColumnDataTypeDefinition dto, ConstraintValidatorContext context) {
         if (dto.getNumericPrecision() != null || dto.getNumericScale() != null) {
             context.disableDefaultConstraintViolation();
-            context.buildConstraintViolationWithTemplate("NumericPrecision and numericScale must be null for this data type").addPropertyNode("dataType").addConstraintViolation();
+            context.buildConstraintViolationWithTemplate("NumericPrecision and numericScale must be null for this data type")
+                    .addPropertyNode("dataType").addConstraintViolation();
             return false;
         }
         return true;
     }
 
-    private boolean isCharFieldNull(NewColumnDto dto, ConstraintValidatorContext context) {
+    private boolean isCharFieldNull(ColumnDataTypeDefinition dto, ConstraintValidatorContext context) {
         if (dto.getCharacterMaxLength() != null) {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate("characterMaxLength must be null for this data type")
@@ -95,7 +96,7 @@ public class ValidColumnDefinitionValidator implements ConstraintValidator<Valid
         return true;
     }
 
-    private boolean areNumericAndCharFieldsNull(NewColumnDto dto, ConstraintValidatorContext context) {
+    private boolean areNumericAndCharFieldsNull(ColumnDataTypeDefinition dto, ConstraintValidatorContext context) {
         return areNumericFieldsNull(dto, context) && isCharFieldNull(dto, context);
     }
 }
