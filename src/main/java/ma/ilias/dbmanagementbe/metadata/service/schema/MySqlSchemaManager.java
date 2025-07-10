@@ -2,6 +2,7 @@ package ma.ilias.dbmanagementbe.metadata.service.schema;
 
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
+import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.NewSchemaDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
@@ -120,5 +121,19 @@ public class MySqlSchemaManager implements SchemaMetadataService {
                 .creationDate(null)
                 .tables(new ArrayList<>())
                 .build();
+    }
+
+    @Override
+    public Boolean deleteSchema(String schemaName) {
+        if (isSystemSchemaByName(schemaName)) {
+            throw new UnauthorizedActionException("Cannot delete system schema: " + schemaName);
+        }
+
+        if (!schemaExists(schemaName)) {
+            throw new SchemaNotFoundException(schemaName);
+        }
+
+        jdbcTemplate.execute("DROP DATABASE " + schemaName);
+        return !schemaExists(schemaName);
     }
 }

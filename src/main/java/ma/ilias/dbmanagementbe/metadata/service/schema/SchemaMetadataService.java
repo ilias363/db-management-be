@@ -11,4 +11,5 @@ public interface SchemaMetadataService {
     List<SchemaMetadataDto> getAllSchemas(Boolean includeSystemSchema);
     SchemaMetadataDto getSchemaByName(String schemaName);
     SchemaMetadataDto createSchema(NewSchemaDto nweSchema);
+    Boolean deleteSchema(String schemaName);
 }
