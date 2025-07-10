@@ -2,6 +2,7 @@ package ma.ilias.dbmanagementbe.metadata.service.schema;
 
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
+import ma.ilias.dbmanagementbe.metadata.dto.schema.NewSchemaDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -106,6 +107,18 @@ public class MySqlSchemaManager implements SchemaMetadataService {
                 .isSystemSchema(isSystemSchemaByName(schemaName))
                 .creationDate(null)
                 .tables(queryTablesForSchema(schemaName))
+                .build();
+    }
+
+    @Override
+    public SchemaMetadataDto createSchema(NewSchemaDto newSchema) {
+        jdbcTemplate.execute("CREATE DATABASE " + newSchema.getSchemaName());
+
+        return SchemaMetadataDto.builder()
+                .schemaName(newSchema.getSchemaName())
+                .isSystemSchema(false)
+                .creationDate(null)
+                .tables(new ArrayList<>())
                 .build();
     }
 }
