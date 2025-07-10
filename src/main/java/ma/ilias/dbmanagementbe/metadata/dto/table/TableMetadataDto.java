@@ -7,7 +7,6 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.ColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.foreignkey.ForeignKeyMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,7 +20,6 @@ public class TableMetadataDto {
     private Integer columnCount;
     private Long rowCount;
     private Long sizeInBytes;
-    private LocalDateTime lastModified;
 
     @JsonIgnoreProperties("tables")
     @ToString.Exclude
