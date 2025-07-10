@@ -13,6 +13,14 @@ import org.springframework.web.bind.annotation.RestController;
 @ControllerAdvice
 @RestController
 public class GlobalExceptionHandler {
+    @ExceptionHandler(MetadataNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMetadataNotFoundException(MetadataNotFoundException e) {
+        return new ResponseEntity<>(ApiResponse.<Void>builder()
+                .message(e.getMessage())
+                .success(false)
+                .build(), HttpStatus.NOT_FOUND);
+    }
+
     @ExceptionHandler(UnauthorizedActionException.class)
     public ResponseEntity<ApiResponse<Void>> handleUnauthorizedActionException(UnauthorizedActionException ex) {
         return new ResponseEntity<>(ApiResponse.<Void>builder()
