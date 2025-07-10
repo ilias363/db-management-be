@@ -19,23 +19,26 @@ public class MySqlSchemaManager implements SchemaMetadataService {
     private final JdbcTemplate jdbcTemplate;
 
     @Override
-    public List<SchemaMetadataDto> getAllSchemas(Boolean includeSystemSchema) {
-        String schemaSql = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA";
+    public Boolean schemaExists(String schemaName) {
+        String schemaSql = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?";
 
-        List<String> systemSchemas = List.of("mysql", "sys", "information_schema", "performance_schema");
+        List<String> schemas = jdbcTemplate.query(
+                schemaSql,
+                ps -> ps.setString(1, schemaName),
+                (rs, rowNum) -> rs.getString("SCHEMA_NAME")
+        );
 
-        return jdbcTemplate.query(schemaSql, (rs) -> {
-            List<SchemaMetadataDto> result = new ArrayList<>();
+        return !schemas.isEmpty();
+    }
 
-            while (rs.next()) {
-                String schemaName = rs.getString("SCHEMA_NAME");
-                boolean isSystem = systemSchemas.contains(schemaName);
+    @Override
+    public Boolean isSystemSchemaByName(String schemaName) {
+        return List.of("mysql", "sys", "information_schema", "performance_schema")
+                .contains(schemaName.trim().toLowerCase());
+    }
 
-                if (!includeSystemSchema && isSystem) {
-                    continue;
-                }
-
-                String tableSql = """
+    private List<TableMetadataDto> queryTablesForSchema(String schemaName) {
+        String tableSql = """
                 SELECT t.TABLE_NAME,
                        COUNT(c.COLUMN_NAME) AS COLUMN_COUNT,
                        t.TABLE_ROWS,
@@ -47,19 +50,37 @@ public class MySqlSchemaManager implements SchemaMetadataService {
                 GROUP BY t.TABLE_NAME, t.TABLE_ROWS, t.DATA_LENGTH, t.INDEX_LENGTH
                 """;
 
-                List<TableMetadataDto> tables = jdbcTemplate.query(
-                        connection -> {
-                            PreparedStatement ps = connection.prepareStatement(tableSql);
-                            ps.setString(1, schemaName);
-                            return ps;
-                        },
-                        (trs, tRowNum) -> TableMetadataDto.builder()
-                                .tableName(trs.getString("TABLE_NAME"))
-                                .columnCount(trs.getInt("COLUMN_COUNT"))
-                                .rowCount(trs.getLong("TABLE_ROWS"))
-                                .sizeInBytes(trs.getLong("SIZE_IN_BYTES"))
-                                .build()
-                );
+        return jdbcTemplate.query(
+                connection -> {
+                    PreparedStatement ps = connection.prepareStatement(tableSql);
+                    ps.setString(1, schemaName);
+                    return ps;
+                },
+                (trs, tRowNum) -> TableMetadataDto.builder()
+                        .tableName(trs.getString("TABLE_NAME"))
+                        .columnCount(trs.getInt("COLUMN_COUNT"))
+                        .rowCount(trs.getLong("TABLE_ROWS"))
+                        .sizeInBytes(trs.getLong("SIZE_IN_BYTES"))
+                        .build()
+        );
+    }
+
+    @Override
+    public List<SchemaMetadataDto> getAllSchemas(Boolean includeSystemSchema) {
+        String schemaSql = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA";
+
+        return jdbcTemplate.query(schemaSql, (rs) -> {
+            List<SchemaMetadataDto> result = new ArrayList<>();
+
+            while (rs.next()) {
+                String schemaName = rs.getString("SCHEMA_NAME");
+                boolean isSystem = isSystemSchemaByName(schemaName);
+
+                if (!includeSystemSchema && isSystem) {
+                    continue;
+                }
+
+                List<TableMetadataDto> tables = queryTablesForSchema(schemaName);
 
                 result.add(SchemaMetadataDto.builder()
                         .schemaName(schemaName)
