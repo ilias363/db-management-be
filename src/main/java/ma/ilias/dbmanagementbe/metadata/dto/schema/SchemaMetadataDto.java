@@ -14,7 +14,6 @@ import java.util.List;
 @Builder
 public class SchemaMetadataDto {
     private String schemaName;
-    private String owner;
     private LocalDateTime creationDate;
 
     @JsonIgnoreProperties({"schema", "columns", "indexes", "foreignKeys"})
