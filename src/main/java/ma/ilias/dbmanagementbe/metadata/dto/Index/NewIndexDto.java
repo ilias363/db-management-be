@@ -4,19 +4,13 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import ma.ilias.dbmanagementbe.metadata.dto.indexcolumn.NewIndexColumnDto;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
-@Builder
 public class NewIndexDto {
     @NotBlank(message = "Index name cannot be blank")
     private String indexName;

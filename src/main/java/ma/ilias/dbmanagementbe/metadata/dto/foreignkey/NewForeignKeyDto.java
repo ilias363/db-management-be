@@ -2,15 +2,9 @@ package ma.ilias.dbmanagementbe.metadata.dto.foreignkey;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
-@Builder
 public class NewForeignKeyDto {
     @NotBlank(message = "Constraint name cannot be blank")
     private String constraintName;

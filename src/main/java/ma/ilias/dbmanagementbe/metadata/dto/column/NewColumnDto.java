@@ -2,16 +2,10 @@ package ma.ilias.dbmanagementbe.metadata.dto.column;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import ma.ilias.dbmanagementbe.validation.ValidDataTypeDefinition;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
-@Builder
 @ValidDataTypeDefinition
 public class NewColumnDto implements ColumnDataTypeDefinition {
     @NotBlank(message = "Schema name cannot be blank")
