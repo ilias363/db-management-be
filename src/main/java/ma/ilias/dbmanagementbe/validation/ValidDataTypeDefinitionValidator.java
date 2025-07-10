@@ -4,7 +4,7 @@ import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import ma.ilias.dbmanagementbe.metadata.dto.column.ColumnDataTypeDefinition;
 
-public class ValidColumnDefinitionValidator implements ConstraintValidator<ValidColumnDefinition, ColumnDataTypeDefinition> {
+public class ValidDataTypeDefinitionValidator implements ConstraintValidator<ValidDataTypeDefinition, ColumnDataTypeDefinition> {
 
     @Override
     public boolean isValid(ColumnDataTypeDefinition dto, ConstraintValidatorContext context) {

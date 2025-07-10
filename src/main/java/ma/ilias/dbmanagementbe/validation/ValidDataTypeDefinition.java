@@ -8,11 +8,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Constraint(validatedBy = ValidColumnDefinitionValidator.class)
+@Constraint(validatedBy = ValidDataTypeDefinitionValidator.class)
 @Target({ ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ValidColumnDefinition {
-    String message() default "Invalid column definition for the selected data type";
+public @interface ValidDataTypeDefinition {
+    String message() default "Invalid definition for the selected data type";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
 }

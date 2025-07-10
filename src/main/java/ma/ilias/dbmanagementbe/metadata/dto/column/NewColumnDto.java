@@ -6,13 +6,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ma.ilias.dbmanagementbe.validation.ValidColumnDefinition;
+import ma.ilias.dbmanagementbe.validation.ValidDataTypeDefinition;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 @Builder
-@ValidColumnDefinition
+@ValidDataTypeDefinition
 public class NewColumnDto implements ColumnDataTypeDefinition {
     @NotBlank(message = "Schema name cannot be blank")
     private String schemaName;
