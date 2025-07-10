@@ -16,7 +16,6 @@ import java.util.List;
 @Builder
 public class TableMetadataDto {
     private String tableName;
-    private Boolean isSystemTable;
     private Integer columnCount;
     private Long rowCount;
     private Long sizeInBytes;
