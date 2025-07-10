@@ -3,6 +3,7 @@ package ma.ilias.dbmanagementbe.metadata.dto.Index;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -28,6 +29,7 @@ public class NewIndexDto {
 
     private Boolean isUnique;
 
+    @Pattern(regexp = "^(?i)(BTREE|HASH)$", message = "Index type is not valid")
     private String indexType;
 
     @Valid
