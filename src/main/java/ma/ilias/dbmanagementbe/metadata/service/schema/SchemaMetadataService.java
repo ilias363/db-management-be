@@ -8,4 +8,5 @@ public interface SchemaMetadataService {
     Boolean schemaExists(String schemaName);
     Boolean isSystemSchemaByName(String schemaName);
     List<SchemaMetadataDto> getAllSchemas(Boolean includeSystemSchema);
+    SchemaMetadataDto getSchemaByName(String schemaName);
 }
