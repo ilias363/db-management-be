@@ -15,7 +15,6 @@ import java.util.List;
 public class IndexMetadataDto {
     private String indexName;
     private Boolean isUnique;
-    private Boolean isPrimary;
     private String indexType;
 
     @JsonIgnoreProperties({"columns", "indexes", "foreignKeys"})
