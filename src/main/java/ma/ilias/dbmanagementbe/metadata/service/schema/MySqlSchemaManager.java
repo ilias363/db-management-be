@@ -17,7 +17,7 @@ import java.util.List;
 @Service
 @AllArgsConstructor
 @Transactional
-public class MySqlSchemaManager implements SchemaMetadataService {
+public class MySqlSchemaManager implements SchemaService {
 
     private final JdbcTemplate jdbcTemplate;
 

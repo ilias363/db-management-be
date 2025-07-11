@@ -5,11 +5,16 @@ import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 
 import java.util.List;
 
-public interface SchemaMetadataService {
+public interface SchemaService {
     Boolean schemaExists(String schemaName);
+
     Boolean isSystemSchemaByName(String schemaName);
+
     List<SchemaMetadataDto> getAllSchemas(Boolean includeSystemSchema);
+
     SchemaMetadataDto getSchemaByName(String schemaName);
+
     SchemaMetadataDto createSchema(NewSchemaDto nweSchema);
+
     Boolean deleteSchema(String schemaName);
 }
