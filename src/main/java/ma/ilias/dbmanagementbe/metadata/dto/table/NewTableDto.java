@@ -7,7 +7,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import ma.ilias.dbmanagementbe.metadata.dto.column.NewColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.foreignkey.NewForeignKeyDto;
-import ma.ilias.dbmanagementbe.validation.ExistingSchema;
 import ma.ilias.dbmanagementbe.validation.UniqueTableName;
 
 import java.util.List;
@@ -16,7 +15,7 @@ import java.util.List;
 @UniqueTableName
 public class NewTableDto implements TableDtoBase {
     @NotBlank(message = "Schema name cannot be blank")
-    @ExistingSchema
+    // schema existence checked in @UniqueTableName
     private String schemaName;
 
     @NotBlank(message = "Table name cannot be blank")
