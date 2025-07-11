@@ -35,7 +35,7 @@ public class TableMetadataDto {
     @EqualsAndHashCode.Exclude
     private List<IndexMetadataDto> indexes = new ArrayList<>();
 
-    @JsonIgnoreProperties("table")
+    @JsonIgnoreProperties("fromTable")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private List<ForeignKeyMetadataDto> foreignKeys = new ArrayList<>();
