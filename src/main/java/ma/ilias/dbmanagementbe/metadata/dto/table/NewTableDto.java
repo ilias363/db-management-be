@@ -7,12 +7,14 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import ma.ilias.dbmanagementbe.metadata.dto.column.NewColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.foreignkey.NewForeignKeyDto;
+import ma.ilias.dbmanagementbe.validation.ExistingSchema;
 
 import java.util.List;
 
 @Data
 public class NewTableDto {
     @NotBlank(message = "Schema name cannot be blank")
+    @ExistingSchema
     private String schemaName;
 
     @NotBlank(message = "Table name cannot be blank")
