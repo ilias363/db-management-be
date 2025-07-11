@@ -8,11 +8,13 @@ import lombok.Data;
 import ma.ilias.dbmanagementbe.metadata.dto.column.NewColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.foreignkey.NewForeignKeyDto;
 import ma.ilias.dbmanagementbe.validation.ExistingSchema;
+import ma.ilias.dbmanagementbe.validation.UniqueTableName;
 
 import java.util.List;
 
 @Data
-public class NewTableDto {
+@UniqueTableName
+public class NewTableDto implements TableDtoBase {
     @NotBlank(message = "Schema name cannot be blank")
     @ExistingSchema
     private String schemaName;
