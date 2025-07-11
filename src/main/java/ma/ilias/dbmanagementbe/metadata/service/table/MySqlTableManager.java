@@ -91,6 +91,25 @@ public class MySqlTableManager implements TableService {
         );
     }
 
+    @Override
+    public List<TableMetadataDto> getTablesBySchema(String schemaName) {
+        if (!schemaService.schemaExists(schemaName)) {
+            throw new SchemaNotFoundException(schemaName.toLowerCase());
+        }
+
+        String tableSql = """
+                SELECT TABLE_NAME
+                FROM INFORMATION_SCHEMA.TABLES
+                WHERE TABLE_SCHEMA = ?
+                """;
+
+        return jdbcTemplate.query(
+                tableSql,
+                ps -> ps.setString(1, schemaName),
+                (rs, rowNum) -> getTable(schemaName, rs.getString("TABLE_NAME"))
+        );
+    }
+
     private List<ColumnMetadataDto> queryColumnsForTable(String schemaName, String tableName) {
         String columnsSql = """
                 SELECT COLUMN_NAME,
