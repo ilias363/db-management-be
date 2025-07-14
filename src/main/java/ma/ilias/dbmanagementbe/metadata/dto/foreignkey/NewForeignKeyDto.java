@@ -6,9 +6,6 @@ import lombok.Data;
 
 @Data
 public class NewForeignKeyDto {
-    @NotBlank(message = "Constraint name cannot be blank")
-    private String constraintName;
-
     @NotBlank(message = "Schema name cannot be blank")
     private String schemaName;
 
