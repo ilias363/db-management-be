@@ -254,19 +254,30 @@ public class MySqlTableManager implements TableService {
 
     private List<ColumnMetadataDto> queryColumnsForTable(String schemaName, String tableName) {
         String columnsSql = """
-                SELECT COLUMN_NAME,
-                       ORDINAL_POSITION,
-                       DATA_TYPE,
-                       CHARACTER_MAXIMUM_LENGTH,
-                       NUMERIC_PRECISION,
-                       NUMERIC_SCALE,
-                       IS_NULLABLE,
-                       COLUMN_DEFAULT,
-                       COLUMN_KEY,
-                       EXTRA
-                FROM INFORMATION_SCHEMA.COLUMNS
-                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
-                ORDER BY ORDINAL_POSITION
+                SELECT  c.COLUMN_NAME,
+                        c.ORDINAL_POSITION,
+                        c.DATA_TYPE,
+                        c.CHARACTER_MAXIMUM_LENGTH,
+                        c.NUMERIC_PRECISION,
+                        c.NUMERIC_SCALE,
+                        c.IS_NULLABLE,
+                        c.COLUMN_DEFAULT,
+                        c.COLUMN_KEY,
+                        c.EXTRA
+                FROM INFORMATION_SCHEMA.COLUMNS c
+                WHERE c.TABLE_SCHEMA = ?
+                AND c.TABLE_NAME = ?
+                AND c.COLUMN_NAME NOT IN (
+                    SELECT kcu.COLUMN_NAME
+                    FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+                    JOIN INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
+                    ON kcu.CONSTRAINT_NAME = rc.CONSTRAINT_NAME
+                    AND kcu.CONSTRAINT_SCHEMA = rc.CONSTRAINT_SCHEMA
+                    WHERE kcu.TABLE_SCHEMA = ?
+                    AND kcu.TABLE_NAME = ?
+                    AND kcu.REFERENCED_TABLE_NAME IS NOT NULL
+                )
+                ORDER BY c.ORDINAL_POSITION
                 """;
 
         String uniqueColsSql = """
@@ -291,6 +302,8 @@ public class MySqlTableManager implements TableService {
                 ps -> {
                     ps.setString(1, schemaName);
                     ps.setString(2, tableName);
+                    ps.setString(3, schemaName);
+                    ps.setString(4, tableName);
                 },
                 (rs, rowNum) -> {
                     boolean isPrimaryKey = "PRI".equalsIgnoreCase(rs.getString("COLUMN_KEY"));
