@@ -3,6 +3,7 @@ package ma.ilias.dbmanagementbe.metadata.service.table;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
+import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
 import ma.ilias.dbmanagementbe.metadata.dto.Index.IndexMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.ColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.NewColumnDto;
@@ -218,6 +219,39 @@ public class MySqlTableManager implements TableService {
         return getTable(updateTableDto.getSchemaName(), updateTableDto.getUpdatedTableName());
     }
 
+    @Override
+    public Boolean deleteTable(String schemaName, String tableName, boolean force) {
+        if (schemaService.isSystemSchemaByName(schemaName)) {
+            throw new UnauthorizedActionException("Cannot delete system table: " + schemaName + "." + tableName);
+        }
+
+        if (!tableExists(schemaName, tableName)) {
+            throw new TableNotFoundException(schemaName.toLowerCase(), tableName.toLowerCase());
+        }
+
+        List<String> fkConstraints = getForeignKeyConstraints(schemaName, tableName);
+        if (!force && !fkConstraints.isEmpty()) {
+            throw new IllegalStateException("Cannot drop table due to " + fkConstraints.size() + " foreign key constraints. Use force=true to drop constraints automatically.");
+        }
+
+        // Drop FK constraints if force=true
+        if (force) {
+            for (String fk : fkConstraints) {
+                String[] parts = fk.split(" ON ");
+                String constraintName = parts[0];
+                String childTable = parts[1];
+                String sql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s", schemaName, childTable, constraintName);
+                jdbcTemplate.execute(sql);
+            }
+        }
+
+        // Drop the table
+        String sql = String.format("DROP TABLE %s.%s", schemaName, tableName);
+        jdbcTemplate.execute(sql);
+
+        return !tableExists(schemaName, tableName);
+    }
+
     private List<ColumnMetadataDto> queryColumnsForTable(String schemaName, String tableName) {
         String columnsSql = """
                 SELECT COLUMN_NAME,
@@ -370,5 +404,20 @@ public class MySqlTableManager implements TableService {
                         .onDeleteAction(rs.getString("DELETE_RULE"))
                         .build()
         );
+    }
+
+    private List<String> getForeignKeyConstraints(String schemaName, String tableName) {
+        String sql = """
+                    SELECT rc.constraint_name, rc.table_name
+                    FROM information_schema.referential_constraints rc
+                    JOIN information_schema.key_column_usage kcu
+                    ON rc.constraint_name = kcu.constraint_name
+                    AND rc.constraint_schema = kcu.constraint_schema
+                    WHERE rc.referenced_table_name = ?
+                    AND rc.constraint_schema = ?
+                """;
+        return jdbcTemplate.query(sql, (rs, rowNum) ->
+                        rs.getString("constraint_name") + " ON " + rs.getString("table_name"),
+                tableName, schemaName);
     }
 }

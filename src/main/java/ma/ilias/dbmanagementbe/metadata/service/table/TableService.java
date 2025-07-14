@@ -16,4 +16,6 @@ public interface TableService {
     TableMetadataDto createTable(NewTableDto newTable);
 
     TableMetadataDto renameTable(UpdateTableDto updateTableDto);
+
+    Boolean deleteTable(String schemaName, String tableName, boolean force);
 }
