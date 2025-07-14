@@ -3,23 +3,19 @@ package ma.ilias.dbmanagementbe.validation;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
+import ma.ilias.dbmanagementbe.metadata.dto.ITableReference;
 import ma.ilias.dbmanagementbe.metadata.dto.table.NewTableDto;
-import ma.ilias.dbmanagementbe.metadata.dto.table.TableDtoBase;
 import ma.ilias.dbmanagementbe.metadata.dto.table.UpdateTableDto;
-import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
 import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class UniqueTableNameValidator implements ConstraintValidator<UniqueTableName, TableDtoBase> {
-
-    @Autowired
-    private SchemaService schemaService;
+public class UniqueTableNameValidator implements ConstraintValidator<UniqueTableName, ITableReference> {
 
     @Autowired
     private TableService tableService;
 
     @Override
-    public boolean isValid(TableDtoBase dto, ConstraintValidatorContext context) {
+    public boolean isValid(ITableReference dto, ConstraintValidatorContext context) {
         if (dto.getSchemaName() == null) {
             return true;
         }
