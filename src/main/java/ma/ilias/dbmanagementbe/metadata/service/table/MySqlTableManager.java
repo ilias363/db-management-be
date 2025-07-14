@@ -11,6 +11,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.indexcolumn.IndexColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.NewTableDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.table.UpdateTableDto;
 import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -203,6 +204,18 @@ public class MySqlTableManager implements TableService {
         jdbcTemplate.execute(createTableSql.toString());
 
         return getTable(newTable.getSchemaName(), newTable.getTableName());
+    }
+
+    @Override
+    public TableMetadataDto renameTable(UpdateTableDto updateTableDto) {
+        if (!updateTableDto.getTableName().equalsIgnoreCase(updateTableDto.getUpdatedTableName())) {
+            String renameSql = String.format("RENAME TABLE %s.%s TO %s.%s",
+                    updateTableDto.getSchemaName(), updateTableDto.getTableName(),
+                    updateTableDto.getSchemaName(), updateTableDto.getUpdatedTableName());
+            jdbcTemplate.execute(renameSql);
+        }
+
+        return getTable(updateTableDto.getSchemaName(), updateTableDto.getUpdatedTableName());
     }
 
     private List<ColumnMetadataDto> queryColumnsForTable(String schemaName, String tableName) {
