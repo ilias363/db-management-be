@@ -3,6 +3,7 @@ package ma.ilias.dbmanagementbe.metadata.dto.column;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
+import ma.ilias.dbmanagementbe.metadata.dto.ITableReference;
 import ma.ilias.dbmanagementbe.validation.ExistingTable;
 import ma.ilias.dbmanagementbe.validation.ValidColumnDefault;
 import ma.ilias.dbmanagementbe.validation.ValidDataTypeDefinition;
@@ -12,7 +13,7 @@ import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
 @ValidDataTypeDefinition
 @ValidColumnDefault
 @ExistingTable(groups = StandaloneColumnCreation.class)
-public class NewColumnDto implements ColumnDataTypeDefinition {
+public class NewColumnDto implements ColumnDataTypeDefinition, ITableReference {
     @NotBlank(message = "Schema name cannot be blank")
     private String schemaName;
 

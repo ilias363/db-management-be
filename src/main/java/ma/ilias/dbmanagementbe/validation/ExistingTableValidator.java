@@ -3,17 +3,17 @@ package ma.ilias.dbmanagementbe.validation;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
-import ma.ilias.dbmanagementbe.metadata.dto.column.NewColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.ITableReference;
 import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ExistingTableValidator implements ConstraintValidator<ExistingTable, NewColumnDto> {
+public class ExistingTableValidator implements ConstraintValidator<ExistingTable, ITableReference> {
 
     @Autowired
     private TableService tableService;
 
     @Override
-    public boolean isValid(NewColumnDto dto, ConstraintValidatorContext context) {
+    public boolean isValid(ITableReference dto, ConstraintValidatorContext context) {
         if (dto == null || dto.getSchemaName() == null || dto.getTableName() == null) {
             return true;
         }
