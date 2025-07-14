@@ -1,5 +1,6 @@
 package ma.ilias.dbmanagementbe.metadata.service.table;
 
+import ma.ilias.dbmanagementbe.metadata.dto.table.NewTableDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 
 import java.util.List;
@@ -11,4 +12,5 @@ public interface TableService {
 
     List<TableMetadataDto> getTablesBySchema(String schemaName);
 
+    TableMetadataDto createTable(NewTableDto newTable);
 }

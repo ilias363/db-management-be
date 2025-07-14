@@ -5,9 +5,11 @@ import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
 import ma.ilias.dbmanagementbe.metadata.dto.Index.IndexMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.ColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.NewColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.foreignkey.ForeignKeyMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.indexcolumn.IndexColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.table.NewTableDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -17,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -108,6 +112,97 @@ public class MySqlTableManager implements TableService {
                 ps -> ps.setString(1, schemaName),
                 (rs, rowNum) -> getTable(schemaName, rs.getString("TABLE_NAME"))
         );
+    }
+
+    @Override
+    public TableMetadataDto createTable(NewTableDto newTable) {
+        if (!schemaService.schemaExists(newTable.getSchemaName())) {
+            throw new SchemaNotFoundException(newTable.getSchemaName().toLowerCase());
+        }
+
+        StringBuilder createTableSql = new StringBuilder("CREATE TABLE ")
+                .append(newTable.getSchemaName())
+                .append(".")
+                .append(newTable.getTableName())
+                .append(" (");
+
+        Function<NewColumnDto, String> columnSqlBuilder = col -> {
+            StringBuilder sb = new StringBuilder();
+            sb.append(col.getColumnName()).append(" ").append(col.getDataType());
+            if (col.getCharacterMaxLength() != null) {
+                sb.append("(").append(col.getCharacterMaxLength()).append(")");
+            } else if (col.getNumericPrecision() != null) {
+                sb.append("(").append(col.getNumericPrecision());
+                if (col.getNumericScale() != null) {
+                    sb.append(",").append(col.getNumericScale());
+                }
+                sb.append(")");
+            }
+            if (Boolean.TRUE.equals(col.getAutoIncrement())) {
+                sb.append(" AUTO_INCREMENT");
+            }
+            if (Boolean.FALSE.equals(col.getIsNullable())) {
+                sb.append(" NOT NULL");
+            }
+            if (Boolean.TRUE.equals(col.getIsUnique())) {
+                sb.append(" UNIQUE");
+            }
+            if (
+                    Boolean.FALSE.equals(col.getAutoIncrement()) &&
+                            col.getColumnDefault() != null &&
+                            !col.getColumnDefault().isBlank()
+            ) {
+                if ("CURRENT_TIMESTAMP".equalsIgnoreCase(col.getColumnDefault())) {
+                    sb.append(" DEFAULT CURRENT_TIMESTAMP");
+                } else {
+                    sb.append(" DEFAULT '").append(col.getColumnDefault()).append("'");
+                }
+            }
+            return sb.toString();
+        };
+
+        // Add primary key column
+        NewColumnDto pkCol = newTable.getPrimaryKey();
+        createTableSql.append(columnSqlBuilder.apply(pkCol)).append(" PRIMARY KEY");
+
+        // Add other columns
+        if (!newTable.getColumns().isEmpty()) {
+            createTableSql.append(", ");
+            String columnsSql = newTable.getColumns().stream()
+                    .map(columnSqlBuilder)
+                    .collect(Collectors.joining(", "));
+            createTableSql.append(columnsSql);
+        }
+
+        // Add foreign keys if any
+        if (newTable.getForeignKeys() != null && !newTable.getForeignKeys().isEmpty()) {
+            createTableSql.append(", ");
+            String fksSql = newTable.getForeignKeys().stream()
+                    .map(fk -> {
+                        StringBuilder fkSql = new StringBuilder(String.format(
+                                "FOREIGN KEY (%s) REFERENCES %s.%s(%s)",
+                                fk.getFromColumnName(),
+                                fk.getSchemaName(),
+                                fk.getToTableName(),
+                                fk.getToColumnName()
+                        ));
+                        if (fk.getOnUpdateAction() != null && !fk.getOnUpdateAction().isBlank()) {
+                            fkSql.append(" ON UPDATE ").append(fk.getOnUpdateAction());
+                        }
+                        if (fk.getOnDeleteAction() != null && !fk.getOnDeleteAction().isBlank()) {
+                            fkSql.append(" ON DELETE ").append(fk.getOnDeleteAction());
+                        }
+                        return fkSql.toString();
+                    })
+                    .collect(Collectors.joining(", "));
+            createTableSql.append(fksSql);
+        }
+
+        createTableSql.append(")");
+
+        jdbcTemplate.execute(createTableSql.toString());
+
+        return getTable(newTable.getSchemaName(), newTable.getTableName());
     }
 
     private List<ColumnMetadataDto> queryColumnsForTable(String schemaName, String tableName) {
