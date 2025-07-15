@@ -121,10 +121,6 @@ public class MySqlTableManager implements TableService {
 
     @Override
     public TableMetadataDto createTable(NewTableDto newTable) {
-        if (!schemaService.schemaExists(newTable.getSchemaName())) {
-            throw new SchemaNotFoundException(newTable.getSchemaName().toLowerCase());
-        }
-
         StringBuilder createTableSql = new StringBuilder("CREATE TABLE ")
                 .append(newTable.getSchemaName())
                 .append(".")
