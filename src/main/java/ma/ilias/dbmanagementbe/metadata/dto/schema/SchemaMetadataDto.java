@@ -17,7 +17,7 @@ public class SchemaMetadataDto {
     private Boolean isSystemSchema;
     private LocalDateTime creationDate;
 
-    @JsonIgnoreProperties({"schema", "columns", "indexes", "foreignKeys"})
+    @JsonIgnoreProperties({"schema", "columns", "indexes"})
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private List<TableMetadataDto> tables = new ArrayList<>();
