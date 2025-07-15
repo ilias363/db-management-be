@@ -14,7 +14,7 @@ public abstract class BaseColumnMetadataDto {
     private String columnName;
     private Integer ordinalPosition;
     private String dataType;
-    private Integer characterMaxLength;
+    private Long characterMaxLength;
     private Integer numericPrecision;
     private Integer numericScale;
     private Boolean isNullable;

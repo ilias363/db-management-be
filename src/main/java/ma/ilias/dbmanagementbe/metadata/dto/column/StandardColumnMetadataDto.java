@@ -16,7 +16,7 @@ public class StandardColumnMetadataDto extends BaseColumnMetadataDto {
     }
 
     public StandardColumnMetadataDto(String columnName, Integer ordinalPosition, String dataType,
-                                     Integer characterMaxLength, Integer numericPrecision, Integer numericScale,
+                                     Long characterMaxLength, Integer numericPrecision, Integer numericScale,
                                      Boolean isNullable, Boolean isUnique, String columnDefault, Boolean autoIncrement,
                                      TableMetadataDto table) {
         super(columnName, ordinalPosition, dataType, characterMaxLength, numericPrecision, numericScale,

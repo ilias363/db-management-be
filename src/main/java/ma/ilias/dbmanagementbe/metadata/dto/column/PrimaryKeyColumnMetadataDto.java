@@ -16,7 +16,7 @@ public class PrimaryKeyColumnMetadataDto extends BaseColumnMetadataDto {
     }
 
     public PrimaryKeyColumnMetadataDto(String columnName, Integer ordinalPosition, String dataType,
-                                       Integer characterMaxLength, Integer numericPrecision, Integer numericScale,
+                                       Long characterMaxLength, Integer numericPrecision, Integer numericScale,
                                        String columnDefault, Boolean autoIncrement, TableMetadataDto table) {
         super(columnName, ordinalPosition, dataType, characterMaxLength, numericPrecision, numericScale,
                 false, true, columnDefault, autoIncrement, table);

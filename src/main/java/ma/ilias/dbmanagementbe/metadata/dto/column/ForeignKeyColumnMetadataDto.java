@@ -21,7 +21,7 @@ public class ForeignKeyColumnMetadataDto extends BaseColumnMetadataDto {
     }
 
     public ForeignKeyColumnMetadataDto(String columnName, Integer ordinalPosition, String dataType,
-                                       Integer characterMaxLength, Integer numericPrecision, Integer numericScale,
+                                       Long characterMaxLength, Integer numericPrecision, Integer numericScale,
                                        Boolean isNullable, Boolean isUnique, String columnDefault, Boolean autoIncrement,
                                        TableMetadataDto table, String referencedSchemaName,
                                        String referencedTableName, String referencedColumnName,
