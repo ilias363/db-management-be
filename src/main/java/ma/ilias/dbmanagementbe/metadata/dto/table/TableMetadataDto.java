@@ -3,8 +3,7 @@ package ma.ilias.dbmanagementbe.metadata.dto.table;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import ma.ilias.dbmanagementbe.metadata.dto.Index.IndexMetadataDto;
-import ma.ilias.dbmanagementbe.metadata.dto.column.ColumnMetadataDto;
-import ma.ilias.dbmanagementbe.metadata.dto.foreignkey.ForeignKeyMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 
 import java.util.ArrayList;
@@ -28,15 +27,10 @@ public class TableMetadataDto {
     @JsonIgnoreProperties("table")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
-    private List<ColumnMetadataDto> columns = new ArrayList<>();
+    private List<BaseColumnMetadataDto> columns = new ArrayList<>();
 
     @JsonIgnoreProperties("table")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private List<IndexMetadataDto> indexes = new ArrayList<>();
-
-    @JsonIgnoreProperties("fromTable")
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private List<ForeignKeyMetadataDto> foreignKeys = new ArrayList<>();
 }
