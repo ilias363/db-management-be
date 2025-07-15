@@ -346,7 +346,7 @@ public class MySqlTableManager implements TableService {
             String columnDefault = rs.getString("COLUMN_DEFAULT");
             Boolean autoIncrement = rs.getString("EXTRA") != null && rs.getString("EXTRA").toLowerCase().contains("auto_increment");
             boolean isPrimaryKey = "PRI".equalsIgnoreCase(rs.getString("COLUMN_KEY"));
-            Boolean isNullable = isPrimaryKey || "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
+            Boolean isNullable = !isPrimaryKey && "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
             Boolean isUnique = isPrimaryKey || uniqueColumns.contains(columnName);
 
             BaseColumnMetadataDto column;
