@@ -2,14 +2,14 @@ package ma.ilias.dbmanagementbe.validation;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import ma.ilias.dbmanagementbe.metadata.dto.column.NewColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
 
 import java.util.regex.Pattern;
 
-public class ValidColumnDefaultValidator implements ConstraintValidator<ValidColumnDefault, NewColumnDto> {
+public class ValidColumnDefaultValidator implements ConstraintValidator<ValidColumnDefault, BaseNewColumnDto> {
 
     @Override
-    public boolean isValid(NewColumnDto dto, ConstraintValidatorContext context) {
+    public boolean isValid(BaseNewColumnDto dto, ConstraintValidatorContext context) {
         String dataType = dto.getDataType();
         String defaultValue = dto.getColumnDefault();
         Boolean isNullable = dto.getIsNullable();
