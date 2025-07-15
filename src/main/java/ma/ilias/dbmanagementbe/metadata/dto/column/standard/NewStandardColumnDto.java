@@ -1,8 +1,9 @@
-package ma.ilias.dbmanagementbe.metadata.dto.column;
+package ma.ilias.dbmanagementbe.metadata.dto.column.standard;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.SuperBuilder;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
 
 @Data
 @SuperBuilder

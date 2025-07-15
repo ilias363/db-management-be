@@ -1,10 +1,11 @@
-package ma.ilias.dbmanagementbe.metadata.dto.column;
+package ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.SuperBuilder;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
 
 @Data
 @SuperBuilder

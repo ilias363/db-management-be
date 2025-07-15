@@ -1,9 +1,10 @@
-package ma.ilias.dbmanagementbe.metadata.dto.column;
+package ma.ilias.dbmanagementbe.metadata.dto.column.standard;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.SuperBuilder;
 import ma.ilias.dbmanagementbe.enums.ColumnType;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 
 @Data
