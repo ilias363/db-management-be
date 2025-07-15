@@ -7,8 +7,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import ma.ilias.dbmanagementbe.metadata.dto.ITableReference;
-import ma.ilias.dbmanagementbe.metadata.dto.column.NewColumnDto;
-import ma.ilias.dbmanagementbe.metadata.dto.foreignkey.NewForeignKeyDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.NewForeignKeyColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.NewPrimaryKeyColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.NewStandardColumnDto;
 import ma.ilias.dbmanagementbe.validation.UniqueTableName;
 
 import java.util.List;
@@ -28,13 +29,13 @@ public class NewTableDto implements ITableReference {
     private String tableName;
 
     @Valid
-    @NotNull
-    private NewColumnDto primaryKey;
+    @NotNull(message = "Primary key is required")
+    private NewPrimaryKeyColumnDto primaryKey;
 
     @Valid
     @NotEmpty(message = "At least one column is required")
-    private List<NewColumnDto> columns;
+    private List<NewStandardColumnDto> columns;
 
     @Valid
-    private List<NewForeignKeyDto> foreignKeys;
+    private List<NewForeignKeyColumnDto> foreignKeyColumns;
 }
