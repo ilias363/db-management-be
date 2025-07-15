@@ -10,12 +10,14 @@ import ma.ilias.dbmanagementbe.metadata.dto.ITableReference;
 import ma.ilias.dbmanagementbe.metadata.dto.column.NewForeignKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.NewPrimaryKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.NewStandardColumnDto;
+import ma.ilias.dbmanagementbe.validation.NoDuplicateColumnNames;
 import ma.ilias.dbmanagementbe.validation.UniqueTableName;
 
 import java.util.List;
 
 @Data
 @UniqueTableName
+@NoDuplicateColumnNames
 public class NewTableDto implements ITableReference {
     @NotBlank(message = "Schema name cannot be blank")
     // schema existence checked in @UniqueTableName
