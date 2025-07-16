@@ -1,6 +1,9 @@
-package ma.ilias.dbmanagementbe.exception;
+package ma.ilias.dbmanagementbe.config;
 
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
+import ma.ilias.dbmanagementbe.exception.EntityNotFoundException;
+import ma.ilias.dbmanagementbe.exception.MetadataNotFoundException;
+import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
