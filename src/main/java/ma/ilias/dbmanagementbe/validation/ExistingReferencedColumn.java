@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = ExistingReferencedColumnValidator.class)
 public @interface ExistingReferencedColumn {
-    String message() default "Referenced column does not exist in the specified  referenced table";
+    String message() default "Referenced column does not exist in the specified referenced table";
 
     Class<?>[] groups() default {};
 

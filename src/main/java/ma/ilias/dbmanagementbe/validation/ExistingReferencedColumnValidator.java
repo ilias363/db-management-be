@@ -15,21 +15,34 @@ public class ExistingReferencedColumnValidator implements ConstraintValidator<Ex
 
     @Override
     public boolean isValid(IReferencedColumnReference dto, ConstraintValidatorContext context) {
-        if (
-                dto == null ||
-                        dto.getReferencedColumnName() == null ||
-                        dto.getReferencedTableName() == null ||
-                        dto.getReferencedColumnName() == null
+        if (dto == null ||
+                dto.getReferencedSchemaName() == null ||
+                dto.getReferencedTableName() == null ||
+                dto.getReferencedColumnName() == null
         ) {
             return true;
         }
 
         try {
-            return columnService.columnExists(
+            if (!columnService.columnExists(
                     dto.getReferencedSchemaName(),
                     dto.getReferencedTableName(),
                     dto.getReferencedColumnName()
-            );
+            )) {
+                return false;
+            }
+
+            if (!columnService.isColumnPrimaryKey(
+                    dto.getReferencedSchemaName(),
+                    dto.getReferencedTableName(),
+                    dto.getReferencedColumnName()
+            )) {
+                context.disableDefaultConstraintViolation();
+                context.buildConstraintViolationWithTemplate("Referenced column is not a primary key")
+                        .addPropertyNode("referencedColumnName").addConstraintViolation();
+                return false;
+            }
+            return true;
         } catch (TableNotFoundException ex) {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate("Referenced table does not exist in the specified referenced schema")
