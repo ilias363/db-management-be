@@ -3,7 +3,7 @@ package ma.ilias.dbmanagementbe.validation;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
-import ma.ilias.dbmanagementbe.metadata.dto.ITableReference;
+import ma.ilias.dbmanagementbe.metadata.dto.common.ITableReference;
 import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
 import org.springframework.beans.factory.annotation.Autowired;
 

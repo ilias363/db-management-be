@@ -6,10 +6,10 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
-import ma.ilias.dbmanagementbe.metadata.dto.ITableReference;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.NewForeignKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.common.ITableReference;
 import ma.ilias.dbmanagementbe.validation.NoDuplicateColumnNames;
 import ma.ilias.dbmanagementbe.validation.UniqueTableName;
 

@@ -3,7 +3,7 @@ package ma.ilias.dbmanagementbe.metadata.dto.table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
-import ma.ilias.dbmanagementbe.metadata.dto.ITableReference;
+import ma.ilias.dbmanagementbe.metadata.dto.common.ITableReference;
 import ma.ilias.dbmanagementbe.validation.ExistingTable;
 import ma.ilias.dbmanagementbe.validation.UniqueTableName;
 

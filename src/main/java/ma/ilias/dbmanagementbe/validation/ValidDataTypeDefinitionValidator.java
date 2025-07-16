@@ -2,7 +2,7 @@ package ma.ilias.dbmanagementbe.validation;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import ma.ilias.dbmanagementbe.metadata.dto.column.ColumnDataTypeDefinition;
+import ma.ilias.dbmanagementbe.metadata.dto.common.ColumnDataTypeDefinition;
 
 public class ValidDataTypeDefinitionValidator implements ConstraintValidator<ValidDataTypeDefinition, ColumnDataTypeDefinition> {
 

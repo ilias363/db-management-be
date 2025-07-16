@@ -1,4 +1,4 @@
-package ma.ilias.dbmanagementbe.metadata.dto;
+package ma.ilias.dbmanagementbe.metadata.dto.common;
 
 public interface IReferencedColumnReference {
     String getReferencedSchemaName();

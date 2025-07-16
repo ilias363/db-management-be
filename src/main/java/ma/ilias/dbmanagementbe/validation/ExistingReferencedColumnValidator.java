@@ -4,7 +4,7 @@ import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
-import ma.ilias.dbmanagementbe.metadata.dto.IReferencedColumnReference;
+import ma.ilias.dbmanagementbe.metadata.dto.common.IReferencedColumnReference;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
 import org.springframework.beans.factory.annotation.Autowired;
 

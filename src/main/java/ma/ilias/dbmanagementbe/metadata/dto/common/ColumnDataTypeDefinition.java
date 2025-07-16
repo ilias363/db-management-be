@@ -1,4 +1,4 @@
-package ma.ilias.dbmanagementbe.metadata.dto.column;
+package ma.ilias.dbmanagementbe.metadata.dto.common;
 
 /**
  * An interface representing the definition of a database column's data type.
@@ -7,7 +7,10 @@ package ma.ilias.dbmanagementbe.metadata.dto.column;
  */
 public interface ColumnDataTypeDefinition {
     String getDataType();
+
     Integer getCharacterMaxLength();
+
     Integer getNumericPrecision();
+
     Integer getNumericScale();
 }
