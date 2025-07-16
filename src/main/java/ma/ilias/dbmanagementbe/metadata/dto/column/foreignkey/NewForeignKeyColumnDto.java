@@ -9,12 +9,14 @@ import lombok.experimental.SuperBuilder;
 import ma.ilias.dbmanagementbe.metadata.dto.IReferencedColumnReference;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
 import ma.ilias.dbmanagementbe.validation.ExistingReferencedColumn;
+import ma.ilias.dbmanagementbe.validation.MatchingForeignKeyType;
 
 @Data
 @SuperBuilder
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @ExistingReferencedColumn
+@MatchingForeignKeyType
 public class NewForeignKeyColumnDto extends BaseNewColumnDto implements IReferencedColumnReference {
     @NotBlank(message = "Referenced schema name cannot be blank")
     private String referencedSchemaName;
