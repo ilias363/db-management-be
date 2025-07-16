@@ -299,15 +299,7 @@ public class MySqlColumnManager implements ColumnService {
             throw new UnauthorizedActionException("Cannot delete column from system table: " + schemaName + "." + tableName);
         }
 
-        // Check if it's a primary key column
-        String pkCheckSql = """
-                SELECT COUNT(*) FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
-                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ? 
-                  AND CONSTRAINT_NAME = 'PRIMARY'
-                """;
-
-        Integer pkCount = jdbcTemplate.queryForObject(pkCheckSql, Integer.class, schemaName, tableName, columnName);
-        if (pkCount != null && pkCount > 0) {
+        if (isColumnPrimaryKey(schemaName, tableName, columnName)) {
             throw new UnauthorizedActionException("Cannot delete primary key column: " + columnName);
         }
 
@@ -344,6 +336,18 @@ public class MySqlColumnManager implements ColumnService {
         jdbcTemplate.execute(alterSql);
 
         return !columnExists(schemaName, tableName, columnName);
+    }
+
+    @Override
+    public Boolean isColumnPrimaryKey(String schemaName, String tableName, String columnName) {
+        String pkCheckSql = """
+                SELECT COUNT(*) FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ? 
+                  AND CONSTRAINT_NAME = 'PRIMARY'
+                """;
+
+        Integer pkCount = jdbcTemplate.queryForObject(pkCheckSql, Integer.class, schemaName, tableName, columnName);
+        return pkCount != null && pkCount > 0;
     }
 
     // Helper record for foreign key information

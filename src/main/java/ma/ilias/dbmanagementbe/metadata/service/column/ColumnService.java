@@ -11,4 +11,6 @@ public interface ColumnService {
     BaseColumnMetadataDto createColumn(BaseNewColumnDto newColumnDto);
 
     Boolean deleteColumn(String schemaName, String tableName, String columnName, boolean force);
+
+    Boolean isColumnPrimaryKey(String schemaName, String tableName, String columnName);
 }
