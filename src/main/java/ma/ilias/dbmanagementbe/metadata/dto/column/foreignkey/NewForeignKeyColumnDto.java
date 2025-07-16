@@ -10,6 +10,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.IReferencedColumnReference;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
 import ma.ilias.dbmanagementbe.validation.ExistingReferencedColumn;
 import ma.ilias.dbmanagementbe.validation.MatchingForeignKeyType;
+import ma.ilias.dbmanagementbe.validation.ValidForeignKeyDefault;
 
 @Data
 @SuperBuilder
@@ -17,6 +18,7 @@ import ma.ilias.dbmanagementbe.validation.MatchingForeignKeyType;
 @EqualsAndHashCode(callSuper = true)
 @ExistingReferencedColumn
 @MatchingForeignKeyType
+@ValidForeignKeyDefault
 public class NewForeignKeyColumnDto extends BaseNewColumnDto implements IReferencedColumnReference {
     @NotBlank(message = "Referenced schema name cannot be blank")
     private String referencedSchemaName;
