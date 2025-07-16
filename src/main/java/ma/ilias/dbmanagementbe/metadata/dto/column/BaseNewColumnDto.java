@@ -2,10 +2,12 @@ package ma.ilias.dbmanagementbe.metadata.dto.column;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import ma.ilias.dbmanagementbe.metadata.dto.IColumnReference;
+import ma.ilias.dbmanagementbe.validation.NotNullOrUnique;
 import ma.ilias.dbmanagementbe.validation.UniqueColumnName;
 import ma.ilias.dbmanagementbe.validation.ValidColumnDefault;
 import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
@@ -13,8 +15,10 @@ import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
 @Data
 @SuperBuilder
 @NoArgsConstructor
+@AllArgsConstructor
 @ValidColumnDefault
 @UniqueColumnName(groups = StandaloneColumnCreation.class)
+@NotNullOrUnique(groups = StandaloneColumnCreation.class)
 public abstract class BaseNewColumnDto implements ColumnDataTypeDefinition, IColumnReference {
     @NotBlank(
             message = "Schema name cannot be blank",
