@@ -6,13 +6,16 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import ma.ilias.dbmanagementbe.metadata.dto.IReferencedColumnReference;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
+import ma.ilias.dbmanagementbe.validation.ExistingReferencedColumn;
 
 @Data
 @SuperBuilder
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-public class NewForeignKeyColumnDto extends BaseNewColumnDto {
+@ExistingReferencedColumn
+public class NewForeignKeyColumnDto extends BaseNewColumnDto implements IReferencedColumnReference {
     @NotBlank(message = "Referenced schema name cannot be blank")
     private String referencedSchemaName;
 
