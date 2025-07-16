@@ -239,7 +239,9 @@ public class MySqlTableManager implements TableService {
 
         List<String> fkConstraints = getForeignKeyConstraints(schemaName, tableName);
         if (!force && !fkConstraints.isEmpty()) {
-            throw new IllegalStateException("Cannot drop table due to " + fkConstraints.size() + " foreign key constraints. Use force=true to drop constraints automatically.");
+            throw new UnauthorizedActionException(
+                    "Cannot drop table due to " + fkConstraints.size() + " foreign key constraints. Use force=true to drop constraints automatically."
+            );
         }
 
         // Drop FK constraints if force=true
