@@ -3,13 +3,33 @@ package ma.ilias.dbmanagementbe.metadata.dto.column;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import ma.ilias.dbmanagementbe.metadata.dto.IColumnReference;
+import ma.ilias.dbmanagementbe.validation.UniqueColumnName;
 import ma.ilias.dbmanagementbe.validation.ValidColumnDefault;
+import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
 
 @Data
 @SuperBuilder
+@NoArgsConstructor
 @ValidColumnDefault
-public abstract class BaseNewColumnDto implements ColumnDataTypeDefinition {
+@UniqueColumnName(groups = StandaloneColumnCreation.class)
+public abstract class BaseNewColumnDto implements ColumnDataTypeDefinition, IColumnReference {
+    @NotBlank(
+            message = "Schema name cannot be blank",
+            groups = StandaloneColumnCreation.class
+    )
+    // schemaName existence is checked in @UniqueColumnName
+    private String schemaName;
+
+    @NotBlank(
+            message = "Table name cannot be blank",
+            groups = StandaloneColumnCreation.class
+    )
+    // tableName existence is checked in @UniqueColumnName
+    private String tableName;
+
     @NotBlank(message = "Column name cannot be blank")
     private String columnName;
 
@@ -28,22 +48,4 @@ public abstract class BaseNewColumnDto implements ColumnDataTypeDefinition {
     private Boolean isUnique;
     private String columnDefault;
     private Boolean autoIncrement;
-
-    public BaseNewColumnDto() {
-        super();
-    }
-
-    public BaseNewColumnDto(String columnName, String dataType, Integer characterMaxLength,
-                            Integer numericPrecision, Integer numericScale, Boolean isNullable,
-                            Boolean isUnique, String columnDefault, Boolean autoIncrement) {
-        this.columnName = columnName;
-        this.dataType = dataType;
-        this.characterMaxLength = characterMaxLength;
-        this.numericPrecision = numericPrecision;
-        this.numericScale = numericScale;
-        this.isNullable = isNullable;
-        this.isUnique = isUnique;
-        this.columnDefault = columnDefault;
-        this.autoIncrement = autoIncrement;
-    }
 }

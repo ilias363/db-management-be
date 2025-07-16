@@ -2,27 +2,15 @@ package ma.ilias.dbmanagementbe.metadata.dto.column.primarykey;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
 
 @Data
 @SuperBuilder
+@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class NewPrimaryKeyColumnDto extends BaseNewColumnDto {
-
-    public NewPrimaryKeyColumnDto() {
-        super();
-        this.setIsNullable(false);
-        this.setIsUnique(true);
-    }
-
-    public NewPrimaryKeyColumnDto(String columnName, String dataType, Integer characterMaxLength,
-                                  Integer numericPrecision, Integer numericScale,
-                                  String columnDefault, Boolean autoIncrement) {
-        super(columnName, dataType, characterMaxLength, numericPrecision, numericScale,
-                false, true, columnDefault, autoIncrement);
-    }
-
     @Override
     public void setIsNullable(Boolean isNullable) {
         // Primary keys cannot be nullable

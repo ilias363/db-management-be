@@ -4,11 +4,13 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
 
 @Data
 @SuperBuilder
+@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class NewForeignKeyColumnDto extends BaseNewColumnDto {
     @NotBlank(message = "Referenced schema name cannot be blank")
@@ -31,22 +33,4 @@ public class NewForeignKeyColumnDto extends BaseNewColumnDto {
             message = "Update action is not valid"
     )
     private String onUpdateAction;
-
-    public NewForeignKeyColumnDto() {
-        super();
-    }
-
-    public NewForeignKeyColumnDto(String columnName, String dataType, Integer characterMaxLength,
-                                  Integer numericPrecision, Integer numericScale, Boolean isNullable,
-                                  Boolean isUnique, String columnDefault, Boolean autoIncrement,
-                                  String referencedSchemaName, String referencedTableName,
-                                  String referencedColumnName, String onDeleteAction, String onUpdateAction) {
-        super(columnName, dataType, characterMaxLength, numericPrecision, numericScale,
-                isNullable, isUnique, columnDefault, autoIncrement);
-        this.referencedSchemaName = referencedSchemaName;
-        this.referencedTableName = referencedTableName;
-        this.referencedColumnName = referencedColumnName;
-        this.onDeleteAction = onDeleteAction;
-        this.onUpdateAction = onUpdateAction;
-    }
 }
