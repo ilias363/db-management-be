@@ -5,10 +5,7 @@ import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/columns")
@@ -29,5 +26,24 @@ public class ColumnController {
                 .success(true)
                 .data(column)
                 .build());
+    }
+
+    @DeleteMapping("/{schemaName}/{tableName}/{columnName}")
+    public ResponseEntity<ApiResponse<Void>> deleteColumn(
+            @PathVariable String schemaName,
+            @PathVariable String tableName,
+            @PathVariable String columnName,
+            @RequestParam(defaultValue = "false") boolean force
+    ) {
+        return columnService.deleteColumn(schemaName, tableName, columnName, force) ?
+                ResponseEntity.ok(ApiResponse.<Void>builder()
+                        .message("Column deleted successfully")
+                        .success(true)
+                        .build())
+                :
+                ResponseEntity.ok(ApiResponse.<Void>builder()
+                        .message("Column has not been deleted")
+                        .success(false)
+                        .build());
     }
 }

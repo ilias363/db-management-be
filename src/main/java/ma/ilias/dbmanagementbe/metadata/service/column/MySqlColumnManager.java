@@ -3,6 +3,7 @@ package ma.ilias.dbmanagementbe.metadata.service.column;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.exception.ColumnNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
+import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.ForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.PrimaryKeyColumnMetadataDto;
@@ -210,6 +211,63 @@ public class MySqlColumnManager implements ColumnService {
                 tableName,
                 columnName
         );
+    }
+
+    @Override
+    public Boolean deleteColumn(String schemaName, String tableName, String columnName, boolean force) {
+        if (!columnExists(schemaName, tableName, columnName)) {
+            throw new ColumnNotFoundException(schemaName.toLowerCase(), tableName.toLowerCase(), columnName.toLowerCase());
+        }
+
+        if (schemaService.isSystemSchemaByName(schemaName)) {
+            throw new UnauthorizedActionException("Cannot delete column from system table: " + schemaName + "." + tableName);
+        }
+
+        // Check if it's a primary key column
+        String pkCheckSql = """
+                SELECT COUNT(*) FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ? 
+                  AND CONSTRAINT_NAME = 'PRIMARY'
+                """;
+
+        Integer pkCount = jdbcTemplate.queryForObject(pkCheckSql, Integer.class, schemaName, tableName, columnName);
+        if (pkCount != null && pkCount > 0) {
+            throw new UnauthorizedActionException("Cannot delete primary key column: " + columnName);
+        }
+
+        // Check if the column is part of a foreign key constraint
+        String fkCheckSql = """
+                SELECT CONSTRAINT_NAME
+                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
+                  AND REFERENCED_TABLE_NAME IS NOT NULL
+                """;
+
+        List<String> fkConstraints = jdbcTemplate.query(
+                fkCheckSql,
+                (rs, rowNum) -> rs.getString("CONSTRAINT_NAME"),
+                schemaName,
+                tableName,
+                columnName
+        );
+
+        if (!force && !fkConstraints.isEmpty()) {
+            throw new UnauthorizedActionException(
+                    "Cannot delete column used in a foreign key constraint. Use force=true to drop the constraint automatically."
+            );
+        }
+
+        if (force && !fkConstraints.isEmpty()) {
+            for (String fkConstraint : fkConstraints) {
+                String sql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s", schemaName, tableName, fkConstraint);
+                jdbcTemplate.execute(sql);
+            }
+        }
+
+        String alterSql = String.format("ALTER TABLE %s.%s DROP COLUMN %s", schemaName, tableName, columnName);
+        jdbcTemplate.execute(alterSql);
+
+        return !columnExists(schemaName, tableName, columnName);
     }
 
     // Helper record for foreign key information
