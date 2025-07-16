@@ -23,6 +23,11 @@ public class ValidForeignKeyDefaultValidator implements ConstraintValidator<Vali
             return true;
         }
 
+        if (dto.getIsUnique() != null && dto.getIsUnique()) {
+            // If the foreign key column is unique, the default value should be null (handled by another validator)
+            return true;
+        }
+
         try {
             String checkSql = String.format(
                     "SELECT COUNT(*) FROM %s.%s WHERE %s = ?",

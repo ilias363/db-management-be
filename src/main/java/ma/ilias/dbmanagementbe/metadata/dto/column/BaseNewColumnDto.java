@@ -11,6 +11,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnReference;
 import ma.ilias.dbmanagementbe.validation.NotNullOrUnique;
 import ma.ilias.dbmanagementbe.validation.UniqueColumnName;
 import ma.ilias.dbmanagementbe.validation.ValidColumnDefault;
+import ma.ilias.dbmanagementbe.validation.ValidDataTypeDefinition;
 import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
 
 @Data
@@ -18,6 +19,7 @@ import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
 @NoArgsConstructor
 @AllArgsConstructor
 @ValidColumnDefault
+@ValidDataTypeDefinition
 @UniqueColumnName(groups = StandaloneColumnCreation.class)
 @NotNullOrUnique(groups = StandaloneColumnCreation.class)
 public abstract class BaseNewColumnDto implements ColumnDataTypeDefinition, IColumnReference {

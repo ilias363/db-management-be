@@ -13,12 +13,20 @@ public class ValidColumnDefaultValidator implements ConstraintValidator<ValidCol
         String dataType = dto.getDataType();
         String defaultValue = dto.getColumnDefault();
         Boolean isNullable = dto.getIsNullable();
+        Boolean isUnique = dto.getIsUnique();
         Integer charLen = dto.getCharacterMaxLength();
         Integer numPrecision = dto.getNumericPrecision();
         Integer numScale = dto.getNumericScale();
         Boolean autoIncrement = dto.getAutoIncrement();
 
         if (defaultValue == null || defaultValue.isEmpty()) return true;
+        if (!defaultValue.equalsIgnoreCase("NULL") && isUnique != null && isUnique) {
+            context.disableDefaultConstraintViolation();
+            context.buildConstraintViolationWithTemplate("If a column is unique, the default value should be null")
+                    .addPropertyNode("columnDefault")
+                    .addConstraintViolation();
+            return false;
+        }
         if (isNullable != null && isNullable && "NULL".equalsIgnoreCase(defaultValue)) return true;
         if (dataType == null) return true;
 
