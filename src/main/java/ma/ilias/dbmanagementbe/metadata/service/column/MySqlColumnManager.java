@@ -5,7 +5,9 @@ import ma.ilias.dbmanagementbe.exception.ColumnNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
 import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.ForeignKeyColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.NewForeignKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.PrimaryKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.StandardColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
@@ -211,6 +213,80 @@ public class MySqlColumnManager implements ColumnService {
                 tableName,
                 columnName
         );
+    }
+
+    @Override
+    public BaseColumnMetadataDto createColumn(BaseNewColumnDto newColumnDto) {
+        StringBuilder alterSql = new StringBuilder("ALTER TABLE ")
+                .append(newColumnDto.getSchemaName())
+                .append(".")
+                .append(newColumnDto.getTableName())
+                .append(" ADD COLUMN ")
+                .append(newColumnDto.getColumnName())
+                .append(" ")
+                .append(newColumnDto.getDataType());
+
+        if (newColumnDto.getCharacterMaxLength() != null) {
+            alterSql.append("(").append(newColumnDto.getCharacterMaxLength()).append(")");
+        } else if (newColumnDto.getNumericPrecision() != null) {
+            alterSql.append("(").append(newColumnDto.getNumericPrecision());
+            if (newColumnDto.getNumericScale() != null) {
+                alterSql.append(",").append(newColumnDto.getNumericScale());
+            }
+            alterSql.append(")");
+        }
+
+        // Add column constraints
+        if (Boolean.TRUE.equals(newColumnDto.getAutoIncrement())) {
+            alterSql.append(" AUTO_INCREMENT");
+        }
+
+        if (Boolean.FALSE.equals(newColumnDto.getIsNullable())) {
+            alterSql.append(" NOT NULL");
+        }
+
+        if (Boolean.TRUE.equals(newColumnDto.getIsUnique())) {
+            alterSql.append(" UNIQUE");
+        }
+
+        if (Boolean.FALSE.equals(newColumnDto.getAutoIncrement()) &&
+                newColumnDto.getColumnDefault() != null &&
+                !newColumnDto.getColumnDefault().isBlank()) {
+            if ("CURRENT_TIMESTAMP".equalsIgnoreCase(newColumnDto.getColumnDefault())) {
+                alterSql.append(" DEFAULT CURRENT_TIMESTAMP");
+            } else {
+                alterSql.append(" DEFAULT '").append(newColumnDto.getColumnDefault()).append("'");
+            }
+        }
+
+        jdbcTemplate.execute(alterSql.toString());
+
+        // Handle foreign key constraint if it's a foreign key column
+        if (newColumnDto instanceof NewForeignKeyColumnDto fkDto) {
+            if (fkDto.getColumnDefault() != null && !fkDto.getColumnDefault().isBlank()) {
+                String updateSql = String.format("UPDATE %s.%s SET %s = ?",
+                        fkDto.getSchemaName(), fkDto.getTableName(), fkDto.getColumnName());
+                jdbcTemplate.update(updateSql, fkDto.getColumnDefault());
+            }
+
+            String fkConstraintSql = String.format(
+                    "ALTER TABLE %s.%s ADD CONSTRAINT fk_%s_%s FOREIGN KEY (%s) REFERENCES %s.%s(%s)",
+                    newColumnDto.getSchemaName(), newColumnDto.getTableName(), newColumnDto.getTableName(), newColumnDto.getColumnName(),
+                    newColumnDto.getColumnName(), fkDto.getReferencedSchemaName(),
+                    fkDto.getReferencedTableName(), fkDto.getReferencedColumnName()
+            );
+
+            if (fkDto.getOnUpdateAction() != null && !fkDto.getOnUpdateAction().isBlank()) {
+                fkConstraintSql += " ON UPDATE " + fkDto.getOnUpdateAction();
+            }
+            if (fkDto.getOnDeleteAction() != null && !fkDto.getOnDeleteAction().isBlank()) {
+                fkConstraintSql += " ON DELETE " + fkDto.getOnDeleteAction();
+            }
+
+            jdbcTemplate.execute(fkConstraintSql);
+        }
+
+        return getColumn(newColumnDto.getSchemaName(), newColumnDto.getTableName(), newColumnDto.getColumnName());
     }
 
     @Override

@@ -1,10 +1,16 @@
 package ma.ilias.dbmanagementbe.controller;
 
+import jakarta.validation.groups.Default;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.NewForeignKeyColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
+import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -12,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @AllArgsConstructor
 public class ColumnController {
 
-    private final ColumnService columnService;
+    private ColumnService columnService;
 
     @GetMapping("/{schemaName}/{tableName}/{columnName}")
     public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> getColumn(
@@ -26,6 +32,30 @@ public class ColumnController {
                 .success(true)
                 .data(column)
                 .build());
+    }
+
+    @PostMapping("/standard")
+    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> createStandardColumn(
+            @Validated({StandaloneColumnCreation.class, Default.class}) @RequestBody NewStandardColumnDto newStandardColumnDto
+    ) {
+        BaseColumnMetadataDto createdColumn = columnService.createColumn(newStandardColumnDto);
+        return new ResponseEntity<>(ApiResponse.<BaseColumnMetadataDto>builder()
+                .message("Standard column created successfully")
+                .success(true)
+                .data(createdColumn)
+                .build(), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/foreign-key")
+    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> createForeignKeyColumn(
+            @Validated({StandaloneColumnCreation.class, Default.class}) @RequestBody NewForeignKeyColumnDto newForeignKeyColumnDto
+    ) {
+        BaseColumnMetadataDto createdColumn = columnService.createColumn(newForeignKeyColumnDto);
+        return new ResponseEntity<>(ApiResponse.<BaseColumnMetadataDto>builder()
+                .message("Foreign key column created successfully")
+                .success(true)
+                .data(createdColumn)
+                .build(), HttpStatus.CREATED);
     }
 
     @DeleteMapping("/{schemaName}/{tableName}/{columnName}")
