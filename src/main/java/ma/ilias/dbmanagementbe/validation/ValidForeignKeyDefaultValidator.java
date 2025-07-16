@@ -14,19 +14,13 @@ public class ValidForeignKeyDefaultValidator implements ConstraintValidator<Vali
     @Override
     public boolean isValid(NewForeignKeyColumnDto dto, ConstraintValidatorContext context) {
         if (dto == null ||
+                dto.getColumnDefault() == null ||
+                dto.getColumnDefault().trim().isEmpty() ||
                 dto.getReferencedSchemaName() == null ||
                 dto.getReferencedTableName() == null ||
                 dto.getReferencedColumnName() == null
         ) {
             return true;
-        }
-
-        if (dto.getColumnDefault() == null || dto.getColumnDefault().trim().isEmpty()) {
-            context.disableDefaultConstraintViolation();
-            context.buildConstraintViolationWithTemplate("Column default is required")
-                    .addPropertyNode("columnDefault")
-                    .addConstraintViolation();
-            return false;
         }
 
         try {
@@ -56,7 +50,7 @@ public class ValidForeignKeyDefaultValidator implements ConstraintValidator<Vali
         } catch (Exception e) {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate(
-                            "Unable to validate default value in referenced table: " + e.getMessage())
+                            "Unable to validate default value in referenced table")
                     .addPropertyNode("columnDefault")
                     .addConstraintViolation();
             return false;

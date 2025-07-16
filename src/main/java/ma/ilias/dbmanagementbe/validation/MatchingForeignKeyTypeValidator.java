@@ -47,11 +47,8 @@ public class MatchingForeignKeyTypeValidator implements ConstraintValidator<Matc
             }
 
         } catch (ColumnNotFoundException e) {
-            // This case is handled by another validator, but we're adding a violation here for clarity
-            context.buildConstraintViolationWithTemplate("Referenced column does not exist")
-                    .addPropertyNode("referencedColumnName")
-                    .addConstraintViolation();
-            isValid = false;
+            // This case is handled by another validator
+            return true;
         }
 
         return isValid;
