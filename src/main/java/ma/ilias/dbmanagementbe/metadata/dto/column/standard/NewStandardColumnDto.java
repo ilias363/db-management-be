@@ -17,5 +17,4 @@ public class NewStandardColumnDto extends BaseNewColumnDto {
     private Boolean isNullable;
     private Boolean isUnique;
     private String columnDefault;
-    private Boolean autoIncrement;
 }

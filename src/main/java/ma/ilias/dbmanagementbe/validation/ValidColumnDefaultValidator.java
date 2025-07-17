@@ -9,7 +9,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto
 import java.util.regex.Pattern;
 
 public class ValidColumnDefaultValidator implements ConstraintValidator<ValidColumnDefault, BaseNewColumnDto> {
-    
+
     @Override
     public boolean isValid(BaseNewColumnDto dto, ConstraintValidatorContext context) {
         if (dto == null) {
@@ -23,7 +23,6 @@ public class ValidColumnDefaultValidator implements ConstraintValidator<ValidCol
         Integer charLen = null;
         Integer numPrecision = null;
         Integer numScale = null;
-        Boolean autoIncrement = null;
 
         if (dto instanceof NewStandardColumnDto standardCol) {
             dataType = standardCol.getDataType();
@@ -33,7 +32,6 @@ public class ValidColumnDefaultValidator implements ConstraintValidator<ValidCol
             charLen = standardCol.getCharacterMaxLength();
             numPrecision = standardCol.getNumericPrecision();
             numScale = standardCol.getNumericScale();
-            autoIncrement = standardCol.getAutoIncrement();
         } else if (dto instanceof NewForeignKeyColumnDto fkCol) {
             dataType = fkCol.getDataType();
             defaultValue = fkCol.getColumnDefault();
@@ -71,7 +69,6 @@ public class ValidColumnDefaultValidator implements ConstraintValidator<ValidCol
             case "INTEGER":
             case "SMALLINT":
             case "BIGINT":
-                if (autoIncrement != null && autoIncrement) return true;
                 try {
                     Integer.parseInt(defaultValue);
                     return true;
