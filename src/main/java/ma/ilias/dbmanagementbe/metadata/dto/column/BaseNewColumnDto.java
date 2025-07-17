@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import ma.ilias.dbmanagementbe.metadata.dto.common.ColumnDataTypeDefinition;
 import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnReference;
+import ma.ilias.dbmanagementbe.validation.RequiredColumnDefault;
 import ma.ilias.dbmanagementbe.validation.UniqueColumnName;
 import ma.ilias.dbmanagementbe.validation.ValidColumnDefault;
 import ma.ilias.dbmanagementbe.validation.ValidDataTypeDefinition;
@@ -19,6 +20,7 @@ import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
 @AllArgsConstructor
 @ValidDataTypeDefinition
 @ValidColumnDefault
+@RequiredColumnDefault(groups = StandaloneColumnCreation.class)
 @UniqueColumnName(groups = StandaloneColumnCreation.class)
 public abstract class BaseNewColumnDto implements ColumnDataTypeDefinition, IColumnReference {
     @NotBlank(
