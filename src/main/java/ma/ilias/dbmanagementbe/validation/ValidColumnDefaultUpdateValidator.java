@@ -11,7 +11,7 @@ import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
 import java.util.regex.Pattern;
 
 @RequiredArgsConstructor
-public class ValidColumnDefaultUpdateValidator implements ConstraintValidator<ValidColumnDefault, UpdateColumnDefaultDto> {
+public class ValidColumnDefaultUpdateValidator implements ConstraintValidator<ValidColumnDefaultUpdate, UpdateColumnDefaultDto> {
 
     private final ColumnService columnService;
 
