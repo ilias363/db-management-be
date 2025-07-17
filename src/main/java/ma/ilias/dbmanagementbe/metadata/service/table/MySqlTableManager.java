@@ -142,20 +142,14 @@ public class MySqlTableManager implements TableService {
             }
 
             if (col instanceof NewStandardColumnDto standardCol) {
-                if (Boolean.TRUE.equals(standardCol.getAutoIncrement())) {
-                    sb.append(" AUTO_INCREMENT");
-                }
                 if (Boolean.FALSE.equals(standardCol.getIsNullable())) {
                     sb.append(" NOT NULL");
                 }
                 if (Boolean.TRUE.equals(standardCol.getIsUnique())) {
                     sb.append(" UNIQUE");
                 }
-                if (
-                        Boolean.FALSE.equals(standardCol.getAutoIncrement()) &&
-                                standardCol.getColumnDefault() != null &&
-                                !standardCol.getColumnDefault().isBlank()
-                ) {
+                if (standardCol.getColumnDefault() != null &&
+                        !standardCol.getColumnDefault().isBlank()) {
                     if ("CURRENT_TIMESTAMP".equalsIgnoreCase(standardCol.getColumnDefault())) {
                         sb.append(" DEFAULT CURRENT_TIMESTAMP");
                     } else {

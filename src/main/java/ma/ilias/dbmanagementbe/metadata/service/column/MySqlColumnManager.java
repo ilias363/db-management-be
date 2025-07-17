@@ -240,10 +240,6 @@ public class MySqlColumnManager implements ColumnService {
 
         // Add column constraints
         if (newColumnDto instanceof NewStandardColumnDto standardCol) {
-            if (Boolean.TRUE.equals(standardCol.getAutoIncrement())) {
-                alterSql.append(" AUTO_INCREMENT");
-            }
-
             if (Boolean.FALSE.equals(standardCol.getIsNullable())) {
                 alterSql.append(" NOT NULL");
             }
@@ -252,8 +248,7 @@ public class MySqlColumnManager implements ColumnService {
                 alterSql.append(" UNIQUE");
             }
 
-            if (Boolean.FALSE.equals(standardCol.getAutoIncrement()) &&
-                    standardCol.getColumnDefault() != null &&
+            if (standardCol.getColumnDefault() != null &&
                     !standardCol.getColumnDefault().isBlank()) {
                 if ("CURRENT_TIMESTAMP".equalsIgnoreCase(standardCol.getColumnDefault())) {
                     alterSql.append(" DEFAULT CURRENT_TIMESTAMP");
