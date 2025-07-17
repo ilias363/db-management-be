@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = ValidAutoIncrementValidator.class)
 public @interface ValidAutoIncrement {
-    String message() default "Auto increment is only valid for numeric data types (INT, INTEGER, SMALLINT, BIGINT, FLOAT, REAL, DOUBLE)";
+    String message() default "Auto increment is only valid for numeric data types.";
 
     Class<?>[] groups() default {};
 
