@@ -299,8 +299,14 @@ public class MySqlColumnManager implements ColumnService {
             throw new UnauthorizedActionException("Cannot delete column from system table: " + schemaName + "." + tableName);
         }
 
-        if (isColumnPrimaryKey(schemaName, tableName, columnName)) {
-            throw new UnauthorizedActionException("Cannot delete primary key column: " + columnName);
+        if (tableService.getTable(schemaName, tableName).getColumnCount() == 1) {
+            throw new UnauthorizedActionException("Table " + tableName + " has only one column. Try dropping the whole table.");
+        }
+
+        boolean isPrimaryKey = isColumnPrimaryKey(schemaName, tableName, columnName);
+
+        if (isPrimaryKey && !force) {
+            throw new UnauthorizedActionException("Cannot delete primary key column. Use force=true to proceed.");
         }
 
         // Check if the column is part of a foreign key constraint
@@ -332,6 +338,17 @@ public class MySqlColumnManager implements ColumnService {
             }
         }
 
+        if (isPrimaryKey) {
+            List<String> referencingFkConstraints = getReferencingForeignKeyConstraints(schemaName, tableName, columnName);
+            for (String fkConstraint : referencingFkConstraints) {
+                String[] parts = fkConstraint.split(" ON ");
+                String constraintName = parts[0];
+                String referencingTableName = parts[1];
+                String dropFkSql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s", schemaName, referencingTableName, constraintName);
+                jdbcTemplate.execute(dropFkSql);
+            }
+        }
+
         String alterSql = String.format("ALTER TABLE %s.%s DROP COLUMN %s", schemaName, tableName, columnName);
         jdbcTemplate.execute(alterSql);
 
@@ -348,6 +365,22 @@ public class MySqlColumnManager implements ColumnService {
 
         Integer pkCount = jdbcTemplate.queryForObject(pkCheckSql, Integer.class, schemaName, tableName, columnName);
         return pkCount != null && pkCount > 0;
+    }
+
+    private List<String> getReferencingForeignKeyConstraints(String schemaName, String tableName, String columnName) {
+        String sql = """
+                SELECT rc.constraint_name, rc.table_name
+                FROM information_schema.referential_constraints rc
+                    JOIN information_schema.key_column_usage kcu
+                        ON rc.constraint_name = kcu.constraint_name
+                               AND rc.constraint_schema = kcu.constraint_schema
+                WHERE rc.referenced_table_name = ?
+                  AND rc.constraint_schema = ?
+                  AND kcu.referenced_column_name = ?
+                """;
+        return jdbcTemplate.query(sql, (rs, rowNum) ->
+                        rs.getString("constraint_name") + " ON " + rs.getString("table_name"),
+                tableName, schemaName, columnName);
     }
 
     // Helper record for foreign key information
