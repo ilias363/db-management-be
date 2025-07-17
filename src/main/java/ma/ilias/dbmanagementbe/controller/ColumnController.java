@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.NewForeignKeyColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
 import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
@@ -53,6 +54,18 @@ public class ColumnController {
         BaseColumnMetadataDto createdColumn = columnService.createColumn(newForeignKeyColumnDto);
         return new ResponseEntity<>(ApiResponse.<BaseColumnMetadataDto>builder()
                 .message("Foreign key column created successfully")
+                .success(true)
+                .data(createdColumn)
+                .build(), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/primary-key")
+    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> createPrimaryKeyColumn(
+            @Validated({StandaloneColumnCreation.class, Default.class}) @RequestBody NewPrimaryKeyColumnDto newPrimaryKeyColumnDto
+    ) {
+        BaseColumnMetadataDto createdColumn = columnService.createColumn(newPrimaryKeyColumnDto);
+        return new ResponseEntity<>(ApiResponse.<BaseColumnMetadataDto>builder()
+                .message("Primary key column created successfully")
                 .success(true)
                 .data(createdColumn)
                 .build(), HttpStatus.CREATED);

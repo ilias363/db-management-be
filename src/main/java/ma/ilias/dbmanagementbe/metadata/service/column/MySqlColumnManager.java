@@ -219,6 +219,10 @@ public class MySqlColumnManager implements ColumnService {
 
     @Override
     public BaseColumnMetadataDto createColumn(BaseNewColumnDto newColumnDto) {
+        if (newColumnDto instanceof NewPrimaryKeyColumnDto pkDto) {
+            return createPrimaryKeyColumn(pkDto);
+        }
+
         StringBuilder alterSql = new StringBuilder("ALTER TABLE ")
                 .append(newColumnDto.getSchemaName())
                 .append(".")
@@ -389,6 +393,182 @@ public class MySqlColumnManager implements ColumnService {
         return jdbcTemplate.query(sql, (rs, rowNum) ->
                         rs.getString("constraint_name") + " ON " + rs.getString("table_name"),
                 tableName, schemaName, columnName);
+    }
+
+    private BaseColumnMetadataDto createPrimaryKeyColumn(NewPrimaryKeyColumnDto pkDto) {
+        String schemaName = pkDto.getSchemaName();
+        String tableName = pkDto.getTableName();
+        String columnName = pkDto.getColumnName();
+
+        if (tableHasPrimaryKey(schemaName, tableName)) {
+            throw new UnauthorizedActionException(
+                    "Table " + schemaName + "." + tableName + " already has a primary key. Drop the existing primary key first."
+            );
+        }
+
+        StringBuilder alterSql = new StringBuilder("ALTER TABLE ")
+                .append(schemaName)
+                .append(".")
+                .append(tableName)
+                .append(" ADD COLUMN ")
+                .append(columnName)
+                .append(" ")
+                .append(pkDto.getDataType());
+
+        if (pkDto.getCharacterMaxLength() != null) {
+            alterSql.append("(").append(pkDto.getCharacterMaxLength()).append(")");
+        } else if (pkDto.getNumericPrecision() != null) {
+            alterSql.append("(").append(pkDto.getNumericPrecision());
+            if (pkDto.getNumericScale() != null) {
+                alterSql.append(",").append(pkDto.getNumericScale());
+            }
+            alterSql.append(")");
+        }
+
+        // If auto-increment is used, existing rows will be automatically populated
+        if (Boolean.TRUE.equals(pkDto.getAutoIncrement())) {
+            alterSql.append(" AUTO_INCREMENT PRIMARY KEY");
+            jdbcTemplate.execute(alterSql.toString());
+            return getColumn(schemaName, tableName, columnName);
+        }
+
+        jdbcTemplate.execute(alterSql.toString());
+
+        // Populate existing rows if the table has data and auto-increment is not used
+        populatePrimaryKeyValues(pkDto);
+
+        // Add primary key constraint
+        String pkConstraintSql = String.format("ALTER TABLE %s.%s ADD PRIMARY KEY (%s)",
+                schemaName, tableName, columnName);
+        jdbcTemplate.execute(pkConstraintSql);
+
+        return getColumn(schemaName, tableName, pkDto.getColumnName());
+    }
+
+    private boolean tableHasPrimaryKey(String schemaName, String tableName) {
+        String sql = """
+                SELECT COUNT(*) FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND CONSTRAINT_NAME = 'PRIMARY'
+                """;
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, schemaName, tableName);
+        return count != null && count > 0;
+    }
+
+    private void populatePrimaryKeyValues(NewPrimaryKeyColumnDto pkDto) {
+        String schemaName = pkDto.getSchemaName();
+        String tableName = pkDto.getTableName();
+        String columnName = pkDto.getColumnName();
+        String dataType = pkDto.getDataType().toUpperCase();
+
+        // Check if table has data
+        String countSql = String.format("SELECT COUNT(*) FROM %s.%s", schemaName, tableName);
+        Integer rowCount = jdbcTemplate.queryForObject(countSql, Integer.class);
+
+        if (rowCount == null || rowCount == 0) {
+            return;
+        }
+        if (rowCount > 2 && dataType.equals("BOOLEAN")) {
+            throw new UnauthorizedActionException("Cannot populate boolean primary key column that has more than 2 rows.");
+        }
+
+        switch (dataType) {
+            case "INT":
+            case "INTEGER":
+            case "SMALLINT":
+            case "BIGINT":
+            case "DECIMAL":
+            case "NUMERIC":
+            case "FLOAT":
+            case "DOUBLE":
+            case "REAL":
+                populateNumericPrimaryKey(schemaName, tableName, columnName);
+                break;
+
+            case "VARCHAR":
+            case "CHAR":
+            case "TEXT":
+                populateStringPrimaryKey(schemaName, tableName, columnName);
+                break;
+
+            case "DATE":
+                populateDatePrimaryKey(schemaName, tableName, columnName);
+                break;
+
+            case "TIME":
+                populateTimePrimaryKey(schemaName, tableName, columnName);
+                break;
+
+            case "TIMESTAMP":
+                populateTimestampPrimaryKey(schemaName, tableName, columnName);
+                break;
+
+            case "BOOLEAN":
+                populateBooleanPrimaryKey(schemaName, tableName, columnName);
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    private void populateNumericPrimaryKey(String schemaName, String tableName, String columnName) {
+        String updateSql = String.format(
+                "UPDATE %s.%s SET %s = (@row_number := @row_number + 1)",
+                schemaName, tableName, columnName
+        );
+
+        jdbcTemplate.execute("SET @row_number = 0");
+        jdbcTemplate.execute(updateSql);
+    }
+
+    private void populateStringPrimaryKey(String schemaName, String tableName, String columnName) {
+        String updateSql = String.format(
+                "UPDATE %s.%s SET %s = CAST((@row_number := @row_number + 1) AS CHAR)",
+                schemaName, tableName, columnName
+        );
+
+        jdbcTemplate.execute("SET @row_number = 0");
+        jdbcTemplate.execute(updateSql);
+    }
+
+    private void populateDatePrimaryKey(String schemaName, String tableName, String columnName) {
+        String updateSql = String.format(
+                "UPDATE %s.%s SET %s = DATE_ADD('2025-01-01', INTERVAL (@row_number := @row_number + 1) - 1 DAY)",
+                schemaName, tableName, columnName
+        );
+
+        jdbcTemplate.execute("SET @row_number = 0");
+        jdbcTemplate.execute(updateSql);
+    }
+
+    private void populateTimePrimaryKey(String schemaName, String tableName, String columnName) {
+        String updateSql = String.format(
+                "UPDATE %s.%s SET %s = SEC_TO_TIME((@row_number := @row_number + 1) * 60)",
+                schemaName, tableName, columnName
+        );
+
+        jdbcTemplate.execute("SET @row_number = 0");
+        jdbcTemplate.execute(updateSql);
+    }
+
+    private void populateTimestampPrimaryKey(String schemaName, String tableName, String columnName) {
+        String updateSql = String.format(
+                "UPDATE %s.%s SET %s = FROM_UNIXTIME(UNIX_TIMESTAMP('2025-01-01 00:00:00') + (@row_number := @row_number + 1) * 3600)",
+                schemaName, tableName, columnName
+        );
+
+        jdbcTemplate.execute("SET @row_number = 0");
+        jdbcTemplate.execute(updateSql);
+    }
+
+    private void populateBooleanPrimaryKey(String schemaName, String tableName, String columnName) {
+        String updateSql = String.format(
+                "UPDATE %s.%s SET %s = (@row_number := @row_number + 1) %% 2",
+                schemaName, tableName, columnName
+        );
+
+        jdbcTemplate.execute("SET @row_number = 0");
+        jdbcTemplate.execute(updateSql);
     }
 
     // Helper record for foreign key information
