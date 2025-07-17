@@ -4,6 +4,8 @@ import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.update.RenameColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnReference;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,11 +17,24 @@ public class UniqueColumnNameValidator implements ConstraintValidator<UniqueColu
 
     @Override
     public boolean isValid(IColumnReference dto, ConstraintValidatorContext context) {
-        if (dto == null || dto.getSchemaName() == null || dto.getTableName() == null || dto.getColumnName() == null) {
-            return true; // Let other validators handle nulls
+        if (dto == null ||
+                dto.getSchemaName() == null ||
+                dto.getTableName() == null ||
+                dto.getColumnName() == null) {
+            return true;
         }
         try {
-            return !columnService.columnExists(dto.getSchemaName(), dto.getTableName(), dto.getColumnName());
+            if (dto instanceof BaseNewColumnDto newDto) {
+                return !columnService.columnExists(newDto.getSchemaName(), newDto.getTableName(), newDto.getColumnName());
+            }
+
+            if (dto instanceof RenameColumnDto renameDto) {
+                if (renameDto.getNewColumnName() == null) {
+                    return true;
+                }
+                return !columnService.columnExists(renameDto.getSchemaName(), renameDto.getTableName(), renameDto.getNewColumnName());
+            }
+            return true;
         } catch (TableNotFoundException ex) {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate("Table does not exist")
