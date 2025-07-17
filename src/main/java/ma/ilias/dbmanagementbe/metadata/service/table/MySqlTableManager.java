@@ -10,6 +10,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.ForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.PrimaryKeyColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.StandardColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.indexcolumn.IndexColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
@@ -139,26 +140,34 @@ public class MySqlTableManager implements TableService {
                 }
                 sb.append(")");
             }
-            if (Boolean.TRUE.equals(col.getAutoIncrement())) {
-                sb.append(" AUTO_INCREMENT");
-            }
-            if (Boolean.FALSE.equals(col.getIsNullable())) {
-                sb.append(" NOT NULL");
-            }
-            if (Boolean.TRUE.equals(col.getIsUnique())) {
-                sb.append(" UNIQUE");
-            }
-            if (
-                    Boolean.FALSE.equals(col.getAutoIncrement()) &&
-                            col.getColumnDefault() != null &&
-                            !col.getColumnDefault().isBlank()
-            ) {
-                if ("CURRENT_TIMESTAMP".equalsIgnoreCase(col.getColumnDefault())) {
-                    sb.append(" DEFAULT CURRENT_TIMESTAMP");
-                } else {
-                    sb.append(" DEFAULT '").append(col.getColumnDefault()).append("'");
+
+            if (col instanceof NewStandardColumnDto standardCol) {
+                if (Boolean.TRUE.equals(standardCol.getAutoIncrement())) {
+                    sb.append(" AUTO_INCREMENT");
+                }
+                if (Boolean.FALSE.equals(standardCol.getIsNullable())) {
+                    sb.append(" NOT NULL");
+                }
+                if (Boolean.TRUE.equals(standardCol.getIsUnique())) {
+                    sb.append(" UNIQUE");
+                }
+                if (
+                        Boolean.FALSE.equals(standardCol.getAutoIncrement()) &&
+                                standardCol.getColumnDefault() != null &&
+                                !standardCol.getColumnDefault().isBlank()
+                ) {
+                    if ("CURRENT_TIMESTAMP".equalsIgnoreCase(standardCol.getColumnDefault())) {
+                        sb.append(" DEFAULT CURRENT_TIMESTAMP");
+                    } else {
+                        sb.append(" DEFAULT '").append(standardCol.getColumnDefault()).append("'");
+                    }
+                }
+            } else if (col instanceof NewPrimaryKeyColumnDto pkCol) {
+                if (Boolean.TRUE.equals(pkCol.getAutoIncrement())) {
+                    sb.append(" AUTO_INCREMENT");
                 }
             }
+
             return sb.toString();
         };
 
