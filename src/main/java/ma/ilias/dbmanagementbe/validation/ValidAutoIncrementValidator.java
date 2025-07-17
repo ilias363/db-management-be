@@ -3,6 +3,7 @@ package ma.ilias.dbmanagementbe.validation;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import lombok.AllArgsConstructor;
+import ma.ilias.dbmanagementbe.enums.ColumnType;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnAutoIncrementDto;
 import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnReference;
@@ -34,6 +35,12 @@ public class ValidAutoIncrementValidator implements ConstraintValidator<ValidAut
                             updateDto.getTableName(),
                             updateDto.getColumnName()
                     );
+                    if (currentColumn.getColumnType() != ColumnType.PRIMARY_KEY) {
+                        context.disableDefaultConstraintViolation();
+                        context.buildConstraintViolationWithTemplate("Auto-increment can only be used with primary key columns")
+                                .addConstraintViolation();
+                        return false;
+                    }
                     dataType = currentColumn != null ? currentColumn.getDataType() : null;
                 } catch (Exception e) {
                     return true;
