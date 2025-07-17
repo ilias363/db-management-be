@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import ma.ilias.dbmanagementbe.metadata.dto.common.ColumnDataTypeDefinition;
 import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnReference;
-import ma.ilias.dbmanagementbe.validation.NotNullOrUnique;
 import ma.ilias.dbmanagementbe.validation.UniqueColumnName;
 import ma.ilias.dbmanagementbe.validation.ValidColumnDefault;
 import ma.ilias.dbmanagementbe.validation.ValidDataTypeDefinition;
@@ -18,10 +17,9 @@ import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-@ValidColumnDefault
 @ValidDataTypeDefinition
+@ValidColumnDefault
 @UniqueColumnName(groups = StandaloneColumnCreation.class)
-@NotNullOrUnique(groups = StandaloneColumnCreation.class)
 public abstract class BaseNewColumnDto implements ColumnDataTypeDefinition, IColumnReference {
     @NotBlank(
             message = "Schema name cannot be blank",
@@ -50,9 +48,4 @@ public abstract class BaseNewColumnDto implements ColumnDataTypeDefinition, ICol
     private Integer characterMaxLength;
     private Integer numericPrecision;
     private Integer numericScale;
-
-    private Boolean isNullable;
-    private Boolean isUnique;
-    private String columnDefault;
-    private Boolean autoIncrement;
 }

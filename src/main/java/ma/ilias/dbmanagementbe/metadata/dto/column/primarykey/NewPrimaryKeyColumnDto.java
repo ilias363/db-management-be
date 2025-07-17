@@ -11,15 +11,5 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class NewPrimaryKeyColumnDto extends BaseNewColumnDto {
-    @Override
-    public void setIsNullable(Boolean isNullable) {
-        // Primary keys cannot be nullable
-        super.setIsNullable(false);
-    }
-
-    @Override
-    public void setIsUnique(Boolean isUnique) {
-        // Primary keys are always unique
-        super.setIsUnique(true);
-    }
+    private Boolean autoIncrement;
 }

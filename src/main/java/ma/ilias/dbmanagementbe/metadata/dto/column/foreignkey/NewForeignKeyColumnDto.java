@@ -11,6 +11,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.common.IReferencedColumnReference;
 import ma.ilias.dbmanagementbe.validation.ExistingReferencedColumn;
 import ma.ilias.dbmanagementbe.validation.MatchingForeignKeyType;
 import ma.ilias.dbmanagementbe.validation.ValidForeignKeyDefault;
+import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
 
 @Data
 @SuperBuilder
@@ -28,6 +29,12 @@ public class NewForeignKeyColumnDto extends BaseNewColumnDto implements IReferen
 
     @NotBlank(message = "Referenced column name cannot be blank")
     private String referencedColumnName;
+
+    @NotBlank(
+            message = "Column default is required",
+            groups = StandaloneColumnCreation.class
+    )
+    private String columnDefault;
 
     @Pattern(
             regexp = "^(?i)(CASCADE|NO ACTION|RESTRICT|SET NULL|SET DEFAULT)$",
