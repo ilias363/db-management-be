@@ -7,9 +7,7 @@ import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
 import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnReference;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
-import org.springframework.stereotype.Component;
 
-@Component
 @AllArgsConstructor
 public class ExistingColumnValidator implements ConstraintValidator<ExistingColumn, IColumnReference> {
 
