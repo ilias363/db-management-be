@@ -302,8 +302,13 @@ public class MySqlColumnManager implements ColumnService {
             throw new UnauthorizedActionException("Cannot delete column from system table: " + schemaName + "." + tableName);
         }
 
-        if (tableService.getTable(schemaName, tableName).getColumnCount() == 1) {
-            throw new UnauthorizedActionException("Table " + tableName + " has only one column. Try dropping the whole table.");
+        String columnCountSql = """
+                SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
+                """;
+        Integer columnCount = jdbcTemplate.queryForObject(columnCountSql, Integer.class, schemaName, tableName);
+        if (columnCount != null && columnCount <= 1) {
+            throw new UnauthorizedActionException("Table " + tableName + " has only one column. Try dropping the whole table instead.");
         }
 
         boolean isPrimaryKey = isColumnPrimaryKey(schemaName, tableName, columnName);
