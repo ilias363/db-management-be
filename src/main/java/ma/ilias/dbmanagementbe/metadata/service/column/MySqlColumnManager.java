@@ -374,7 +374,7 @@ public class MySqlColumnManager implements ColumnService {
     public Boolean isColumnPrimaryKey(String schemaName, String tableName, String columnName) {
         String pkCheckSql = """
                 SELECT COUNT(*) FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ? 
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
                   AND CONSTRAINT_NAME = 'PRIMARY'
                 """;
 
@@ -859,5 +859,82 @@ public class MySqlColumnManager implements ColumnService {
         jdbcTemplate.execute(sql);
 
         return getColumn(updateColDefaultDto.getSchemaName(), updateColDefaultDto.getTableName(), updateColDefaultDto.getColumnName());
+    }
+
+    @Override
+    public BaseColumnMetadataDto updateColumnPrimaryKey(UpdateColumnPrimaryKeyDto updateColPKDto, boolean force) {
+        boolean isCurrentlyPrimaryKey = isColumnPrimaryKey(
+                updateColPKDto.getSchemaName(),
+                updateColPKDto.getTableName(),
+                updateColPKDto.getColumnName());
+
+        if (updateColPKDto.getIsPrimaryKey()) {
+            if (tableHasPrimaryKey(updateColPKDto.getSchemaName(), updateColPKDto.getTableName())) {
+                throw new UnauthorizedActionException(
+                        "Table already has a primary key. Drop the existing primary key first."
+                );
+            }
+
+            if (columnHasDuplicates(
+                    updateColPKDto.getSchemaName(),
+                    updateColPKDto.getTableName(),
+                    updateColPKDto.getColumnName())) {
+                throw new UnauthorizedActionException(
+                        "Cannot add primary key constraint to column containing duplicate values."
+                );
+            }
+
+            String sql = String.format("ALTER TABLE %s.%s ADD PRIMARY KEY (%s)",
+                    updateColPKDto.getSchemaName(),
+                    updateColPKDto.getTableName(),
+                    updateColPKDto.getColumnName());
+
+            jdbcTemplate.execute(sql);
+        } else {
+            if (!isCurrentlyPrimaryKey) {
+                throw new UnauthorizedActionException("Column is not a primary key");
+            }
+
+            List<String> referencingFkConstraints = getReferencingForeignKeyConstraints(
+                    updateColPKDto.getSchemaName(),
+                    updateColPKDto.getTableName(),
+                    updateColPKDto.getColumnName());
+
+            if (!referencingFkConstraints.isEmpty() && !force) {
+                throw new UnauthorizedActionException(
+                        "Cannot drop primary key constraint: " + referencingFkConstraints.size() +
+                                " foreign key constraints reference this column. Use force=true to proceed."
+                );
+            }
+
+            if (!referencingFkConstraints.isEmpty()) {
+                for (String fkConstraint : referencingFkConstraints) {
+                    String[] parts = fkConstraint.split(" ON ");
+                    String constraintName = parts[0];
+                    String referencingTableName = parts[1];
+                    String dropFkSql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s",
+                            updateColPKDto.getSchemaName(), referencingTableName, constraintName);
+                    jdbcTemplate.execute(dropFkSql);
+                }
+            }
+
+            UpdateColumnAutoIncrementDto updateAIDto = new UpdateColumnAutoIncrementDto();
+            updateAIDto.setSchemaName(updateColPKDto.getSchemaName());
+            updateAIDto.setTableName(updateColPKDto.getTableName());
+            updateAIDto.setColumnName(updateColPKDto.getColumnName());
+            updateAIDto.setAutoIncrement(false);
+
+            updateColumnAutoIncrement(updateAIDto);
+
+            String sql = String.format("ALTER TABLE %s.%s DROP PRIMARY KEY",
+                    updateColPKDto.getSchemaName(),
+                    updateColPKDto.getTableName());
+
+            jdbcTemplate.execute(sql);
+        }
+
+        return getColumn(updateColPKDto.getSchemaName(),
+                updateColPKDto.getTableName(),
+                updateColPKDto.getColumnName());
     }
 }

@@ -164,4 +164,17 @@ public class ColumnController {
                 .data(updatedColumn)
                 .build());
     }
+
+    @PatchMapping("/primary-key")
+    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> updateColumnPrimaryKey(
+            @Valid @RequestBody UpdateColumnPrimaryKeyDto updateColumnPrimaryKeyDto,
+            @RequestParam(defaultValue = "false") boolean force
+    ) {
+        BaseColumnMetadataDto updatedColumn = columnService.updateColumnPrimaryKey(updateColumnPrimaryKeyDto, force);
+        return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
+                .message("Column primary key constraint updated successfully")
+                .success(true)
+                .data(updatedColumn)
+                .build());
+    }
 }

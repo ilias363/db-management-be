@@ -26,4 +26,6 @@ public interface ColumnService {
     BaseColumnMetadataDto updateColumnUnique(UpdateColumnUniqueDto updateColumnUniqueDto);
 
     BaseColumnMetadataDto updateColumnDefault(UpdateColumnDefaultDto updateColumnDefaultDto);
+
+    BaseColumnMetadataDto updateColumnPrimaryKey(UpdateColumnPrimaryKeyDto updateColumnPrimaryKeyDto, boolean force);
 }
