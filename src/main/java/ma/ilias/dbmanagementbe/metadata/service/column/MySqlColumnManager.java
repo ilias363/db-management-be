@@ -13,6 +13,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.PrimaryKeyColumnMe
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.StandardColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.RenameColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnDataTypeDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
@@ -585,5 +586,29 @@ public class MySqlColumnManager implements ColumnService {
         jdbcTemplate.execute(sql);
 
         return getColumn(renameColumnDto.getSchemaName(), renameColumnDto.getTableName(), renameColumnDto.getNewColumnName());
+    }
+
+    @Override
+    public BaseColumnMetadataDto updateColumnDataType(UpdateColumnDataTypeDto updapteColDataTypeDto) {
+        StringBuilder dataTypeDefinition = new StringBuilder(updapteColDataTypeDto.getDataType());
+
+        if (updapteColDataTypeDto.getCharacterMaxLength() != null) {
+            dataTypeDefinition.append("(").append(updapteColDataTypeDto.getCharacterMaxLength()).append(")");
+        } else if (updapteColDataTypeDto.getNumericPrecision() != null) {
+            dataTypeDefinition.append("(").append(updapteColDataTypeDto.getNumericPrecision());
+            if (updapteColDataTypeDto.getNumericScale() != null) {
+                dataTypeDefinition.append(",").append(updapteColDataTypeDto.getNumericScale());
+            }
+            dataTypeDefinition.append(")");
+        }
+
+        String sql = "ALTER TABLE " + updapteColDataTypeDto.getSchemaName() + "." + updapteColDataTypeDto.getTableName() +
+                " MODIFY COLUMN " + updapteColDataTypeDto.getColumnName() + " " + dataTypeDefinition;
+
+        jdbcTemplate.execute(sql);
+
+        return getColumn(updapteColDataTypeDto.getSchemaName(),
+                updapteColDataTypeDto.getTableName(),
+                updapteColDataTypeDto.getColumnName());
     }
 }

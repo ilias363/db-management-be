@@ -9,6 +9,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.NewForeignKeyColum
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.RenameColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnDataTypeDto;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
 import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
 import org.springframework.http.HttpStatus;
@@ -99,6 +100,18 @@ public class ColumnController {
         BaseColumnMetadataDto updatedColumn = columnService.renameColumn(renameColumnDto);
         return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
                 .message("Column renamed successfully")
+                .success(true)
+                .data(updatedColumn)
+                .build());
+    }
+
+    @PatchMapping("/data-type")
+    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> updateColumnDataType(
+            @Valid @RequestBody UpdateColumnDataTypeDto updateColumnDataTypeDto
+    ) {
+        BaseColumnMetadataDto updatedColumn = columnService.updateColumnDataType(updateColumnDataTypeDto);
+        return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
+                .message("Column data type updated successfully")
                 .success(true)
                 .data(updatedColumn)
                 .build());
