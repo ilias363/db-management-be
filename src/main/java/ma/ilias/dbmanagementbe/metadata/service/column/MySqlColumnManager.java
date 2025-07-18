@@ -12,10 +12,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColum
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.PrimaryKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.StandardColumnMetadataDto;
-import ma.ilias.dbmanagementbe.metadata.dto.column.update.RenameColumnDto;
-import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnAutoIncrementDto;
-import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnDataTypeDto;
-import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnNullableDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.update.*;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
@@ -747,5 +744,74 @@ public class MySqlColumnManager implements ColumnService {
             return "''";
         }
         throw new IllegalArgumentException("Unsupported data type: " + dataType);
+    }
+
+    @Override
+    public BaseColumnMetadataDto updateColumnUnique(UpdateColumnUniqueDto updateColUniqueDto) {
+        String uniqueColConstraintsSql = """
+                SELECT c.CONSTRAINT_NAME
+                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE c
+                JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS t
+                  ON c.CONSTRAINT_NAME = t.CONSTRAINT_NAME
+                WHERE c.TABLE_SCHEMA = ? AND c.TABLE_NAME = ? AND c.COLUMN_NAME = ?
+                  AND t.CONSTRAINT_TYPE = 'UNIQUE'
+                """;
+
+        List<String> uniqueConstraints = jdbcTemplate.query(
+                uniqueColConstraintsSql,
+                ps -> {
+                    ps.setString(1, updateColUniqueDto.getSchemaName());
+                    ps.setString(2, updateColUniqueDto.getTableName());
+                    ps.setString(3, updateColUniqueDto.getColumnName());
+                },
+                (rs, rowNum) -> rs.getString("CONSTRAINT_NAME")
+        );
+
+        if (updateColUniqueDto.getIsUnique() == !uniqueConstraints.isEmpty()) {
+            return getColumn(updateColUniqueDto.getSchemaName(),
+                    updateColUniqueDto.getTableName(),
+                    updateColUniqueDto.getColumnName());
+        }
+
+        if (updateColUniqueDto.getIsUnique()) {
+            if (columnHasDuplicates(
+                    updateColUniqueDto.getSchemaName(),
+                    updateColUniqueDto.getTableName(),
+                    updateColUniqueDto.getColumnName())) {
+                throw new UnauthorizedActionException(
+                        "Cannot add unique constraint: column contains duplicate values."
+                );
+            }
+        }
+
+        String sql;
+        if (updateColUniqueDto.getIsUnique()) {
+            sql = String.format("ALTER TABLE %s.%s ADD CONSTRAINT UNIQUE (%s)",
+                    updateColUniqueDto.getSchemaName(),
+                    updateColUniqueDto.getTableName(),
+                    updateColUniqueDto.getColumnName());
+        } else {
+            sql = String.format("ALTER TABLE %s.%s DROP CONSTRAINT %s",
+                    updateColUniqueDto.getSchemaName(),
+                    updateColUniqueDto.getTableName(),
+                    uniqueConstraints.get(0));
+        }
+
+        jdbcTemplate.execute(sql);
+        return getColumn(updateColUniqueDto.getSchemaName(),
+                updateColUniqueDto.getTableName(),
+                updateColUniqueDto.getColumnName());
+    }
+
+    private boolean columnHasDuplicates(String schemaName, String tableName, String columnName) {
+        String duplicateCheckSql = String.format(
+                "SELECT %s FROM %s.%s GROUP BY %s HAVING COUNT(*) > 1 LIMIT 1",
+                columnName, schemaName, tableName, columnName);
+
+        List<Object> duplicates = jdbcTemplate.query(
+                duplicateCheckSql,
+                (rs, rowNum) -> rs.getObject(columnName)
+        );
+        return !duplicates.isEmpty();
     }
 }

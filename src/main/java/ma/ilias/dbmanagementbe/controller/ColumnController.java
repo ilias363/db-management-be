@@ -8,10 +8,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.NewForeignKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
-import ma.ilias.dbmanagementbe.metadata.dto.column.update.RenameColumnDto;
-import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnAutoIncrementDto;
-import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnDataTypeDto;
-import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnNullableDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.update.*;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
 import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
 import org.springframework.http.HttpStatus;
@@ -139,6 +136,18 @@ public class ColumnController {
         BaseColumnMetadataDto updatedColumn = columnService.updateColumnNullable(updateColumnNullableDto, populate);
         return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
                 .message("Column nullable constraint updated successfully")
+                .success(true)
+                .data(updatedColumn)
+                .build());
+    }
+
+    @PatchMapping("/unique")
+    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> updateColumnUnique(
+            @Valid @RequestBody UpdateColumnUniqueDto updateColumnUniqueDto
+    ) {
+        BaseColumnMetadataDto updatedColumn = columnService.updateColumnUnique(updateColumnUniqueDto);
+        return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
+                .message("Column unique constraint updated successfully")
                 .success(true)
                 .data(updatedColumn)
                 .build());
