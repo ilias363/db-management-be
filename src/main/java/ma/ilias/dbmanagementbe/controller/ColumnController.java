@@ -11,6 +11,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.RenameColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnAutoIncrementDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnDataTypeDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnNullableDto;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
 import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
 import org.springframework.http.HttpStatus;
@@ -117,7 +118,7 @@ public class ColumnController {
                 .data(updatedColumn)
                 .build());
     }
-    
+
     @PatchMapping("/auto-increment")
     public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> updateColumnAutoIncrement(
             @Valid @RequestBody UpdateColumnAutoIncrementDto updateColumnAutoIncrementDto
@@ -125,6 +126,19 @@ public class ColumnController {
         BaseColumnMetadataDto updatedColumn = columnService.updateColumnAutoIncrement(updateColumnAutoIncrementDto);
         return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
                 .message("Column auto increment updated successfully")
+                .success(true)
+                .data(updatedColumn)
+                .build());
+    }
+
+    @PatchMapping("/nullable")
+    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> updateColumnNullable(
+            @Valid @RequestBody UpdateColumnNullableDto updateColumnNullableDto,
+            @RequestParam(defaultValue = "false") boolean populate
+    ) {
+        BaseColumnMetadataDto updatedColumn = columnService.updateColumnNullable(updateColumnNullableDto, populate);
+        return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
+                .message("Column nullable constraint updated successfully")
                 .success(true)
                 .data(updatedColumn)
                 .build());

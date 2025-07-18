@@ -15,6 +15,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.standard.StandardColumnMetada
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.RenameColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnAutoIncrementDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnDataTypeDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnNullableDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
@@ -649,5 +650,102 @@ public class MySqlColumnManager implements ColumnService {
         return getColumn(updateColAutoIncrementDto.getSchemaName(),
                 updateColAutoIncrementDto.getTableName(),
                 updateColAutoIncrementDto.getColumnName());
+    }
+
+    @Override
+    public BaseColumnMetadataDto updateColumnNullable(UpdateColumnNullableDto updateColNullableDto, boolean populate) {
+        BaseColumnMetadataDto currentColumn = getColumn(updateColNullableDto.getSchemaName(),
+                updateColNullableDto.getTableName(),
+                updateColNullableDto.getColumnName());
+
+        if (currentColumn.getIsNullable() == updateColNullableDto.getIsNullable()) {
+            return currentColumn;
+        }
+
+        Integer nullCount = getColumnNullCount(
+                updateColNullableDto.getSchemaName(),
+                updateColNullableDto.getTableName(),
+                updateColNullableDto.getColumnName());
+
+        if (!populate && !updateColNullableDto.getIsNullable() && nullCount > 0) {
+            throw new UnauthorizedActionException(
+                    "Column contains null values, cannot make make it not null. Use populate=true to fill null values and proceed."
+            );
+        }
+
+        if (populate && !updateColNullableDto.getIsNullable() && nullCount > 0) {
+            if (currentColumn.getIsUnique() != null && currentColumn.getIsUnique()) {
+                throw new UnauthorizedActionException(
+                        "Column is unique and contains null values, cannot make it not null or fill its null values."
+                );
+            }
+            String nullUpdateSql = String.format("UPDATE %s.%s SET %s = ? WHERE %s IS NULL",
+                    updateColNullableDto.getSchemaName(),
+                    updateColNullableDto.getTableName(),
+                    updateColNullableDto.getColumnName(),
+                    updateColNullableDto.getColumnName());
+
+            if (currentColumn.getColumnDefault() != null) {
+                jdbcTemplate.update(nullUpdateSql, currentColumn.getColumnDefault());
+            } else {
+                jdbcTemplate.update(nullUpdateSql, getDefaultForDataType(currentColumn.getDataType()));
+            }
+        }
+
+        StringBuilder columnDefinition = new StringBuilder(currentColumn.getDataType());
+
+        if (currentColumn.getCharacterMaxLength() != null) {
+            columnDefinition.append("(").append(currentColumn.getCharacterMaxLength()).append(")");
+        } else if (Set.of("NUMERIC", "DECIMAL").contains(currentColumn.getDataType().toUpperCase()) &&
+                currentColumn.getNumericPrecision() != null) {
+            columnDefinition.append("(").append(currentColumn.getNumericPrecision());
+            if (currentColumn.getNumericScale() != null) {
+                columnDefinition.append(",").append(currentColumn.getNumericScale());
+            }
+            columnDefinition.append(")");
+        }
+
+        if (updateColNullableDto.getIsNullable()) {
+            columnDefinition.append(" NULL");
+        } else {
+            columnDefinition.append(" NOT NULL");
+        }
+
+        String sql = "ALTER TABLE " + updateColNullableDto.getSchemaName() + "." + updateColNullableDto.getTableName() +
+                " MODIFY COLUMN " + updateColNullableDto.getColumnName() + " " + columnDefinition;
+
+        jdbcTemplate.execute(sql);
+
+        return getColumn(updateColNullableDto.getSchemaName(), updateColNullableDto.getTableName(), updateColNullableDto.getColumnName());
+    }
+
+    private Integer getColumnNullCount(String schemaName, String tableName, String columnName) {
+        String sql = String.format("SELECT COUNT(*) FROM %s.%s WHERE %s IS NULL", schemaName, tableName, columnName);
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class);
+        return count == null ? 0 : count;
+    }
+
+    private String getDefaultForDataType(String dataType) {
+        dataType = dataType.toUpperCase();
+        if (dataType.contains("INT") || dataType.contains("DECIMAL") || dataType.contains("NUMERIC") ||
+                dataType.contains("FLOAT") || dataType.contains("DOUBLE") || dataType.contains("REAL")) {
+            return "0";
+        }
+        if (dataType.contains("CHAR") || dataType.contains("TEXT")) {
+            return "'unknown'";
+        }
+        if (dataType.contains("DATE") && !dataType.contains("TIMESTAMP")) {
+            return "'1970-01-01'";
+        }
+        if (dataType.contains("TIME")) {
+            return "'00:00:00'";
+        }
+        if (dataType.contains("BOOL")) {
+            return "FALSE";
+        }
+        if (dataType.contains("BINARY") || dataType.contains("BLOB")) {
+            return "''";
+        }
+        throw new IllegalArgumentException("Unsupported data type: " + dataType);
     }
 }

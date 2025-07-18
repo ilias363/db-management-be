@@ -5,6 +5,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.RenameColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnAutoIncrementDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnDataTypeDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnNullableDto;
 
 public interface ColumnService {
     Boolean columnExists(String schemaName, String tableName, String columnName);
@@ -22,4 +23,6 @@ public interface ColumnService {
     BaseColumnMetadataDto updateColumnDataType(UpdateColumnDataTypeDto updateColumnDataTypeDto);
 
     BaseColumnMetadataDto updateColumnAutoIncrement(UpdateColumnAutoIncrementDto updateColumnAutoIncrementDto);
+
+    BaseColumnMetadataDto updateColumnNullable(UpdateColumnNullableDto updateColumnNullableDto, boolean populate);
 }
