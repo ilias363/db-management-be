@@ -12,6 +12,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColum
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.PrimaryKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.StandardColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.update.RenameColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
@@ -574,5 +575,15 @@ public class MySqlColumnManager implements ColumnService {
     // Helper record for foreign key information
     private record ForeignKeyInfo(String referencedSchemaName, String referencedTableName,
                                   String referencedColumnName, String onUpdateAction, String onDeleteAction) {
+    }
+
+    @Override
+    public BaseColumnMetadataDto renameColumn(RenameColumnDto renameColumnDto) {
+        String sql = "ALTER TABLE " + renameColumnDto.getSchemaName() + "." + renameColumnDto.getTableName() +
+                " RENAME COLUMN " + renameColumnDto.getColumnName() + " TO " + renameColumnDto.getNewColumnName();
+
+        jdbcTemplate.execute(sql);
+
+        return getColumn(renameColumnDto.getSchemaName(), renameColumnDto.getTableName(), renameColumnDto.getNewColumnName());
     }
 }

@@ -1,5 +1,6 @@
 package ma.ilias.dbmanagementbe.controller;
 
+import jakarta.validation.Valid;
 import jakarta.validation.groups.Default;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
@@ -7,6 +8,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.NewForeignKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.update.RenameColumnDto;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
 import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
 import org.springframework.http.HttpStatus;
@@ -88,5 +90,17 @@ public class ColumnController {
                         .message("Column has not been deleted")
                         .success(false)
                         .build());
+    }
+
+    @PatchMapping("/rename")
+    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> renameColumn(
+            @Valid @RequestBody RenameColumnDto renameColumnDto
+    ) {
+        BaseColumnMetadataDto updatedColumn = columnService.renameColumn(renameColumnDto);
+        return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
+                .message("Column renamed successfully")
+                .success(true)
+                .data(updatedColumn)
+                .build());
     }
 }
