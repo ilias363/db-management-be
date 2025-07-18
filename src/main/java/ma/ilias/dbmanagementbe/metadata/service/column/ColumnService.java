@@ -3,6 +3,7 @@ package ma.ilias.dbmanagementbe.metadata.service.column;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.RenameColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnAutoIncrementDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnDataTypeDto;
 
 public interface ColumnService {
@@ -19,4 +20,6 @@ public interface ColumnService {
     BaseColumnMetadataDto renameColumn(RenameColumnDto renameColumnDto);
 
     BaseColumnMetadataDto updateColumnDataType(UpdateColumnDataTypeDto updateColumnDataTypeDto);
+
+    BaseColumnMetadataDto updateColumnAutoIncrement(UpdateColumnAutoIncrementDto updateColumnAutoIncrementDto);
 }

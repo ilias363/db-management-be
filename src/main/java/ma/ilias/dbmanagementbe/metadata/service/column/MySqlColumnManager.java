@@ -13,6 +13,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.PrimaryKeyColumnMe
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.StandardColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.RenameColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnAutoIncrementDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnDataTypeDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @AllArgsConstructor
@@ -610,5 +612,42 @@ public class MySqlColumnManager implements ColumnService {
         return getColumn(updapteColDataTypeDto.getSchemaName(),
                 updapteColDataTypeDto.getTableName(),
                 updapteColDataTypeDto.getColumnName());
+    }
+
+    @Override
+    public BaseColumnMetadataDto updateColumnAutoIncrement(UpdateColumnAutoIncrementDto updateColAutoIncrementDto) {
+        BaseColumnMetadataDto currentColumn = getColumn(updateColAutoIncrementDto.getSchemaName(),
+                updateColAutoIncrementDto.getTableName(),
+                updateColAutoIncrementDto.getColumnName());
+
+        if (currentColumn.getAutoIncrement() == updateColAutoIncrementDto.getAutoIncrement()) {
+            return currentColumn;
+        }
+
+        StringBuilder columnDefinition = new StringBuilder(currentColumn.getDataType());
+
+        if (currentColumn.getCharacterMaxLength() != null) {
+            columnDefinition.append("(").append(currentColumn.getCharacterMaxLength()).append(")");
+        } else if (Set.of("NUMERIC", "DECIMAL").contains(currentColumn.getDataType().toUpperCase()) &&
+                currentColumn.getNumericPrecision() != null) {
+            columnDefinition.append("(").append(currentColumn.getNumericPrecision());
+            if (currentColumn.getNumericScale() != null) {
+                columnDefinition.append(",").append(currentColumn.getNumericScale());
+            }
+            columnDefinition.append(")");
+        }
+
+        if (updateColAutoIncrementDto.getAutoIncrement()) {
+            columnDefinition.append(" AUTO_INCREMENT");
+        }
+
+        String sql = "ALTER TABLE " + updateColAutoIncrementDto.getSchemaName() + "." + updateColAutoIncrementDto.getTableName() +
+                " MODIFY COLUMN " + updateColAutoIncrementDto.getColumnName() + " " + columnDefinition;
+
+        jdbcTemplate.execute(sql);
+
+        return getColumn(updateColAutoIncrementDto.getSchemaName(),
+                updateColAutoIncrementDto.getTableName(),
+                updateColAutoIncrementDto.getColumnName());
     }
 }

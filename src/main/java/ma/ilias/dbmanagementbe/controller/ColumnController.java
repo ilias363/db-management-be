@@ -9,6 +9,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.NewForeignKeyColum
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.RenameColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnAutoIncrementDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnDataTypeDto;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
 import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
@@ -112,6 +113,18 @@ public class ColumnController {
         BaseColumnMetadataDto updatedColumn = columnService.updateColumnDataType(updateColumnDataTypeDto);
         return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
                 .message("Column data type updated successfully")
+                .success(true)
+                .data(updatedColumn)
+                .build());
+    }
+    
+    @PatchMapping("/auto-increment")
+    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> updateColumnAutoIncrement(
+            @Valid @RequestBody UpdateColumnAutoIncrementDto updateColumnAutoIncrementDto
+    ) {
+        BaseColumnMetadataDto updatedColumn = columnService.updateColumnAutoIncrement(updateColumnAutoIncrementDto);
+        return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
+                .message("Column auto increment updated successfully")
                 .success(true)
                 .data(updatedColumn)
                 .build());
