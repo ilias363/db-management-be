@@ -590,27 +590,27 @@ public class MySqlColumnManager implements ColumnService {
     }
 
     @Override
-    public BaseColumnMetadataDto updateColumnDataType(UpdateColumnDataTypeDto updapteColDataTypeDto) {
-        StringBuilder dataTypeDefinition = new StringBuilder(updapteColDataTypeDto.getDataType());
+    public BaseColumnMetadataDto updateColumnDataType(UpdateColumnDataTypeDto updateColDataTypeDto) {
+        StringBuilder dataTypeDefinition = new StringBuilder(updateColDataTypeDto.getDataType());
 
-        if (updapteColDataTypeDto.getCharacterMaxLength() != null) {
-            dataTypeDefinition.append("(").append(updapteColDataTypeDto.getCharacterMaxLength()).append(")");
-        } else if (updapteColDataTypeDto.getNumericPrecision() != null) {
-            dataTypeDefinition.append("(").append(updapteColDataTypeDto.getNumericPrecision());
-            if (updapteColDataTypeDto.getNumericScale() != null) {
-                dataTypeDefinition.append(",").append(updapteColDataTypeDto.getNumericScale());
+        if (updateColDataTypeDto.getCharacterMaxLength() != null) {
+            dataTypeDefinition.append("(").append(updateColDataTypeDto.getCharacterMaxLength()).append(")");
+        } else if (updateColDataTypeDto.getNumericPrecision() != null) {
+            dataTypeDefinition.append("(").append(updateColDataTypeDto.getNumericPrecision());
+            if (updateColDataTypeDto.getNumericScale() != null) {
+                dataTypeDefinition.append(",").append(updateColDataTypeDto.getNumericScale());
             }
             dataTypeDefinition.append(")");
         }
 
-        String sql = "ALTER TABLE " + updapteColDataTypeDto.getSchemaName() + "." + updapteColDataTypeDto.getTableName() +
-                " MODIFY COLUMN " + updapteColDataTypeDto.getColumnName() + " " + dataTypeDefinition;
+        String sql = "ALTER TABLE " + updateColDataTypeDto.getSchemaName() + "." + updateColDataTypeDto.getTableName() +
+                " MODIFY COLUMN " + updateColDataTypeDto.getColumnName() + " " + dataTypeDefinition;
 
         jdbcTemplate.execute(sql);
 
-        return getColumn(updapteColDataTypeDto.getSchemaName(),
-                updapteColDataTypeDto.getTableName(),
-                updapteColDataTypeDto.getColumnName());
+        return getColumn(updateColDataTypeDto.getSchemaName(),
+                updateColDataTypeDto.getTableName(),
+                updateColDataTypeDto.getColumnName());
     }
 
     @Override
