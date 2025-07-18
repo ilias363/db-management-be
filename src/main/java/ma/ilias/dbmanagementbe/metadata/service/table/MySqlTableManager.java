@@ -148,10 +148,11 @@ public class MySqlTableManager implements TableService {
                 if (Boolean.TRUE.equals(standardCol.getIsUnique())) {
                     sb.append(" UNIQUE");
                 }
-                if (standardCol.getColumnDefault() != null &&
-                        !standardCol.getColumnDefault().isBlank()) {
+                if (standardCol.getColumnDefault() != null) {
                     if ("CURRENT_TIMESTAMP".equalsIgnoreCase(standardCol.getColumnDefault())) {
                         sb.append(" DEFAULT CURRENT_TIMESTAMP");
+                    } else if ("NULL".equalsIgnoreCase(standardCol.getColumnDefault())) {
+                        sb.append(" DEFAULT NULL");
                     } else {
                         sb.append(" DEFAULT '").append(standardCol.getColumnDefault()).append("'");
                     }

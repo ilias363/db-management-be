@@ -254,10 +254,11 @@ public class MySqlColumnManager implements ColumnService {
                 alterSql.append(" UNIQUE");
             }
 
-            if (standardCol.getColumnDefault() != null &&
-                    !standardCol.getColumnDefault().isBlank()) {
+            if (standardCol.getColumnDefault() != null) {
                 if ("CURRENT_TIMESTAMP".equalsIgnoreCase(standardCol.getColumnDefault())) {
                     alterSql.append(" DEFAULT CURRENT_TIMESTAMP");
+                } else if ("NULL".equalsIgnoreCase(standardCol.getColumnDefault())) {
+                    alterSql.append(" DEFAULT NULL");
                 } else {
                     alterSql.append(" DEFAULT '").append(standardCol.getColumnDefault()).append("'");
                 }
