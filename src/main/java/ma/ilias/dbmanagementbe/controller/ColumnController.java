@@ -177,4 +177,16 @@ public class ColumnController {
                 .data(updatedColumn)
                 .build());
     }
+
+    @PatchMapping("/foreign-key")
+    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> updateColumnForeignKey(
+            @Valid @RequestBody UpdateColumnForeignKeyDto updateColumnForeignKeyDto
+    ) {
+        BaseColumnMetadataDto updatedColumn = columnService.updateColumnForeignKey(updateColumnForeignKeyDto);
+        return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
+                .message("Column foreign key constraint updated successfully")
+                .success(true)
+                .data(updatedColumn)
+                .build());
+    }
 }

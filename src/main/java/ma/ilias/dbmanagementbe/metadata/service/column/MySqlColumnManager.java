@@ -937,4 +937,87 @@ public class MySqlColumnManager implements ColumnService {
                 updateColPKDto.getTableName(),
                 updateColPKDto.getColumnName());
     }
+
+    @Override
+    public BaseColumnMetadataDto updateColumnForeignKey(UpdateColumnForeignKeyDto updateColFKDto) {
+        if (updateColFKDto.getIsForeignKey()) {
+            validateForeignKeyValuesExist(updateColFKDto);
+
+            StringBuilder fkSql = new StringBuilder(String.format(
+                    "ALTER TABLE %s.%s ADD CONSTRAINT FOREIGN KEY (%s) REFERENCES %s.%s(%s)",
+                    updateColFKDto.getSchemaName(),
+                    updateColFKDto.getTableName(),
+                    updateColFKDto.getColumnName(),
+                    updateColFKDto.getReferencedSchemaName(),
+                    updateColFKDto.getReferencedTableName(),
+                    updateColFKDto.getReferencedColumnName()
+            ));
+
+            if (updateColFKDto.getOnUpdateAction() != null && !updateColFKDto.getOnUpdateAction().isBlank()) {
+                fkSql.append(" ON UPDATE ").append(updateColFKDto.getOnUpdateAction());
+            }
+
+            if (updateColFKDto.getOnDeleteAction() != null && !updateColFKDto.getOnDeleteAction().isBlank()) {
+                fkSql.append(" ON DELETE ").append(updateColFKDto.getOnDeleteAction());
+            }
+
+            jdbcTemplate.execute(fkSql.toString());
+        } else {
+            String fkConstraintName = getForeignKeyConstraintName(
+                    updateColFKDto.getSchemaName(),
+                    updateColFKDto.getTableName(),
+                    updateColFKDto.getColumnName());
+
+            if (fkConstraintName == null) {
+                throw new UnauthorizedActionException("Column is not a foreign key");
+            }
+
+            String sql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s",
+                    updateColFKDto.getSchemaName(),
+                    updateColFKDto.getTableName(),
+                    fkConstraintName);
+
+            jdbcTemplate.execute(sql);
+        }
+
+        return getColumn(updateColFKDto.getSchemaName(),
+                updateColFKDto.getTableName(),
+                updateColFKDto.getColumnName());
+    }
+
+    private String getForeignKeyConstraintName(String schemaName, String tableName, String columnName) {
+        String sql = """
+                SELECT CONSTRAINT_NAME
+                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
+                  AND REFERENCED_TABLE_NAME IS NOT NULL
+                """;
+
+        List<String> constraints = jdbcTemplate.query(
+                sql,
+                (rs, rowNum) -> rs.getString("CONSTRAINT_NAME"),
+                schemaName,
+                tableName,
+                columnName
+        );
+
+        return constraints.isEmpty() ? null : constraints.get(0);
+    }
+
+    private void validateForeignKeyValuesExist(UpdateColumnForeignKeyDto dto) {
+        String sql = String.format(
+                "SELECT COUNT(*) FROM %s.%s fk LEFT JOIN %s.%s ref ON fk.%s = ref.%s WHERE fk.%s IS NOT NULL AND ref.%s IS NULL",
+                dto.getSchemaName(), dto.getTableName(),
+                dto.getReferencedSchemaName(), dto.getReferencedTableName(),
+                dto.getColumnName(), dto.getReferencedColumnName(),
+                dto.getColumnName(), dto.getReferencedColumnName()
+        );
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class);
+        if (count != null && count > 0) {
+            throw new UnauthorizedActionException(
+                    "Foreign key constraint violation: " + count + " value(s) in column '" + dto.getColumnName() +
+                            "' do not exist in referenced column '" + dto.getReferencedColumnName() + "'."
+            );
+        }
+    }
 }
