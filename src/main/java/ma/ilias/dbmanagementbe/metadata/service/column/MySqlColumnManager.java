@@ -814,4 +814,49 @@ public class MySqlColumnManager implements ColumnService {
         );
         return !duplicates.isEmpty();
     }
+
+    @Override
+    public BaseColumnMetadataDto updateColumnDefault(UpdateColumnDefaultDto updateColDefaultDto) {
+        BaseColumnMetadataDto currentColumn = getColumn(
+                updateColDefaultDto.getSchemaName(),
+                updateColDefaultDto.getTableName(),
+                updateColDefaultDto.getColumnName());
+
+        StringBuilder columnDefinition = new StringBuilder(currentColumn.getDataType());
+
+        if (currentColumn.getCharacterMaxLength() != null) {
+            columnDefinition.append("(").append(currentColumn.getCharacterMaxLength()).append(")");
+        } else if (Set.of("NUMERIC", "DECIMAL").contains(currentColumn.getDataType().toUpperCase()) &&
+                currentColumn.getNumericPrecision() != null) {
+            columnDefinition.append("(").append(currentColumn.getNumericPrecision());
+            if (currentColumn.getNumericScale() != null) {
+                columnDefinition.append(",").append(currentColumn.getNumericScale());
+            }
+            columnDefinition.append(")");
+        }
+
+        if (currentColumn.getIsNullable() != null && !currentColumn.getIsNullable()) {
+            columnDefinition.append(" NOT NULL");
+        }
+
+        if (updateColDefaultDto.getColumnDefault() != null) {
+            if ("CURRENT_TIMESTAMP".equalsIgnoreCase(updateColDefaultDto.getColumnDefault())) {
+                columnDefinition.append(" DEFAULT CURRENT_TIMESTAMP");
+            } else if ("NULL".equalsIgnoreCase(updateColDefaultDto.getColumnDefault())) {
+                columnDefinition.append(" DEFAULT NULL");
+            } else {
+                columnDefinition.append(" DEFAULT '").append(updateColDefaultDto.getColumnDefault()).append("'");
+            }
+        }
+
+        String sql = String.format("ALTER TABLE %s.%s MODIFY COLUMN %s %s",
+                updateColDefaultDto.getSchemaName(),
+                updateColDefaultDto.getTableName(),
+                updateColDefaultDto.getColumnName(),
+                columnDefinition);
+
+        jdbcTemplate.execute(sql);
+
+        return getColumn(updateColDefaultDto.getSchemaName(), updateColDefaultDto.getTableName(), updateColDefaultDto.getColumnName());
+    }
 }

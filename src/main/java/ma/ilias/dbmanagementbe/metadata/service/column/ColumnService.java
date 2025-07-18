@@ -24,4 +24,6 @@ public interface ColumnService {
     BaseColumnMetadataDto updateColumnNullable(UpdateColumnNullableDto updateColumnNullableDto, boolean populate);
 
     BaseColumnMetadataDto updateColumnUnique(UpdateColumnUniqueDto updateColumnUniqueDto);
+
+    BaseColumnMetadataDto updateColumnDefault(UpdateColumnDefaultDto updateColumnDefaultDto);
 }

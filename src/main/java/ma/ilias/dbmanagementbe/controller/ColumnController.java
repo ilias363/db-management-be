@@ -152,4 +152,16 @@ public class ColumnController {
                 .data(updatedColumn)
                 .build());
     }
+
+    @PatchMapping("/default")
+    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> updateColumnDefault(
+            @Valid @RequestBody UpdateColumnDefaultDto updateColumnDefaultDto
+    ) {
+        BaseColumnMetadataDto updatedColumn = columnService.updateColumnDefault(updateColumnDefaultDto);
+        return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
+                .message("Column default value updated successfully")
+                .success(true)
+                .data(updatedColumn)
+                .build());
+    }
 }
