@@ -8,6 +8,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnDefaultDto;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
 
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 @RequiredArgsConstructor
@@ -17,50 +18,46 @@ public class ValidColumnDefaultUpdateValidator implements ConstraintValidator<Va
 
     @Override
     public boolean isValid(UpdateColumnDefaultDto dto, ConstraintValidatorContext context) {
-        if (dto == null) {
+        if (dto == null || dto.getColumnDefault() == null) {
             return true;
         }
 
         BaseColumnMetadataDto currentColumn;
 
         try {
-            currentColumn = columnService.getColumn(
-                    dto.getSchemaName(),
-                    dto.getTableName(),
-                    dto.getColumnName()
-            );
-
+            currentColumn = columnService.getColumn(dto.getSchemaName(), dto.getTableName(), dto.getColumnName());
             if (currentColumn == null) {
                 return true;
-            }
-
-            if (currentColumn.getColumnType() == ColumnType.PRIMARY_KEY) {
-                context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate("Column default can only be used for standard or foreign key columns")
-                        .addConstraintViolation();
-                return false;
             }
         } catch (Exception e) {
             return true;
         }
 
+        if (currentColumn.getColumnType() == ColumnType.PRIMARY_KEY) {
+            context.disableDefaultConstraintViolation();
+            context.buildConstraintViolationWithTemplate("Column default can only be used for standard or foreign key columns")
+                    .addConstraintViolation();
+            return false;
+        }
+
+        if (Objects.equals(currentColumn.getColumnDefault(), dto.getColumnDefault())) return true;
+
+        String newDefaultValue = dto.getColumnDefault();
         String dataType = currentColumn.getDataType();
-        String defaultValue = currentColumn.getColumnDefault();
         Boolean isNullable = currentColumn.getIsNullable();
         Boolean isUnique = currentColumn.getIsUnique();
         Long charLen = currentColumn.getCharacterMaxLength();
         Integer numPrecision = currentColumn.getNumericPrecision();
         Integer numScale = currentColumn.getNumericScale();
 
-        if (defaultValue == null || defaultValue.isEmpty()) return true;
-        if (!defaultValue.equalsIgnoreCase("NULL") && isUnique != null && isUnique) {
+        if (!newDefaultValue.equalsIgnoreCase("NULL") && isUnique != null && isUnique) {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate("If a column is unique, the default value should be null")
                     .addPropertyNode("columnDefault")
                     .addConstraintViolation();
             return false;
         }
-        if (isNullable != null && isNullable && "NULL".equalsIgnoreCase(defaultValue)) return true;
+        if (isNullable != null && isNullable && "NULL".equalsIgnoreCase(newDefaultValue)) return true;
         if (dataType == null) return true;
 
         context.disableDefaultConstraintViolation();
@@ -68,7 +65,7 @@ public class ValidColumnDefaultUpdateValidator implements ConstraintValidator<Va
         switch (dataType.toUpperCase()) {
             case "VARCHAR":
             case "CHAR":
-                if (charLen == null || defaultValue.length() <= charLen) return true;
+                if (charLen == null || newDefaultValue.length() <= charLen) return true;
                 context.buildConstraintViolationWithTemplate("Column default string length is bigger than the maximum allowed length")
                         .addPropertyNode("columnDefault").addConstraintViolation();
                 return false;
@@ -81,7 +78,7 @@ public class ValidColumnDefaultUpdateValidator implements ConstraintValidator<Va
             case "SMALLINT":
             case "BIGINT":
                 try {
-                    Integer.parseInt(defaultValue);
+                    Integer.parseInt(newDefaultValue);
                     return true;
                 } catch (NumberFormatException e) {
                     context.buildConstraintViolationWithTemplate("Column default should be a valid integer")
@@ -93,13 +90,13 @@ public class ValidColumnDefaultUpdateValidator implements ConstraintValidator<Va
                 try {
                     if (numPrecision != null && numScale != null) {
                         String regex = "^-?\\d{1," + (numPrecision - numScale) + "}(\\.\\d{1," + numScale + "})?$";
-                        if (!Pattern.matches(regex, defaultValue)) {
+                        if (!Pattern.matches(regex, newDefaultValue)) {
                             context.buildConstraintViolationWithTemplate("Column default should be a valid decimal number")
                                     .addPropertyNode("columnDefault").addConstraintViolation();
                             return false;
                         }
                     }
-                    Double.parseDouble(defaultValue);
+                    Double.parseDouble(newDefaultValue);
                     return true;
                 } catch (NumberFormatException e) {
                     context.buildConstraintViolationWithTemplate("Column default should be a valid decimal number")
@@ -110,7 +107,7 @@ public class ValidColumnDefaultUpdateValidator implements ConstraintValidator<Va
             case "REAL":
             case "DOUBLE":
                 try {
-                    Double.parseDouble(defaultValue);
+                    Double.parseDouble(newDefaultValue);
                     return true;
                 } catch (NumberFormatException e) {
                     context.buildConstraintViolationWithTemplate("Column default should be a valid number")
@@ -118,24 +115,24 @@ public class ValidColumnDefaultUpdateValidator implements ConstraintValidator<Va
                     return false;
                 }
             case "BOOLEAN":
-                if ("0".equals(defaultValue) || "1".equals(defaultValue)) return true;
+                if ("0".equals(newDefaultValue) || "1".equals(newDefaultValue)) return true;
                 context.buildConstraintViolationWithTemplate("Column default should be a valid boolean (0, 1)")
                         .addPropertyNode("columnDefault").addConstraintViolation();
                 return false;
             case "DATE":
-                if (Pattern.matches("^\\d{4}-\\d{2}-\\d{2}$", defaultValue)) return true;
+                if (Pattern.matches("^\\d{4}-\\d{2}-\\d{2}$", newDefaultValue)) return true;
                 context.buildConstraintViolationWithTemplate("Column default should be a valid date (yyyy-MM-dd)")
                         .addPropertyNode("columnDefault").addConstraintViolation();
                 return false;
             case "TIME":
-                if (Pattern.matches("^\\d{2}:\\d{2}:\\d{2}$", defaultValue)) return true;
+                if (Pattern.matches("^\\d{2}:\\d{2}:\\d{2}$", newDefaultValue)) return true;
                 context.buildConstraintViolationWithTemplate("Column default should be a valid time (HH:mm:ss)")
                         .addPropertyNode("columnDefault").addConstraintViolation();
                 return false;
             case "TIMESTAMP":
                 if (
-                        "CURRENT_TIMESTAMP".equalsIgnoreCase(defaultValue) ||
-                                Pattern.matches("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$", defaultValue)
+                        "CURRENT_TIMESTAMP".equalsIgnoreCase(newDefaultValue) ||
+                                Pattern.matches("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$", newDefaultValue)
                 ) return true;
                 context.buildConstraintViolationWithTemplate("Column default should be ''CURRENT_TIMESTAMP'' or a valid timestamp (yyyy-MM-dd HH:mm:ss)")
                         .addPropertyNode("columnDefault").addConstraintViolation();
