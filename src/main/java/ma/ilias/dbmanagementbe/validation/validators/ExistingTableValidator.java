@@ -5,6 +5,7 @@ import jakarta.validation.ConstraintValidatorContext;
 import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
 import ma.ilias.dbmanagementbe.metadata.dto.common.ITableReference;
 import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
+import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ExistingTable;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -15,16 +16,19 @@ public class ExistingTableValidator implements ConstraintValidator<ExistingTable
 
     @Override
     public boolean isValid(ITableReference dto, ConstraintValidatorContext context) {
-        if (dto == null || dto.getSchemaName() == null || dto.getTableName() == null) {
+        if (dto == null ||
+                ValidationUtils.hasNullOrBlankValues(
+                        dto.getSchemaName(),
+                        dto.getTableName())) {
             return true;
         }
 
         try {
             return tableService.tableExists(dto.getSchemaName(), dto.getTableName());
         } catch (SchemaNotFoundException ex) {
-            context.disableDefaultConstraintViolation();
-            context.buildConstraintViolationWithTemplate("Schema does not exist")
-                    .addPropertyNode("schemaName").addConstraintViolation();
+            ValidationUtils.addConstraintViolation(context,
+                    "Schema does not exist",
+                    "schemaName");
             return false;
         }
     }

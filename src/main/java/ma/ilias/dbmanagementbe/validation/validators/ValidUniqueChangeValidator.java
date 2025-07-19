@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import ma.ilias.dbmanagementbe.enums.ColumnType;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnUniqueDto;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
+import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidUniqueChange;
 
 @RequiredArgsConstructor
@@ -23,12 +24,11 @@ public class ValidUniqueChangeValidator implements ConstraintValidator<ValidUniq
             var currentColumn = columnService.getColumn(
                     dto.getSchemaName(),
                     dto.getTableName(),
-                    dto.getColumnName()
-            );
+                    dto.getColumnName());
             if (currentColumn.getColumnType() != ColumnType.STANDARD) {
-                context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate("Is unique can only be used for standard columns")
-                        .addConstraintViolation();
+                ValidationUtils.addConstraintViolation(context,
+                        "Is unique can only be used for standard columns",
+                        null);
                 return false;
             }
         } catch (Exception e) {

@@ -3,7 +3,7 @@ package ma.ilias.dbmanagementbe.validation.validators;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import ma.ilias.dbmanagementbe.dao.repositories.PermissionRepository;
-import ma.ilias.dbmanagementbe.dto.permission.PermissionDto;
+import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ExistingPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -20,20 +20,13 @@ public class ExistingPermissionsValidator implements ConstraintValidator<Existin
             return true;
         }
 
-        for (Object permission : permissions) {
-            Long permissionId;
-            if (permission instanceof Long) {
-                permissionId = (Long) permission;
-            } else if (permission instanceof PermissionDto) {
-                permissionId = ((PermissionDto) permission).getId();
-            } else {
-                return false;
-            }
-
-            if (!permissionRepository.existsById(permissionId)) {
-                return false;
-            }
-        }
-        return true;
+        return ValidationUtils.validateEntitiesExist(
+                permissions,
+                permission -> {
+                    Long permissionId = ValidationUtils.extractId(permission);
+                    return permissionId != null && permissionRepository.existsById(permissionId);
+                },
+                null,
+                null);
     }
 }

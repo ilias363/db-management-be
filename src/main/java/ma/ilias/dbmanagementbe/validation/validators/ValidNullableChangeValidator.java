@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import ma.ilias.dbmanagementbe.enums.ColumnType;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnNullableDto;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
+import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidNullableChange;
 
 @RequiredArgsConstructor
@@ -23,12 +24,11 @@ public class ValidNullableChangeValidator implements ConstraintValidator<ValidNu
             var currentColumn = columnService.getColumn(
                     dto.getSchemaName(),
                     dto.getTableName(),
-                    dto.getColumnName()
-            );
+                    dto.getColumnName());
             if (currentColumn.getColumnType() == ColumnType.PRIMARY_KEY) {
-                context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate("Is nullable can only be used for standard or foreign key columns")
-                        .addConstraintViolation();
+                ValidationUtils.addConstraintViolation(context,
+                        "Is nullable can only be used for standard or foreign key columns",
+                        null);
                 return false;
             }
         } catch (Exception e) {

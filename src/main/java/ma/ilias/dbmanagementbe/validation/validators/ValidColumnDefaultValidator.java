@@ -5,9 +5,8 @@ import jakarta.validation.ConstraintValidatorContext;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.NewForeignKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
+import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidColumnDefault;
-
-import java.util.regex.Pattern;
 
 public class ValidColumnDefaultValidator implements ConstraintValidator<ValidColumnDefault, BaseNewColumnDto> {
 
@@ -42,96 +41,112 @@ public class ValidColumnDefaultValidator implements ConstraintValidator<ValidCol
             numScale = fkCol.getNumericScale();
         }
 
-        if (defaultValue == null || defaultValue.isEmpty()) return true;
+        if (defaultValue == null || defaultValue.isEmpty())
+            return true;
+
         if (!defaultValue.equalsIgnoreCase("NULL") && isUnique != null && isUnique) {
-            context.disableDefaultConstraintViolation();
-            context.buildConstraintViolationWithTemplate("If a column is unique, the default value should be null")
-                    .addPropertyNode("columnDefault")
-                    .addConstraintViolation();
+            ValidationUtils.addConstraintViolation(context,
+                    "If a column is unique, the default value should be null",
+                    "columnDefault");
             return false;
         }
-        if (isNullable != null && isNullable && "NULL".equalsIgnoreCase(defaultValue)) return true;
-        if (dataType == null) return true;
+
+        if (isNullable != null && isNullable && "NULL".equalsIgnoreCase(defaultValue))
+            return true;
+        if (dataType == null)
+            return true;
 
         context.disableDefaultConstraintViolation();
 
-        switch (dataType.toUpperCase()) {
-            case "VARCHAR":
-            case "CHAR":
-                if (charLen == null || defaultValue.length() <= charLen) return true;
-                context.buildConstraintViolationWithTemplate("Column default string length is bigger than the maximum allowed length")
-                        .addPropertyNode("columnDefault").addConstraintViolation();
-                return false;
-            case "TEXT":
-                context.buildConstraintViolationWithTemplate("Data type TEXT cannot have default")
-                        .addPropertyNode("columnDefault").addConstraintViolation();
-                return false;
-            case "INT":
-            case "INTEGER":
-            case "SMALLINT":
-            case "BIGINT":
-                try {
-                    Integer.parseInt(defaultValue);
-                    return true;
-                } catch (NumberFormatException e) {
-                    context.buildConstraintViolationWithTemplate("Column default should be a valid integer")
-                            .addPropertyNode("columnDefault").addConstraintViolation();
-                    return false;
+        return switch (dataType.toUpperCase()) {
+            case "VARCHAR", "CHAR" -> {
+                if (charLen == null || defaultValue.length() <= charLen) {
+                    yield true;
                 }
-            case "DECIMAL":
-            case "NUMERIC":
-                try {
-                    if (numPrecision != null && numScale != null) {
-                        String regex = "^-?\\d{1," + (numPrecision - numScale) + "}(\\.\\d{1," + numScale + "})?$";
-                        if (!Pattern.matches(regex, defaultValue)) {
-                            context.buildConstraintViolationWithTemplate("Column default should be a valid decimal number")
-                                    .addPropertyNode("columnDefault").addConstraintViolation();
-                            return false;
-                        }
+                ValidationUtils.addConstraintViolationKeepDefault(context,
+                        "Column default string length is bigger than the maximum allowed length",
+                        "columnDefault");
+                yield false;
+            }
+            case "TEXT" -> {
+                ValidationUtils.addConstraintViolationKeepDefault(context,
+                        "Data type TEXT cannot have default",
+                        "columnDefault");
+                yield false;
+            }
+            case "INT", "INTEGER", "SMALLINT", "BIGINT" -> {
+                if (ValidationUtils.validateIntegerValue(defaultValue))
+                    yield true;
+                ValidationUtils.addConstraintViolationKeepDefault(context,
+                        "Column default should be a valid integer",
+                        "columnDefault");
+                yield false;
+            }
+            case "DECIMAL", "NUMERIC" -> {
+                if (numPrecision != null && numScale != null) {
+                    if (!ValidationUtils.validateDecimalFormat(defaultValue, numPrecision, numScale)) {
+                        ValidationUtils.addConstraintViolationKeepDefault(context,
+                                "Decimal column default should have a valid format (precision, scale)",
+                                "columnDefault");
+                        yield false;
                     }
-                    Double.parseDouble(defaultValue);
-                    return true;
-                } catch (NumberFormatException e) {
-                    context.buildConstraintViolationWithTemplate("Column default should be a valid decimal number")
-                            .addPropertyNode("columnDefault").addConstraintViolation();
-                    return false;
                 }
-            case "FLOAT":
-            case "REAL":
-            case "DOUBLE":
-                try {
-                    Double.parseDouble(defaultValue);
-                    return true;
-                } catch (NumberFormatException e) {
-                    context.buildConstraintViolationWithTemplate("Column default should be a valid number")
-                            .addPropertyNode("columnDefault").addConstraintViolation();
-                    return false;
+
+                if (!ValidationUtils.validateDecimalValue(defaultValue)) {
+                    ValidationUtils.addConstraintViolationKeepDefault(context,
+                            "Column default should be a valid decimal number",
+                            "columnDefault");
+                    yield false;
                 }
-            case "BOOLEAN":
-                if ("0".equals(defaultValue) || "1".equals(defaultValue)) return true;
-                context.buildConstraintViolationWithTemplate("Column default should be a valid boolean (0, 1)")
-                        .addPropertyNode("columnDefault").addConstraintViolation();
-                return false;
-            case "DATE":
-                if (Pattern.matches("^\\d{4}-\\d{2}-\\d{2}$", defaultValue)) return true;
-                context.buildConstraintViolationWithTemplate("Column default should be a valid date (yyyy-MM-dd)")
-                        .addPropertyNode("columnDefault").addConstraintViolation();
-                return false;
-            case "TIME":
-                if (Pattern.matches("^\\d{2}:\\d{2}:\\d{2}$", defaultValue)) return true;
-                context.buildConstraintViolationWithTemplate("Column default should be a valid time (HH:mm:ss)")
-                        .addPropertyNode("columnDefault").addConstraintViolation();
-                return false;
-            case "TIMESTAMP":
-                if (
-                        "CURRENT_TIMESTAMP".equalsIgnoreCase(defaultValue) ||
-                                Pattern.matches("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$", defaultValue)
-                ) return true;
-                context.buildConstraintViolationWithTemplate("Column default should be ''CURRENT_TIMESTAMP'' or a valid timestamp (yyyy-MM-dd HH:mm:ss)")
-                        .addPropertyNode("columnDefault").addConstraintViolation();
-                return false;
-            default:
-                return true;
-        }
+
+                yield true;
+            }
+            case "FLOAT", "REAL", "DOUBLE" -> {
+                if (ValidationUtils.validateFloatValue(defaultValue)) {
+                    yield true;
+                }
+                ValidationUtils.addConstraintViolationKeepDefault(context,
+                        "Column default should be a valid floating point number",
+                        "columnDefault");
+                yield false;
+            }
+            case "BOOLEAN" -> {
+                if (ValidationUtils.validateBooleanValue(defaultValue)) {
+                    yield true;
+                }
+                ValidationUtils.addConstraintViolationKeepDefault(context,
+                        "Column default should be a valid boolean (0, 1)",
+                        "columnDefault");
+                yield false;
+            }
+            case "DATE" -> {
+                if (ValidationUtils.validateDateValue(defaultValue)) {
+                    yield true;
+                }
+                ValidationUtils.addConstraintViolationKeepDefault(context,
+                        "Column default should be a valid date (yyyy-MM-dd)",
+                        "columnDefault");
+                yield false;
+            }
+            case "TIME" -> {
+                if (ValidationUtils.validateTimeValue(defaultValue)) {
+                    yield true;
+                }
+                ValidationUtils.addConstraintViolationKeepDefault(context,
+                        "Column default should be a valid time (HH:mm:ss)",
+                        "columnDefault");
+                yield false;
+            }
+            case "TIMESTAMP" -> {
+                if (ValidationUtils.validateTimestampValue(defaultValue)) {
+                    yield true;
+                }
+                ValidationUtils.addConstraintViolationKeepDefault(context,
+                        "Column default should be a valid timestamp (yyyy-MM-dd HH:mm:ss)",
+                        "columnDefault");
+                yield false;
+            }
+            default -> true;
+        };
     }
 }

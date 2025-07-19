@@ -3,6 +3,7 @@ package ma.ilias.dbmanagementbe.validation.validators;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import ma.ilias.dbmanagementbe.enums.PermissionType;
+import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidPermissionType;
 
 public class ValidPermissionTypeValidator implements ConstraintValidator<ValidPermissionType, String> {
@@ -12,11 +13,6 @@ public class ValidPermissionTypeValidator implements ConstraintValidator<ValidPe
         if (value == null) {
             return true; // @NotNull will handle this
         }
-        for (PermissionType permissionType : PermissionType.values()) {
-            if (permissionType.name().equals(value)) {
-                return true;
-            }
-        }
-        return false;
+        return ValidationUtils.validateEnum(value, PermissionType.class);
     }
 }

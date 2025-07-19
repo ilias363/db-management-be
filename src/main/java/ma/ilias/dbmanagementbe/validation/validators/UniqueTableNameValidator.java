@@ -7,6 +7,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.common.ITableReference;
 import ma.ilias.dbmanagementbe.metadata.dto.table.NewTableDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.UpdateTableDto;
 import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
+import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.UniqueTableName;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -39,9 +40,9 @@ public class UniqueTableNameValidator implements ConstraintValidator<UniqueTable
             }
             return true;
         } catch (SchemaNotFoundException ex) {
-            context.disableDefaultConstraintViolation();
-            context.buildConstraintViolationWithTemplate("Schema does not exist")
-                    .addPropertyNode("schemaName").addConstraintViolation();
+            ValidationUtils.addConstraintViolation(context,
+                    "Schema does not exist",
+                    "schemaName");
             return false;
         }
     }

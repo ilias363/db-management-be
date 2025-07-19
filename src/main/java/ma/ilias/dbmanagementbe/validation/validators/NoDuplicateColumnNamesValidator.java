@@ -3,6 +3,7 @@ package ma.ilias.dbmanagementbe.validation.validators;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import ma.ilias.dbmanagementbe.metadata.dto.table.NewTableDto;
+import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.NoDuplicateColumnNames;
 
 import java.util.HashSet;
@@ -23,8 +24,9 @@ public class NoDuplicateColumnNamesValidator implements ConstraintValidator<NoDu
             for (int i = 0; i < dto.getColumns().size(); i++) {
                 var col = dto.getColumns().get(i);
                 if (col.getColumnName() != null && !names.add(col.getColumnName())) {
-                    context.buildConstraintViolationWithTemplate("Duplicate column name: " + col.getColumnName())
-                            .addPropertyNode("columns[" + i + "].columnName").addConstraintViolation();
+                    ValidationUtils.addConstraintViolationKeepDefault(context,
+                            "Duplicate column name: " + col.getColumnName(),
+                            "columns[" + i + "].columnName");
                     valid = false;
                 }
             }
@@ -34,8 +36,9 @@ public class NoDuplicateColumnNamesValidator implements ConstraintValidator<NoDu
             for (int i = 0; i < dto.getForeignKeyColumns().size(); i++) {
                 var fk = dto.getForeignKeyColumns().get(i);
                 if (fk.getColumnName() != null && !names.add(fk.getColumnName())) {
-                    context.buildConstraintViolationWithTemplate("Duplicate column name: " + fk.getColumnName())
-                            .addPropertyNode("foreignKeyColumns[" + i + "].columnName").addConstraintViolation();
+                    ValidationUtils.addConstraintViolationKeepDefault(context,
+                            "Duplicate column name: " + fk.getColumnName(),
+                            "foreignKeyColumns[" + i + "].columnName");
                     valid = false;
                 }
             }

@@ -7,6 +7,7 @@ import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
 import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnReference;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
+import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ExistingColumn;
 
 @AllArgsConstructor
@@ -17,29 +18,30 @@ public class ExistingColumnValidator implements ConstraintValidator<ExistingColu
     @Override
     public boolean isValid(IColumnReference colDto, ConstraintValidatorContext context) {
         if (colDto == null ||
-                colDto.getSchemaName() == null ||
-                colDto.getTableName() == null ||
-                colDto.getColumnName() == null) {
+                ValidationUtils.hasNullOrBlankValues(
+                        colDto.getSchemaName(),
+                        colDto.getTableName(),
+                        colDto.getColumnName())) {
             return true;
         }
 
         try {
             if (!columnService.columnExists(colDto.getSchemaName(), colDto.getTableName(), colDto.getColumnName())) {
-                context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate("Column does not exist in the specified table")
-                        .addPropertyNode("columnName").addConstraintViolation();
+                ValidationUtils.addConstraintViolation(context,
+                        "Column does not exist in the specified table",
+                        "columnName");
                 return false;
             }
             return true;
         } catch (TableNotFoundException ex) {
-            context.disableDefaultConstraintViolation();
-            context.buildConstraintViolationWithTemplate("Table does not exist in the specified schema")
-                    .addPropertyNode("tableName").addConstraintViolation();
+            ValidationUtils.addConstraintViolation(context,
+                    "Table does not exist in the specified schema",
+                    "tableName");
             return false;
         } catch (SchemaNotFoundException ex) {
-            context.disableDefaultConstraintViolation();
-            context.buildConstraintViolationWithTemplate("Schema does not exist")
-                    .addPropertyNode("schemaName").addConstraintViolation();
+            ValidationUtils.addConstraintViolation(context,
+                    "Schema does not exist",
+                    "schemaName");
             return false;
         }
     }

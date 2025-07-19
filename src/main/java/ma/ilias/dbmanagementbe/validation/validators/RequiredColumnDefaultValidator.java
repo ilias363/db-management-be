@@ -16,19 +16,20 @@ public class RequiredColumnDefaultValidator implements ConstraintValidator<Requi
         }
 
         if (dto instanceof NewStandardColumnDto standardCol) {
-            return standardCol.getIsNullable() == null
-                    || standardCol.getIsNullable()
-                    || standardCol.getColumnDefault() == null
-                    || !standardCol.getColumnDefault().isBlank();
+            return validateColumnDefault(standardCol.getIsNullable(), standardCol.getColumnDefault());
         }
 
         if (dto instanceof NewForeignKeyColumnDto fkCol) {
-            return fkCol.getIsNullable() == null
-                    || fkCol.getIsNullable()
-                    || fkCol.getColumnDefault() == null
-                    || !fkCol.getColumnDefault().isBlank();
+            return validateColumnDefault(fkCol.getIsNullable(), fkCol.getColumnDefault());
         }
 
         return true;
+    }
+
+    private boolean validateColumnDefault(Boolean isNullable, String columnDefault) {
+        return isNullable == null
+                || isNullable
+                || columnDefault == null
+                || !columnDefault.isBlank();
     }
 }

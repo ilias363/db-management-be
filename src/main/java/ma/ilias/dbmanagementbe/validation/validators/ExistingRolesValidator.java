@@ -3,7 +3,7 @@ package ma.ilias.dbmanagementbe.validation.validators;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import ma.ilias.dbmanagementbe.dao.repositories.RoleRepository;
-import ma.ilias.dbmanagementbe.dto.role.RoleDto;
+import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ExistingRoles;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -20,20 +20,13 @@ public class ExistingRolesValidator implements ConstraintValidator<ExistingRoles
             return true;
         }
 
-        for (Object role : roles) {
-            Long roleId;
-            if (role instanceof Long) {
-                roleId = (Long) role;
-            } else if (role instanceof RoleDto) {
-                roleId = ((RoleDto) role).getId();
-            } else {
-                return false;
-            }
-
-            if (!roleRepository.existsById(roleId)) {
-                return false;
-            }
-        }
-        return true;
+        return ValidationUtils.validateEntitiesExist(
+                roles,
+                role -> {
+                    Long roleId = ValidationUtils.extractId(role);
+                    return roleId != null && roleRepository.existsById(roleId);
+                },
+                null,
+                null);
     }
 }

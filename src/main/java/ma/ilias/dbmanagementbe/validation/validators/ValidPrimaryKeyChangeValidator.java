@@ -6,10 +6,12 @@ import lombok.RequiredArgsConstructor;
 import ma.ilias.dbmanagementbe.enums.ColumnType;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnPrimaryKeyDto;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
+import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidPrimaryKeyChange;
 
 @RequiredArgsConstructor
-public class ValidPrimaryKeyChangeValidator implements ConstraintValidator<ValidPrimaryKeyChange, UpdateColumnPrimaryKeyDto> {
+public class ValidPrimaryKeyChangeValidator
+        implements ConstraintValidator<ValidPrimaryKeyChange, UpdateColumnPrimaryKeyDto> {
 
     private final ColumnService columnService;
 
@@ -23,22 +25,20 @@ public class ValidPrimaryKeyChangeValidator implements ConstraintValidator<Valid
             var currentColumn = columnService.getColumn(
                     dto.getSchemaName(),
                     dto.getTableName(),
-                    dto.getColumnName()
-            );
+                    dto.getColumnName());
 
             boolean isCurrentlyPrimaryKey = currentColumn.getColumnType() == ColumnType.PRIMARY_KEY;
             if (isCurrentlyPrimaryKey == dto.getIsPrimaryKey()) {
-                context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate("Column is already " +
-                                (isCurrentlyPrimaryKey ? "a primary key" : "not a primary key"))
-                        .addConstraintViolation();
+                ValidationUtils.addConstraintViolation(context,
+                        "Column is already " + (isCurrentlyPrimaryKey ? "a primary key" : "not a primary key"),
+                        null);
                 return false;
             }
 
             if (dto.getIsPrimaryKey() && Boolean.TRUE.equals(currentColumn.getIsNullable())) {
-                context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate("Cannot add primary key constraint to nullable column. Make column NOT NULL first.")
-                        .addConstraintViolation();
+                ValidationUtils.addConstraintViolation(context,
+                        "Cannot add primary key constraint to nullable column. Make column NOT NULL first.",
+                        null);
                 return false;
             }
 

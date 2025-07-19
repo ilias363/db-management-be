@@ -8,6 +8,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColum
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnAutoIncrementDto;
 import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnReference;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
+import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidAutoIncrement;
 
 @AllArgsConstructor
@@ -34,12 +35,11 @@ public class ValidAutoIncrementValidator implements ConstraintValidator<ValidAut
                     var currentColumn = columnService.getColumn(
                             updateDto.getSchemaName(),
                             updateDto.getTableName(),
-                            updateDto.getColumnName()
-                    );
+                            updateDto.getColumnName());
                     if (currentColumn.getColumnType() != ColumnType.PRIMARY_KEY) {
-                        context.disableDefaultConstraintViolation();
-                        context.buildConstraintViolationWithTemplate("Auto-increment can only be used with primary key columns")
-                                .addConstraintViolation();
+                        ValidationUtils.addConstraintViolation(context,
+                                "Auto-increment can only be used with primary key columns",
+                                null);
                         return false;
                     }
                     dataType = currentColumn != null ? currentColumn.getDataType() : null;
@@ -53,12 +53,6 @@ public class ValidAutoIncrementValidator implements ConstraintValidator<ValidAut
             return true;
         }
 
-        return dataType.equalsIgnoreCase("INT") ||
-                dataType.equalsIgnoreCase("INTEGER") ||
-                dataType.equalsIgnoreCase("SMALLINT") ||
-                dataType.equalsIgnoreCase("BIGINT") ||
-                dataType.equalsIgnoreCase("FLOAT") ||
-                dataType.equalsIgnoreCase("REAL") ||
-                dataType.equalsIgnoreCase("DOUBLE");
+        return ValidationUtils.isAutoIncrementCompatible(dataType);
     }
 }
