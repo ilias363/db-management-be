@@ -3,9 +3,10 @@ package ma.ilias.dbmanagementbe.metadata.dto.Index;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import ma.ilias.dbmanagementbe.metadata.dto.Index.indexcolumn.NewIndexColumnDto;
+import ma.ilias.dbmanagementbe.validation.annotations.ValidIndexType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +24,8 @@ public class NewIndexDto {
 
     private Boolean isUnique;
 
-    @Pattern(regexp = "^(?i)(BTREE|HASH)$", message = "Index type is not valid")
+    @NotNull(message = "Index type cannot be null")
+    @ValidIndexType
     private String indexType;
 
     @Valid
