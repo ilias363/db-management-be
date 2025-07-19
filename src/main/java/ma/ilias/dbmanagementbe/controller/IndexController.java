@@ -7,6 +7,8 @@ import ma.ilias.dbmanagementbe.metadata.service.index.IndexService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/indexes")
 @AllArgsConstructor
@@ -24,6 +26,18 @@ public class IndexController {
                 .message("Index fetched successfully")
                 .success(true)
                 .data(index)
+                .build());
+    }
+
+    @GetMapping("/{schemaName}/{tableName}")
+    public ResponseEntity<ApiResponse<List<IndexMetadataDto>>> getIndexesByTable(
+            @PathVariable String schemaName,
+            @PathVariable String tableName) {
+        List<IndexMetadataDto> indexes = indexService.getIndexesByTable(schemaName, tableName, true, true);
+        return ResponseEntity.ok(ApiResponse.<List<IndexMetadataDto>>builder()
+                .message("Indexes fetched successfully")
+                .success(true)
+                .data(indexes)
                 .build());
     }
 }

@@ -6,6 +6,7 @@ import ma.ilias.dbmanagementbe.exception.IndexNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
 import ma.ilias.dbmanagementbe.metadata.dto.index.IndexMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.index.indexcolumn.IndexColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -100,5 +101,32 @@ public class MySqlIndexManager implements IndexService {
                             .build();
                 },
                 schemaName, tableName, indexName);
+    }
+
+    @Override
+    public List<IndexMetadataDto> getIndexesByTable(
+            String schemaName, String tableName,
+            boolean includeTable, boolean checkTableExists) {
+        if (checkTableExists && !tableService.tableExists(schemaName, tableName)) {
+            throw new TableNotFoundException(schemaName.toLowerCase(), tableName.toLowerCase());
+        }
+
+        String indexesSql = """
+                SELECT INDEX_NAME
+                FROM INFORMATION_SCHEMA.STATISTICS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
+                ORDER BY INDEX_NAME
+                """;
+
+        var indexes = jdbcTemplate.query(
+                indexesSql,
+                (rs, rowNum) -> getIndex(schemaName, tableName, rs.getString("INDEX_NAME"), false, false),
+                schemaName, tableName);
+
+        if (includeTable) {
+            TableMetadataDto table = tableService.getTable(schemaName, tableName, false, false);
+            indexes.forEach(index -> index.setTable(table));
+        }
+        return indexes;
     }
 }
