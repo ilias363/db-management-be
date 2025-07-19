@@ -169,11 +169,11 @@ public class MySqlTableManager implements TableService {
         // Add primary key column
         if (newTable.getPrimaryKey() != null) {
             createTableSql.append(columnSqlBuilder.apply(newTable.getPrimaryKey())).append(" PRIMARY KEY");
+            createTableSql.append(", ");
         }
 
         // Add standard columns
         if (!newTable.getColumns().isEmpty()) {
-            createTableSql.append(", ");
             String columnsSql = newTable.getColumns().stream()
                     .map(columnSqlBuilder)
                     .collect(Collectors.joining(", "));
