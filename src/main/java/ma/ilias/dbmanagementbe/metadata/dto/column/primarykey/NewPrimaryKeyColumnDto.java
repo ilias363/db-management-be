@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
-import ma.ilias.dbmanagementbe.validation.ValidAutoIncrement;
+import ma.ilias.dbmanagementbe.validation.annotations.ValidAutoIncrement;
 
 @Data
 @SuperBuilder

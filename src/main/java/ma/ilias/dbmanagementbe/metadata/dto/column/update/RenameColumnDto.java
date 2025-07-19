@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseUpdateColumnDto;
-import ma.ilias.dbmanagementbe.validation.UniqueColumnName;
+import ma.ilias.dbmanagementbe.validation.annotations.UniqueColumnName;
 
 @Data
 @EqualsAndHashCode(callSuper = true)

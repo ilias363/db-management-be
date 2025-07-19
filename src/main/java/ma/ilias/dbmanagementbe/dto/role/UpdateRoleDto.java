@@ -3,9 +3,12 @@ package ma.ilias.dbmanagementbe.dto.role;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import lombok.*;
-import ma.ilias.dbmanagementbe.validation.ExistingPermissions;
-import ma.ilias.dbmanagementbe.validation.UniqueRoleName;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import ma.ilias.dbmanagementbe.validation.annotations.ExistingPermissions;
+import ma.ilias.dbmanagementbe.validation.annotations.UniqueRoleName;
 
 import java.util.HashSet;
 import java.util.Set;

@@ -6,8 +6,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseUpdateColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.common.IReferencedColumnReference;
-import ma.ilias.dbmanagementbe.validation.ExistingReferencedColumn;
-import ma.ilias.dbmanagementbe.validation.ValidForeignKeyChange;
+import ma.ilias.dbmanagementbe.validation.annotations.ExistingReferencedColumn;
+import ma.ilias.dbmanagementbe.validation.annotations.ValidForeignKeyChange;
 
 @Data
 @EqualsAndHashCode(callSuper = true)

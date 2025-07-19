@@ -6,8 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ma.ilias.dbmanagementbe.validation.ExistingPermissions;
-import ma.ilias.dbmanagementbe.validation.UniqueRoleName;
+import ma.ilias.dbmanagementbe.validation.annotations.ExistingPermissions;
+import ma.ilias.dbmanagementbe.validation.annotations.UniqueRoleName;
 
 import java.util.HashSet;
 import java.util.Set;

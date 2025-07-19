@@ -3,7 +3,7 @@ package ma.ilias.dbmanagementbe.metadata.dto.schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
-import ma.ilias.dbmanagementbe.validation.UniqueSchemaName;
+import ma.ilias.dbmanagementbe.validation.annotations.UniqueSchemaName;
 
 @Data
 public class NewSchemaDto {

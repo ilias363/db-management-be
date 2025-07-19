@@ -1,0 +1,21 @@
+package ma.ilias.dbmanagementbe.validation.annotations;
+
+import jakarta.validation.Constraint;
+import jakarta.validation.Payload;
+import ma.ilias.dbmanagementbe.validation.validators.ValidColumnDefaultValidator;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Constraint(validatedBy = ValidColumnDefaultValidator.class)
+@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface ValidColumnDefault {
+    String message() default "Invalid column default value for the specified data type.";
+
+    Class<?>[] groups() default {};
+
+    Class<? extends Payload>[] payload() default {};
+}

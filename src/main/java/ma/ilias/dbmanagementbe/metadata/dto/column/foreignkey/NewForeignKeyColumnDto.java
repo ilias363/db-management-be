@@ -8,9 +8,9 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.common.IReferencedColumnReference;
-import ma.ilias.dbmanagementbe.validation.ExistingReferencedColumn;
-import ma.ilias.dbmanagementbe.validation.MatchingForeignKeyType;
-import ma.ilias.dbmanagementbe.validation.ValidForeignKeyDefault;
+import ma.ilias.dbmanagementbe.validation.annotations.ExistingReferencedColumn;
+import ma.ilias.dbmanagementbe.validation.annotations.MatchingForeignKeyType;
+import ma.ilias.dbmanagementbe.validation.annotations.ValidForeignKeyDefault;
 
 @Data
 @SuperBuilder

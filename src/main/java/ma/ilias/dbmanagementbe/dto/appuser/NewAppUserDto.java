@@ -1,12 +1,15 @@
 package ma.ilias.dbmanagementbe.dto.appuser;
 
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ma.ilias.dbmanagementbe.validation.ExistingRoles;
-import ma.ilias.dbmanagementbe.validation.UniqueUsername;
+import ma.ilias.dbmanagementbe.validation.annotations.ExistingRoles;
+import ma.ilias.dbmanagementbe.validation.annotations.UniqueUsername;
 
 import java.util.ArrayList;
 import java.util.Collection;

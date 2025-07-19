@@ -9,8 +9,8 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.NewForeignKeyColum
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.common.ITableReference;
-import ma.ilias.dbmanagementbe.validation.NoDuplicateColumnNames;
-import ma.ilias.dbmanagementbe.validation.UniqueTableName;
+import ma.ilias.dbmanagementbe.validation.annotations.NoDuplicateColumnNames;
+import ma.ilias.dbmanagementbe.validation.annotations.UniqueTableName;
 
 import java.util.List;
 

@@ -3,8 +3,8 @@ package ma.ilias.dbmanagementbe.metadata.dto.column;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnReference;
-import ma.ilias.dbmanagementbe.validation.ExistingColumn;
-import ma.ilias.dbmanagementbe.validation.NotSystemSchema;
+import ma.ilias.dbmanagementbe.validation.annotations.ExistingColumn;
+import ma.ilias.dbmanagementbe.validation.annotations.NotSystemSchema;
 
 @Data
 @ExistingColumn

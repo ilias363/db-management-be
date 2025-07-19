@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseUpdateColumnDto;
-import ma.ilias.dbmanagementbe.validation.ValidPrimaryKeyChange;
+import ma.ilias.dbmanagementbe.validation.annotations.ValidPrimaryKeyChange;
 
 @Data
 @EqualsAndHashCode(callSuper = true)

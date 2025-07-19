@@ -6,8 +6,8 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import ma.ilias.dbmanagementbe.dto.permission.PermissionDto;
-import ma.ilias.dbmanagementbe.validation.ExistingPermissions;
-import ma.ilias.dbmanagementbe.validation.UniqueRoleName;
+import ma.ilias.dbmanagementbe.validation.annotations.ExistingPermissions;
+import ma.ilias.dbmanagementbe.validation.annotations.UniqueRoleName;
 
 import java.util.HashSet;
 import java.util.Set;

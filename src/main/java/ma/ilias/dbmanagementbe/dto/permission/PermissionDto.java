@@ -8,7 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.role.RoleDto;
-import ma.ilias.dbmanagementbe.validation.ValidPermissionType;
+import ma.ilias.dbmanagementbe.validation.annotations.ValidPermissionType;
 
 @AllArgsConstructor
 @NoArgsConstructor
