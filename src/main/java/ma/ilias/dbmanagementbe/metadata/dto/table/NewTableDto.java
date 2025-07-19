@@ -3,7 +3,6 @@ package ma.ilias.dbmanagementbe.metadata.dto.table;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.NewForeignKeyColumnDto;
@@ -31,7 +30,6 @@ public class NewTableDto implements ITableReference {
     private String tableName;
 
     @Valid
-    @NotNull(message = "Primary key is required")
     private NewPrimaryKeyColumnDto primaryKey;
 
     @Valid

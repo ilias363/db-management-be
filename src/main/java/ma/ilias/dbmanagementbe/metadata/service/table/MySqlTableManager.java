@@ -167,8 +167,9 @@ public class MySqlTableManager implements TableService {
         };
 
         // Add primary key column
-        NewPrimaryKeyColumnDto pkCol = newTable.getPrimaryKey();
-        createTableSql.append(columnSqlBuilder.apply(pkCol)).append(" PRIMARY KEY");
+        if (newTable.getPrimaryKey() != null) {
+            createTableSql.append(columnSqlBuilder.apply(newTable.getPrimaryKey())).append(" PRIMARY KEY");
+        }
 
         // Add standard columns
         if (!newTable.getColumns().isEmpty()) {
