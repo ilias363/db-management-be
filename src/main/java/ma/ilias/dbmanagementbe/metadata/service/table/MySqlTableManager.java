@@ -5,6 +5,7 @@ import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
 import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
 import ma.ilias.dbmanagementbe.metadata.dto.Index.IndexMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.Index.indexcolumn.IndexColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.ForeignKeyColumnMetadataDto;
@@ -12,12 +13,12 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColum
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.PrimaryKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.StandardColumnMetadataDto;
-import ma.ilias.dbmanagementbe.metadata.dto.indexcolumn.IndexColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.NewTableDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.UpdateTableDto;
 import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
+import ma.ilias.dbmanagementbe.enums.IndexType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,8 +56,7 @@ public class MySqlTableManager implements TableService {
                     ps.setString(1, schemaName);
                     ps.setString(2, tableName);
                 },
-                (rs, rowNum) -> rs.getString("TABLE_NAME")
-        );
+                (rs, rowNum) -> rs.getString("TABLE_NAME"));
 
         return !tables.isEmpty();
     }
@@ -91,14 +91,12 @@ public class MySqlTableManager implements TableService {
                                         .schemaName(schemaName.toLowerCase())
                                         .isSystemSchema(schemaService.isSystemSchemaByName(schemaName))
                                         .creationDate(null)
-                                        .build()
-                        )
+                                        .build())
                         .columns(queryColumnsForTable(schemaName, tableName))
                         .indexes(queryIndexesForTable(schemaName, tableName))
                         .build(),
                 schemaName,
-                tableName
-        );
+                tableName);
     }
 
     @Override
@@ -116,8 +114,7 @@ public class MySqlTableManager implements TableService {
         return jdbcTemplate.query(
                 tableSql,
                 ps -> ps.setString(1, schemaName),
-                (rs, rowNum) -> getTable(schemaName, rs.getString("TABLE_NAME"))
-        );
+                (rs, rowNum) -> getTable(schemaName, rs.getString("TABLE_NAME")));
     }
 
     @Override
@@ -199,8 +196,7 @@ public class MySqlTableManager implements TableService {
                                 fk.getColumnName(),
                                 fk.getReferencedSchemaName(),
                                 fk.getReferencedTableName(),
-                                fk.getReferencedColumnName()
-                        ));
+                                fk.getReferencedColumnName()));
                         if (fk.getOnUpdateAction() != null && !fk.getOnUpdateAction().isBlank()) {
                             fkSql.append(" ON UPDATE ").append(fk.getOnUpdateAction());
                         }
@@ -245,8 +241,8 @@ public class MySqlTableManager implements TableService {
         List<String> fkConstraints = getForeignKeyConstraints(schemaName, tableName);
         if (!force && !fkConstraints.isEmpty()) {
             throw new UnauthorizedActionException(
-                    "Cannot drop table due to " + fkConstraints.size() + " foreign key constraints. Use force=true to drop constraints automatically."
-            );
+                    "Cannot drop table due to " + fkConstraints.size()
+                            + " foreign key constraints. Use force=true to drop constraints automatically.");
         }
 
         // Drop FK constraints if force=true
@@ -255,7 +251,8 @@ public class MySqlTableManager implements TableService {
                 String[] parts = fk.split(" ON ");
                 String constraintName = parts[0];
                 String childTable = parts[1];
-                String sql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s", schemaName, childTable, constraintName);
+                String sql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s", schemaName, childTable,
+                        constraintName);
                 jdbcTemplate.execute(sql);
             }
         }
@@ -323,8 +320,7 @@ public class MySqlTableManager implements TableService {
                     rs.getString("REFERENCED_TABLE_NAME"),
                     rs.getString("REFERENCED_COLUMN_NAME"),
                     rs.getString("UPDATE_RULE"),
-                    rs.getString("DELETE_RULE")
-            );
+                    rs.getString("DELETE_RULE"));
             foreignKeyMap.put(columnName, fkInfo);
             return null;
         });
@@ -347,7 +343,8 @@ public class MySqlTableManager implements TableService {
             Integer numericPrecision = rs.getObject("NUMERIC_PRECISION", Integer.class);
             Integer numericScale = rs.getObject("NUMERIC_SCALE", Integer.class);
             String columnDefault = rs.getString("COLUMN_DEFAULT");
-            Boolean autoIncrement = rs.getString("EXTRA") != null && rs.getString("EXTRA").toLowerCase().contains("auto_increment");
+            Boolean autoIncrement = rs.getString("EXTRA") != null
+                    && rs.getString("EXTRA").toLowerCase().contains("auto_increment");
             boolean isPrimaryKey = "PRI".equalsIgnoreCase(rs.getString("COLUMN_KEY"));
             Boolean isNullable = !isPrimaryKey && "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
             Boolean isUnique = isPrimaryKey || uniqueColumns.contains(columnName);
@@ -409,7 +406,7 @@ public class MySqlTableManager implements TableService {
 
     // Helper record for foreign key information
     private record ForeignKeyInfo(String referencedSchemaName, String referencedTableName,
-                                  String referencedColumnName, String onUpdateAction, String onDeleteAction) {
+            String referencedColumnName, String onUpdateAction, String onDeleteAction) {
     }
 
     private List<IndexMetadataDto> queryIndexesForTable(String schemaName, String tableName) {
@@ -440,17 +437,13 @@ public class MySqlTableManager implements TableService {
                             .columnName(rs.getString("COLUMN_NAME"))
                             .ordinalPosition(rs.getInt("SEQ_IN_INDEX"))
                             .sortOrder(
-                                    rs.getString("COLLATION") == null ?
-                                            null :
-                                            (rs.getString("COLLATION").equals("A") ?
-                                                    "ASC" : (rs.getString("COLLATION").equals("D") ?
-                                                    "DESC" : rs.getString("COLLATION"))
-                                            )
-                            )
+                                    rs.getString("COLLATION") == null ? null
+                                            : (rs.getString("COLLATION").equals("A") ? "ASC"
+                                                    : (rs.getString("COLLATION").equals("D") ? "DESC"
+                                                            : rs.getString("COLLATION"))))
                             .build();
                     indexColumnsMap.computeIfAbsent(idxName, k -> new ArrayList<>()).add(colDto);
-                }
-        );
+                });
 
         return jdbcTemplate.query(
                 indexesSql,
@@ -460,14 +453,15 @@ public class MySqlTableManager implements TableService {
                 },
                 (rs, rowNum) -> {
                     String idxName = rs.getString("INDEX_NAME");
+                    String indexTypeStr = rs.getString("INDEX_TYPE");
+                    IndexType indexType = indexTypeStr != null ? IndexType.valueOf(indexTypeStr.toUpperCase()) : null;
                     return IndexMetadataDto.builder()
                             .indexName(idxName)
                             .isUnique(!rs.getBoolean("NON_UNIQUE"))
-                            .indexType(rs.getString("INDEX_TYPE"))
+                            .indexType(indexType)
                             .indexColumns(indexColumnsMap.getOrDefault(idxName, List.of()))
                             .build();
-                }
-        );
+                });
     }
 
     private List<String> getForeignKeyConstraints(String schemaName, String tableName) {
@@ -480,8 +474,8 @@ public class MySqlTableManager implements TableService {
                     WHERE rc.referenced_table_name = ?
                     AND rc.constraint_schema = ?
                 """;
-        return jdbcTemplate.query(sql, (rs, rowNum) ->
-                        rs.getString("constraint_name") + " ON " + rs.getString("table_name"),
+        return jdbcTemplate.query(sql,
+                (rs, rowNum) -> rs.getString("constraint_name") + " ON " + rs.getString("table_name"),
                 tableName, schemaName);
     }
 }
