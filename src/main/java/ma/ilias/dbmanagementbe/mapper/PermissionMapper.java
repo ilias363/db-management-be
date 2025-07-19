@@ -2,7 +2,6 @@ package ma.ilias.dbmanagementbe.mapper;
 
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dao.entities.Permission;
-import ma.ilias.dbmanagementbe.dto.appuser.NewAppUserDto;
 import ma.ilias.dbmanagementbe.dto.permission.NewPermissionDto;
 import ma.ilias.dbmanagementbe.dto.permission.PermissionDto;
 import org.modelmapper.ModelMapper;
