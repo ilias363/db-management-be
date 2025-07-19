@@ -46,6 +46,7 @@ public class Role {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     @JsonIgnoreProperties("role")
+    @Builder.Default
     private Set<Permission> permissions = new HashSet<>();
 
     public Set<Permission> getPermissionsWithoutRole() {

@@ -30,5 +30,6 @@ public class RoleDto implements RoleDtoBase {
     @ExistingPermissions
     @ToString.Exclude
     @JsonIgnoreProperties("role")
+    @Builder.Default
     private Set<PermissionDto> permissions = new HashSet<>();
 }

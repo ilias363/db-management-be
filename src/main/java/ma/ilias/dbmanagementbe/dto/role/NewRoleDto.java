@@ -25,6 +25,7 @@ public class NewRoleDto implements RoleDtoBase {
 
     @NotEmpty(message = "At least one permission is required")
     @ExistingPermissions
+    @Builder.Default
     private Set<Long> permissions = new HashSet<>();
 
     @Override

@@ -20,5 +20,6 @@ public class SchemaMetadataDto {
     @JsonIgnoreProperties({"schema", "columns", "indexes"})
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
+    @Builder.Default
     private List<TableMetadataDto> tables = new ArrayList<>();
 }

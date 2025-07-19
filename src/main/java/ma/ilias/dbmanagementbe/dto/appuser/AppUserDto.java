@@ -31,5 +31,6 @@ public class AppUserDto implements AppUserDtoBase {
     @NotEmpty(message = "At least one role is required")
     @ExistingRoles
     @ToString.Exclude
+    @Builder.Default
     private Collection<RoleDto> roles = new ArrayList<>();
 }

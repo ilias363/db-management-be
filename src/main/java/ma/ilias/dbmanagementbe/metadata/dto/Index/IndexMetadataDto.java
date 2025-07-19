@@ -25,5 +25,6 @@ public class IndexMetadataDto {
     @JsonIgnoreProperties("index")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
+    @Builder.Default
     private List<IndexColumnMetadataDto> indexColumns = new ArrayList<>();
 }

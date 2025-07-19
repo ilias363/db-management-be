@@ -27,10 +27,12 @@ public class TableMetadataDto {
     @JsonIgnoreProperties("table")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
+    @Builder.Default
     private List<BaseColumnMetadataDto> columns = new ArrayList<>();
 
     @JsonIgnoreProperties("table")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
+    @Builder.Default
     private List<IndexMetadataDto> indexes = new ArrayList<>();
 }

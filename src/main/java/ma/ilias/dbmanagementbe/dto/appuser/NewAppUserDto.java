@@ -33,6 +33,7 @@ public class NewAppUserDto implements AppUserDtoBase {
 
     @NotEmpty(message = "At least one role is required")
     @ExistingRoles
+    @Builder.Default
     private Collection<Long> roles = new ArrayList<>();
 
     @Override
