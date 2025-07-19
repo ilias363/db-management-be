@@ -1,4 +1,4 @@
-package ma.ilias.dbmanagementbe.metadata.dto.indexcolumn;
+package ma.ilias.dbmanagementbe.metadata.dto.Index.indexcolumn;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -9,9 +9,6 @@ public class NewIndexColumnDto {
     @NotBlank(message = "Column name is required")
     private String columnName;
 
-    @Pattern(
-            regexp = "^(?i)(ASC|DESC)$",
-            message = "Sort order is not valid (ASC, DESC, null)"
-    )
+    @Pattern(regexp = "^(?i)(ASC|DESC)$", message = "Sort order is not valid (ASC, DESC)")
     private String sortOrder;
 }

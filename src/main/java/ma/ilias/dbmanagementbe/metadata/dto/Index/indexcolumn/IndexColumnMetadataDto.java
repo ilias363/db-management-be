@@ -1,4 +1,4 @@
-package ma.ilias.dbmanagementbe.metadata.dto.indexcolumn;
+package ma.ilias.dbmanagementbe.metadata.dto.Index.indexcolumn;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;

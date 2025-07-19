@@ -2,7 +2,8 @@ package ma.ilias.dbmanagementbe.metadata.dto.Index;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
-import ma.ilias.dbmanagementbe.metadata.dto.indexcolumn.IndexColumnMetadataDto;
+import ma.ilias.dbmanagementbe.enums.IndexType;
+import ma.ilias.dbmanagementbe.metadata.dto.Index.indexcolumn.IndexColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 
 import java.util.ArrayList;
@@ -15,9 +16,9 @@ import java.util.List;
 public class IndexMetadataDto {
     private String indexName;
     private Boolean isUnique;
-    private String indexType;
+    private IndexType indexType;
 
-    @JsonIgnoreProperties({"columns", "indexes", "foreignKeys"})
+    @JsonIgnoreProperties({ "columns", "indexes", "foreignKeys" })
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private TableMetadataDto table;
