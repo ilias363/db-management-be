@@ -1,4 +1,4 @@
-package ma.ilias.dbmanagementbe.metadata.dto.Index.indexcolumn;
+package ma.ilias.dbmanagementbe.metadata.dto.index.indexcolumn;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

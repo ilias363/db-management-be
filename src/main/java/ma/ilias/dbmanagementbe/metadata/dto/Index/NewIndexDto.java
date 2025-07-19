@@ -1,11 +1,11 @@
-package ma.ilias.dbmanagementbe.metadata.dto.Index;
+package ma.ilias.dbmanagementbe.metadata.dto.index;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import ma.ilias.dbmanagementbe.metadata.dto.Index.indexcolumn.NewIndexColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.index.indexcolumn.NewIndexColumnDto;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidIndexType;
 
 import java.util.ArrayList;

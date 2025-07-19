@@ -1,9 +1,9 @@
-package ma.ilias.dbmanagementbe.metadata.dto.Index;
+package ma.ilias.dbmanagementbe.metadata.dto.index;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import ma.ilias.dbmanagementbe.enums.IndexType;
-import ma.ilias.dbmanagementbe.metadata.dto.Index.indexcolumn.IndexColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.index.indexcolumn.IndexColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 
 import java.util.ArrayList;
