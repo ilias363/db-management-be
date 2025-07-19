@@ -18,7 +18,7 @@ public class IndexMetadataDto {
     private Boolean isUnique;
     private IndexType indexType;
 
-    @JsonIgnoreProperties({ "columns", "indexes", "foreignKeys" })
+    @JsonIgnoreProperties({ "columns", "indexes" })
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private TableMetadataDto table;

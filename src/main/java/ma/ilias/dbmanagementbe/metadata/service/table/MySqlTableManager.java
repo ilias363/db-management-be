@@ -62,7 +62,7 @@ public class MySqlTableManager implements TableService {
     }
 
     @Override
-    public TableMetadataDto getTable(String schemaName, String tableName) {
+    public TableMetadataDto getTable(String schemaName, String tableName, boolean includeColumns, boolean includeIndexes) {
         if (!tableExists(schemaName, tableName)) {
             throw new TableNotFoundException(schemaName.toLowerCase(), tableName.toLowerCase());
         }
@@ -92,8 +92,8 @@ public class MySqlTableManager implements TableService {
                                         .isSystemSchema(schemaService.isSystemSchemaByName(schemaName))
                                         .creationDate(null)
                                         .build())
-                        .columns(queryColumnsForTable(schemaName, tableName))
-                        .indexes(queryIndexesForTable(schemaName, tableName))
+                        .columns(includeColumns ? queryColumnsForTable(schemaName, tableName) : null)
+                        .indexes(includeIndexes ? queryIndexesForTable(schemaName, tableName) : null)
                         .build(),
                 schemaName,
                 tableName);
@@ -114,7 +114,7 @@ public class MySqlTableManager implements TableService {
         return jdbcTemplate.query(
                 tableSql,
                 ps -> ps.setString(1, schemaName),
-                (rs, rowNum) -> getTable(schemaName, rs.getString("TABLE_NAME")));
+                (rs, rowNum) -> getTable(schemaName, rs.getString("TABLE_NAME"), true, true));
     }
 
     @Override
@@ -213,7 +213,7 @@ public class MySqlTableManager implements TableService {
 
         jdbcTemplate.execute(createTableSql.toString());
 
-        return getTable(newTable.getSchemaName(), newTable.getTableName());
+        return getTable(newTable.getSchemaName(), newTable.getTableName(), true, true);
     }
 
     @Override
@@ -225,7 +225,7 @@ public class MySqlTableManager implements TableService {
             jdbcTemplate.execute(renameSql);
         }
 
-        return getTable(updateTableDto.getSchemaName(), updateTableDto.getUpdatedTableName());
+        return getTable(updateTableDto.getSchemaName(), updateTableDto.getUpdatedTableName(), true, true);
     }
 
     @Override

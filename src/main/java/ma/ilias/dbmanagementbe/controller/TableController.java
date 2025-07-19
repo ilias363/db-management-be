@@ -25,7 +25,7 @@ public class TableController {
             @PathVariable String schemaName,
             @PathVariable String tableName
     ) {
-        TableMetadataDto table = tableService.getTable(schemaName, tableName);
+        TableMetadataDto table = tableService.getTable(schemaName, tableName, true, true);
         return ResponseEntity.ok(ApiResponse.<TableMetadataDto>builder()
                 .message("Table fetched successfully")
                 .success(true)
