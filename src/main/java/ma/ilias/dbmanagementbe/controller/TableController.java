@@ -1,14 +1,18 @@
 package ma.ilias.dbmanagementbe.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.groups.Default;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.metadata.dto.table.NewTableDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.UpdateTableDto;
 import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
+import ma.ilias.dbmanagementbe.validation.groups.NotStandaloneColumnCreation;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -44,7 +48,8 @@ public class TableController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<TableMetadataDto>> createTable(@Valid @RequestBody NewTableDto newTableDto) {
+    public ResponseEntity<ApiResponse<TableMetadataDto>> createTable(
+			@Validated({NotStandaloneColumnCreation.class, Default.class}) @RequestBody NewTableDto newTableDto) {
         TableMetadataDto createdTable = tableService.createTable(newTableDto);
         return new ResponseEntity<>(ApiResponse.<TableMetadataDto>builder()
                 .message("Table created successfully")
