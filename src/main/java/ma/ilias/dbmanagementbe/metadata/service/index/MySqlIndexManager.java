@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.enums.IndexType;
 import ma.ilias.dbmanagementbe.exception.IndexNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
+import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
 import ma.ilias.dbmanagementbe.metadata.dto.index.IndexMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.index.NewIndexDto;
 import ma.ilias.dbmanagementbe.metadata.dto.index.indexcolumn.IndexColumnMetadataDto;
@@ -166,5 +167,23 @@ public class MySqlIndexManager implements IndexService {
 
         return getIndex(newIndexDto.getSchemaName(), newIndexDto.getTableName(), newIndexDto.getIndexName(),
                 true, false);
+    }
+
+    @Override
+    public Boolean deleteIndex(String schemaName, String tableName, String indexName) {
+        if (!indexExists(schemaName, tableName, indexName)) {
+            throw new IndexNotFoundException(schemaName, tableName, indexName);
+        }
+
+        if ("PRIMARY".equalsIgnoreCase(indexName)) {
+            throw new UnauthorizedActionException(
+                    "Cannot drop PRIMARY KEY index. Use the table's primary key management instead.");
+
+        } else {
+            String sql = String.format("DROP INDEX %s ON %s.%s", indexName, schemaName, tableName);
+            jdbcTemplate.execute(sql);
+        }
+
+        return !indexExists(schemaName, tableName, indexName);
     }
 }

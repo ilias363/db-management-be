@@ -15,4 +15,6 @@ public interface IndexService {
             boolean includeTable, boolean checkTableExists);
 
     IndexMetadataDto createIndex(NewIndexDto newIndexDto);
+
+    Boolean deleteIndex(String schemaName, String tableName, String indexName);
 }

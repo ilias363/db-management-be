@@ -54,4 +54,23 @@ public class IndexController {
                 .data(createdIndex)
                 .build(), HttpStatus.CREATED);
     }
+
+    @DeleteMapping("/{schemaName}/{tableName}/{indexName}")
+    public ResponseEntity<ApiResponse<Void>> deleteIndex(
+            @PathVariable String schemaName,
+            @PathVariable String tableName,
+            @PathVariable String indexName) {
+        boolean deleted = indexService.deleteIndex(schemaName, tableName, indexName);
+        if (deleted) {
+            return ResponseEntity.ok(ApiResponse.<Void>builder()
+                    .message("Index deleted successfully")
+                    .success(true)
+                    .build());
+        } else {
+            return ResponseEntity.ok(ApiResponse.<Void>builder()
+                    .message("Index has not been deleted")
+                    .success(false)
+                    .build());
+        }
+    }
 }
