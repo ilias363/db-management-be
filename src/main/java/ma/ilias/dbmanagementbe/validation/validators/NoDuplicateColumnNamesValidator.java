@@ -14,17 +14,12 @@ public class NoDuplicateColumnNamesValidator implements ConstraintValidator<NoDu
     public boolean isValid(NewTableDto dto, ConstraintValidatorContext context) {
         Set<String> names = new HashSet<>();
         boolean valid = true;
-        context.disableDefaultConstraintViolation();
-
-        if (dto.getPrimaryKey() != null && dto.getPrimaryKey().getColumnName() != null) {
-            names.add(dto.getPrimaryKey().getColumnName());
-        }
 
         if (dto.getColumns() != null) {
             for (int i = 0; i < dto.getColumns().size(); i++) {
                 var col = dto.getColumns().get(i);
                 if (col.getColumnName() != null && !names.add(col.getColumnName())) {
-                    ValidationUtils.addConstraintViolationKeepDefault(context,
+                    ValidationUtils.addConstraintViolation(context,
                             "Duplicate column name: " + col.getColumnName(),
                             "columns[" + i + "].columnName");
                     valid = false;
@@ -32,17 +27,6 @@ public class NoDuplicateColumnNamesValidator implements ConstraintValidator<NoDu
             }
         }
 
-        if (dto.getForeignKeyColumns() != null) {
-            for (int i = 0; i < dto.getForeignKeyColumns().size(); i++) {
-                var fk = dto.getForeignKeyColumns().get(i);
-                if (fk.getColumnName() != null && !names.add(fk.getColumnName())) {
-                    ValidationUtils.addConstraintViolationKeepDefault(context,
-                            "Duplicate column name: " + fk.getColumnName(),
-                            "foreignKeyColumns[" + i + "].columnName");
-                    valid = false;
-                }
-            }
-        }
         return valid;
     }
 }
