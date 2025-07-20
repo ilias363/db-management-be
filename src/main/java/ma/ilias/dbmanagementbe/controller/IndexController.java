@@ -1,9 +1,12 @@
 package ma.ilias.dbmanagementbe.controller;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.metadata.dto.index.IndexMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.index.NewIndexDto;
 import ma.ilias.dbmanagementbe.metadata.service.index.IndexService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,5 +42,16 @@ public class IndexController {
                 .success(true)
                 .data(indexes)
                 .build());
+    }
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<IndexMetadataDto>> createIndex(
+            @Valid @RequestBody NewIndexDto newIndexDto) {
+        IndexMetadataDto createdIndex = indexService.createIndex(newIndexDto);
+        return new ResponseEntity<>(ApiResponse.<IndexMetadataDto>builder()
+                .message("Index created successfully")
+                .success(true)
+                .data(createdIndex)
+                .build(), HttpStatus.CREATED);
     }
 }

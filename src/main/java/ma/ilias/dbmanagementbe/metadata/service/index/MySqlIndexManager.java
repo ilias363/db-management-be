@@ -5,6 +5,7 @@ import ma.ilias.dbmanagementbe.enums.IndexType;
 import ma.ilias.dbmanagementbe.exception.IndexNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
 import ma.ilias.dbmanagementbe.metadata.dto.index.IndexMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.index.NewIndexDto;
 import ma.ilias.dbmanagementbe.metadata.dto.index.indexcolumn.IndexColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -128,5 +130,41 @@ public class MySqlIndexManager implements IndexService {
             indexes.forEach(index -> index.setTable(table));
         }
         return indexes;
+    }
+
+    @Override
+    public IndexMetadataDto createIndex(NewIndexDto newIndexDto) {
+        StringBuilder createIndexSql = new StringBuilder("CREATE ");
+
+        if (Boolean.TRUE.equals(newIndexDto.getIsUnique())) {
+            createIndexSql.append("UNIQUE ");
+        }
+
+        createIndexSql.append("INDEX ").append(newIndexDto.getIndexName());
+
+        createIndexSql.append(" ON ")
+                .append(newIndexDto.getSchemaName())
+                .append(".")
+                .append(newIndexDto.getTableName())
+                .append(" (");
+
+        String columnsPart = newIndexDto.getIndexColumns().stream()
+                .map(col -> {
+                    StringBuilder colSql = new StringBuilder(col.getColumnName());
+                    if (col.getSortOrder() != null && !col.getSortOrder().isBlank()) {
+                        colSql.append(" ").append(col.getSortOrder().toUpperCase());
+                    }
+                    return colSql.toString();
+                })
+                .collect(Collectors.joining(", "));
+
+        createIndexSql.append(columnsPart).append(")");
+
+        createIndexSql.append(" USING ").append(newIndexDto.getIndexType().toUpperCase());
+
+        jdbcTemplate.execute(createIndexSql.toString());
+
+        return getIndex(newIndexDto.getSchemaName(), newIndexDto.getTableName(), newIndexDto.getIndexName(),
+                true, false);
     }
 }
