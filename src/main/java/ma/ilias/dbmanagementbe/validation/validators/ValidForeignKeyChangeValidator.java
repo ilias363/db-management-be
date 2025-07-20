@@ -1,5 +1,7 @@
 package ma.ilias.dbmanagementbe.validation.validators;
 
+import java.util.Set;
+
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +32,8 @@ public class ValidForeignKeyChangeValidator
                     dto.getTableName(),
                     dto.getColumnName());
 
-            boolean isCurrentlyForeignKey = currentColumn.getColumnType() == ColumnType.FOREIGN_KEY;
+            boolean isCurrentlyForeignKey = Set.of(ColumnType.FOREIGN_KEY, ColumnType.PRIMARY_KEY_FOREIGN_KEY)
+                    .contains(currentColumn.getColumnType());
             if (isCurrentlyForeignKey == dto.getIsForeignKey()) {
                 ValidationUtils.addConstraintViolationKeepDefault(context,
                         "Column is already " + (isCurrentlyForeignKey ? "a foreign key" : "not a foreign key"),

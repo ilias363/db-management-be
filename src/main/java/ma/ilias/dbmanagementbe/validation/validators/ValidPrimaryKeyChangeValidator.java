@@ -1,5 +1,7 @@
 package ma.ilias.dbmanagementbe.validation.validators;
 
+import java.util.Set;
+
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +29,8 @@ public class ValidPrimaryKeyChangeValidator
                     dto.getTableName(),
                     dto.getColumnName());
 
-            boolean isCurrentlyPrimaryKey = currentColumn.getColumnType() == ColumnType.PRIMARY_KEY;
+            boolean isCurrentlyPrimaryKey = Set.of(ColumnType.PRIMARY_KEY, ColumnType.PRIMARY_KEY_FOREIGN_KEY)
+                    .contains(currentColumn.getColumnType());
             if (isCurrentlyPrimaryKey == dto.getIsPrimaryKey()) {
                 ValidationUtils.addConstraintViolation(context,
                         "Column is already " + (isCurrentlyPrimaryKey ? "a primary key" : "not a primary key"),
