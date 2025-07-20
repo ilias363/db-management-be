@@ -542,7 +542,7 @@ public class ValidationUtils {
         }
 
         try {
-            Enum.valueOf(enumClass, value);
+            Enum.valueOf(enumClass, value.toUpperCase());
             return true;
         } catch (IllegalArgumentException e) {
             return false;
