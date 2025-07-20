@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import ma.ilias.dbmanagementbe.enums.ColumnType;
 import ma.ilias.dbmanagementbe.metadata.dto.common.ColumnDataTypeDefinition;
 import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnReference;
 import ma.ilias.dbmanagementbe.validation.annotations.RequiredColumnDefault;
@@ -50,4 +51,6 @@ public abstract class BaseNewColumnDto implements ColumnDataTypeDefinition, ICol
     private Integer characterMaxLength;
     private Integer numericPrecision;
     private Integer numericScale;
+
+    public abstract ColumnType getColumnType();
 }

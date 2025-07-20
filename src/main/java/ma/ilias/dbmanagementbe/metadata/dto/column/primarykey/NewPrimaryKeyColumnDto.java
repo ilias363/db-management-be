@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import ma.ilias.dbmanagementbe.enums.ColumnType;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidAutoIncrement;
 
@@ -14,4 +15,9 @@ import ma.ilias.dbmanagementbe.validation.annotations.ValidAutoIncrement;
 @ValidAutoIncrement
 public class NewPrimaryKeyColumnDto extends BaseNewColumnDto {
     private Boolean autoIncrement;
+
+    @Override
+    public ColumnType getColumnType() {
+        return ColumnType.PRIMARY_KEY;
+    }
 }
