@@ -21,8 +21,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -84,8 +86,7 @@ public class MySqlColumnManager implements ColumnService {
                     ps.setString(2, tableName);
                     ps.setString(3, columnName);
                 },
-                (rs, rowNum) -> rs.getString("COLUMN_NAME")
-        );
+                (rs, rowNum) -> rs.getString("COLUMN_NAME"));
 
         // Get foreign key information
         String foreignKeySql = """
@@ -113,9 +114,7 @@ public class MySqlColumnManager implements ColumnService {
                         rs.getString("REFERENCED_TABLE_NAME"),
                         rs.getString("REFERENCED_COLUMN_NAME"),
                         rs.getString("DELETE_RULE"),
-                        rs.getString("UPDATE_RULE")
-                )
-        );
+                        rs.getString("UPDATE_RULE")));
 
         String tableSql = """
                 SELECT t.TABLE_NAME,
@@ -141,12 +140,10 @@ public class MySqlColumnManager implements ColumnService {
                                         .schemaName(schemaName.toLowerCase())
                                         .isSystemSchema(schemaService.isSystemSchemaByName(schemaName))
                                         .creationDate(null)
-                                        .build()
-                        )
+                                        .build())
                         .build(),
                 schemaName,
-                tableName
-        );
+                tableName);
 
         return jdbcTemplate.queryForObject(
                 sql,
@@ -158,7 +155,8 @@ public class MySqlColumnManager implements ColumnService {
                     Integer numericPrecision = rs.getObject("NUMERIC_PRECISION", Integer.class);
                     Integer numericScale = rs.getObject("NUMERIC_SCALE", Integer.class);
                     String columnDefault = rs.getString("COLUMN_DEFAULT");
-                    Boolean autoIncrement = rs.getString("EXTRA") != null && rs.getString("EXTRA").toLowerCase().contains("auto_increment");
+                    Boolean autoIncrement = rs.getString("EXTRA") != null
+                            && rs.getString("EXTRA").toLowerCase().contains("auto_increment");
                     boolean isPrimaryKey = "PRI".equalsIgnoreCase(rs.getString("COLUMN_KEY"));
                     Boolean isNullable = !isPrimaryKey && "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
                     Boolean isUnique = isPrimaryKey || uniqueColumns.contains(colName);
@@ -215,8 +213,7 @@ public class MySqlColumnManager implements ColumnService {
                 },
                 schemaName,
                 tableName,
-                columnName
-        );
+                columnName);
     }
 
     @Override
@@ -281,10 +278,10 @@ public class MySqlColumnManager implements ColumnService {
 
             String fkConstraintSql = String.format(
                     "ALTER TABLE %s.%s ADD CONSTRAINT fk_%s_%s FOREIGN KEY (%s) REFERENCES %s.%s(%s)",
-                    newColumnDto.getSchemaName(), newColumnDto.getTableName(), newColumnDto.getTableName(), newColumnDto.getColumnName(),
+                    newColumnDto.getSchemaName(), newColumnDto.getTableName(), newColumnDto.getTableName(),
+                    newColumnDto.getColumnName(),
                     newColumnDto.getColumnName(), fkDto.getReferencedSchemaName(),
-                    fkDto.getReferencedTableName(), fkDto.getReferencedColumnName()
-            );
+                    fkDto.getReferencedTableName(), fkDto.getReferencedColumnName());
 
             if (fkDto.getOnUpdateAction() != null && !fkDto.getOnUpdateAction().isBlank()) {
                 fkConstraintSql += " ON UPDATE " + fkDto.getOnUpdateAction();
@@ -302,11 +299,13 @@ public class MySqlColumnManager implements ColumnService {
     @Override
     public Boolean deleteColumn(String schemaName, String tableName, String columnName, boolean force) {
         if (!columnExists(schemaName, tableName, columnName)) {
-            throw new ColumnNotFoundException(schemaName.toLowerCase(), tableName.toLowerCase(), columnName.toLowerCase());
+            throw new ColumnNotFoundException(schemaName.toLowerCase(), tableName.toLowerCase(),
+                    columnName.toLowerCase());
         }
 
         if (schemaService.isSystemSchemaByName(schemaName)) {
-            throw new UnauthorizedActionException("Cannot delete column from system table: " + schemaName + "." + tableName);
+            throw new UnauthorizedActionException(
+                    "Cannot delete column from system table: " + schemaName + "." + tableName);
         }
 
         String columnCountSql = """
@@ -315,7 +314,8 @@ public class MySqlColumnManager implements ColumnService {
                 """;
         Integer columnCount = jdbcTemplate.queryForObject(columnCountSql, Integer.class, schemaName, tableName);
         if (columnCount != null && columnCount <= 1) {
-            throw new UnauthorizedActionException("Table " + tableName + " has only one column. Try dropping the whole table instead.");
+            throw new UnauthorizedActionException(
+                    "Table " + tableName + " has only one column. Try dropping the whole table instead.");
         }
 
         boolean isPrimaryKey = isColumnPrimaryKey(schemaName, tableName, columnName);
@@ -337,29 +337,30 @@ public class MySqlColumnManager implements ColumnService {
                 (rs, rowNum) -> rs.getString("CONSTRAINT_NAME"),
                 schemaName,
                 tableName,
-                columnName
-        );
+                columnName);
 
         if (!force && !fkConstraints.isEmpty()) {
             throw new UnauthorizedActionException(
-                    "Cannot delete column used in a foreign key constraint. Use force=true to drop the constraint automatically."
-            );
+                    "Cannot delete column used in a foreign key constraint. Use force=true to drop the constraint automatically.");
         }
 
         if (force && !fkConstraints.isEmpty()) {
             for (String fkConstraint : fkConstraints) {
-                String sql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s", schemaName, tableName, fkConstraint);
+                String sql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s", schemaName, tableName,
+                        fkConstraint);
                 jdbcTemplate.execute(sql);
             }
         }
 
         if (isPrimaryKey) {
-            List<String> referencingFkConstraints = getReferencingForeignKeyConstraints(schemaName, tableName, columnName);
+            List<String> referencingFkConstraints = getReferencingForeignKeyConstraints(schemaName, tableName,
+                    columnName);
             for (String fkConstraint : referencingFkConstraints) {
                 String[] parts = fkConstraint.split(" ON ");
                 String constraintName = parts[0];
                 String referencingTableName = parts[1];
-                String dropFkSql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s", schemaName, referencingTableName, constraintName);
+                String dropFkSql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s", schemaName,
+                        referencingTableName, constraintName);
                 jdbcTemplate.execute(dropFkSql);
             }
         }
@@ -393,8 +394,8 @@ public class MySqlColumnManager implements ColumnService {
                   AND rc.constraint_schema = ?
                   AND kcu.referenced_column_name = ?
                 """;
-        return jdbcTemplate.query(sql, (rs, rowNum) ->
-                        rs.getString("constraint_name") + " ON " + rs.getString("table_name"),
+        return jdbcTemplate.query(sql,
+                (rs, rowNum) -> rs.getString("constraint_name") + " ON " + rs.getString("table_name"),
                 tableName, schemaName, columnName);
     }
 
@@ -405,8 +406,8 @@ public class MySqlColumnManager implements ColumnService {
 
         if (tableHasPrimaryKey(schemaName, tableName)) {
             throw new UnauthorizedActionException(
-                    "Table " + schemaName + "." + tableName + " already has a primary key. Drop the existing primary key first."
-            );
+                    "Table " + schemaName + "." + tableName
+                            + " already has a primary key. Drop the existing primary key first.");
         }
 
         StringBuilder alterSql = new StringBuilder("ALTER TABLE ")
@@ -471,7 +472,8 @@ public class MySqlColumnManager implements ColumnService {
             return;
         }
         if (rowCount > 2 && dataType.equals("BOOLEAN")) {
-            throw new UnauthorizedActionException("Cannot populate boolean primary key column that has more than 2 rows.");
+            throw new UnauthorizedActionException(
+                    "Cannot populate boolean primary key column that has more than 2 rows.");
         }
 
         switch (dataType) {
@@ -517,8 +519,7 @@ public class MySqlColumnManager implements ColumnService {
     private void populateNumericPrimaryKey(String schemaName, String tableName, String columnName) {
         String updateSql = String.format(
                 "UPDATE %s.%s SET %s = (@row_number := @row_number + 1)",
-                schemaName, tableName, columnName
-        );
+                schemaName, tableName, columnName);
 
         jdbcTemplate.execute("SET @row_number = 0");
         jdbcTemplate.execute(updateSql);
@@ -527,8 +528,7 @@ public class MySqlColumnManager implements ColumnService {
     private void populateStringPrimaryKey(String schemaName, String tableName, String columnName) {
         String updateSql = String.format(
                 "UPDATE %s.%s SET %s = CAST((@row_number := @row_number + 1) AS CHAR)",
-                schemaName, tableName, columnName
-        );
+                schemaName, tableName, columnName);
 
         jdbcTemplate.execute("SET @row_number = 0");
         jdbcTemplate.execute(updateSql);
@@ -537,8 +537,7 @@ public class MySqlColumnManager implements ColumnService {
     private void populateDatePrimaryKey(String schemaName, String tableName, String columnName) {
         String updateSql = String.format(
                 "UPDATE %s.%s SET %s = DATE_ADD('2025-01-01', INTERVAL (@row_number := @row_number + 1) - 1 DAY)",
-                schemaName, tableName, columnName
-        );
+                schemaName, tableName, columnName);
 
         jdbcTemplate.execute("SET @row_number = 0");
         jdbcTemplate.execute(updateSql);
@@ -547,8 +546,7 @@ public class MySqlColumnManager implements ColumnService {
     private void populateTimePrimaryKey(String schemaName, String tableName, String columnName) {
         String updateSql = String.format(
                 "UPDATE %s.%s SET %s = SEC_TO_TIME((@row_number := @row_number + 1) * 60)",
-                schemaName, tableName, columnName
-        );
+                schemaName, tableName, columnName);
 
         jdbcTemplate.execute("SET @row_number = 0");
         jdbcTemplate.execute(updateSql);
@@ -557,8 +555,7 @@ public class MySqlColumnManager implements ColumnService {
     private void populateTimestampPrimaryKey(String schemaName, String tableName, String columnName) {
         String updateSql = String.format(
                 "UPDATE %s.%s SET %s = FROM_UNIXTIME(UNIX_TIMESTAMP('2025-01-01 00:00:00') + (@row_number := @row_number + 1) * 3600)",
-                schemaName, tableName, columnName
-        );
+                schemaName, tableName, columnName);
 
         jdbcTemplate.execute("SET @row_number = 0");
         jdbcTemplate.execute(updateSql);
@@ -567,8 +564,7 @@ public class MySqlColumnManager implements ColumnService {
     private void populateBooleanPrimaryKey(String schemaName, String tableName, String columnName) {
         String updateSql = String.format(
                 "UPDATE %s.%s SET %s = (@row_number := @row_number + 1) %% 2",
-                schemaName, tableName, columnName
-        );
+                schemaName, tableName, columnName);
 
         jdbcTemplate.execute("SET @row_number = 0");
         jdbcTemplate.execute(updateSql);
@@ -576,7 +572,7 @@ public class MySqlColumnManager implements ColumnService {
 
     // Helper record for foreign key information
     private record ForeignKeyInfo(String referencedSchemaName, String referencedTableName,
-                                  String referencedColumnName, String onUpdateAction, String onDeleteAction) {
+            String referencedColumnName, String onUpdateAction, String onDeleteAction) {
     }
 
     @Override
@@ -586,7 +582,8 @@ public class MySqlColumnManager implements ColumnService {
 
         jdbcTemplate.execute(sql);
 
-        return getColumn(renameColumnDto.getSchemaName(), renameColumnDto.getTableName(), renameColumnDto.getNewColumnName());
+        return getColumn(renameColumnDto.getSchemaName(), renameColumnDto.getTableName(),
+                renameColumnDto.getNewColumnName());
     }
 
     @Override
@@ -640,7 +637,8 @@ public class MySqlColumnManager implements ColumnService {
             columnDefinition.append(" AUTO_INCREMENT");
         }
 
-        String sql = "ALTER TABLE " + updateColAutoIncrementDto.getSchemaName() + "." + updateColAutoIncrementDto.getTableName() +
+        String sql = "ALTER TABLE " + updateColAutoIncrementDto.getSchemaName() + "."
+                + updateColAutoIncrementDto.getTableName() +
                 " MODIFY COLUMN " + updateColAutoIncrementDto.getColumnName() + " " + columnDefinition;
 
         jdbcTemplate.execute(sql);
@@ -667,15 +665,13 @@ public class MySqlColumnManager implements ColumnService {
 
         if (!populate && !updateColNullableDto.getIsNullable() && nullCount > 0) {
             throw new UnauthorizedActionException(
-                    "Column contains null values, cannot make make it not null. Use populate=true to fill null values and proceed."
-            );
+                    "Column contains null values, cannot make make it not null. Use populate=true to fill null values and proceed.");
         }
 
         if (populate && !updateColNullableDto.getIsNullable() && nullCount > 0) {
             if (currentColumn.getIsUnique() != null && currentColumn.getIsUnique()) {
                 throw new UnauthorizedActionException(
-                        "Column is unique and contains null values, cannot make it not null or fill its null values."
-                );
+                        "Column is unique and contains null values, cannot make it not null or fill its null values.");
             }
             String nullUpdateSql = String.format("UPDATE %s.%s SET %s = ? WHERE %s IS NULL",
                     updateColNullableDto.getSchemaName(),
@@ -714,7 +710,8 @@ public class MySqlColumnManager implements ColumnService {
 
         jdbcTemplate.execute(sql);
 
-        return getColumn(updateColNullableDto.getSchemaName(), updateColNullableDto.getTableName(), updateColNullableDto.getColumnName());
+        return getColumn(updateColNullableDto.getSchemaName(), updateColNullableDto.getTableName(),
+                updateColNullableDto.getColumnName());
     }
 
     private Integer getColumnNullCount(String schemaName, String tableName, String columnName) {
@@ -765,8 +762,7 @@ public class MySqlColumnManager implements ColumnService {
                     ps.setString(2, updateColUniqueDto.getTableName());
                     ps.setString(3, updateColUniqueDto.getColumnName());
                 },
-                (rs, rowNum) -> rs.getString("CONSTRAINT_NAME")
-        );
+                (rs, rowNum) -> rs.getString("CONSTRAINT_NAME"));
 
         if (updateColUniqueDto.getIsUnique() == !uniqueConstraints.isEmpty()) {
             return getColumn(updateColUniqueDto.getSchemaName(),
@@ -780,8 +776,7 @@ public class MySqlColumnManager implements ColumnService {
                     updateColUniqueDto.getTableName(),
                     updateColUniqueDto.getColumnName())) {
                 throw new UnauthorizedActionException(
-                        "Cannot add unique constraint: column contains duplicate values."
-                );
+                        "Cannot add unique constraint: column contains duplicate values.");
             }
         }
 
@@ -811,8 +806,7 @@ public class MySqlColumnManager implements ColumnService {
 
         List<Object> duplicates = jdbcTemplate.query(
                 duplicateCheckSql,
-                (rs, rowNum) -> rs.getObject(columnName)
-        );
+                (rs, rowNum) -> rs.getObject(columnName));
         return !duplicates.isEmpty();
     }
 
@@ -858,53 +852,56 @@ public class MySqlColumnManager implements ColumnService {
 
         jdbcTemplate.execute(sql);
 
-        return getColumn(updateColDefaultDto.getSchemaName(), updateColDefaultDto.getTableName(), updateColDefaultDto.getColumnName());
+        return getColumn(updateColDefaultDto.getSchemaName(), updateColDefaultDto.getTableName(),
+                updateColDefaultDto.getColumnName());
     }
 
     @Override
-    public BaseColumnMetadataDto updateColumnPrimaryKey(UpdateColumnPrimaryKeyDto updateColPKDto, boolean force) {
-        boolean isCurrentlyPrimaryKey = isColumnPrimaryKey(
+    public List<BaseColumnMetadataDto> updateColumnPrimaryKey(UpdateColumnPrimaryKeyDto updateColPKDto, boolean force) {
+        boolean isCurrentlyPrimaryKey = updateColPKDto.getColumnNames().stream().anyMatch(
+                colName -> isColumnPrimaryKey(updateColPKDto.getSchemaName(), updateColPKDto.getTableName(), colName));
+
+        List<String> currentPkColumns = getCurrentPrimaryKeyColumns(
                 updateColPKDto.getSchemaName(),
-                updateColPKDto.getTableName(),
-                updateColPKDto.getColumnName());
+                updateColPKDto.getTableName());
 
         if (updateColPKDto.getIsPrimaryKey()) {
-            if (tableHasPrimaryKey(updateColPKDto.getSchemaName(), updateColPKDto.getTableName())) {
+            if (!currentPkColumns.isEmpty()) {
                 throw new UnauthorizedActionException(
-                        "Table already has a primary key. Drop the existing primary key first."
-                );
+                        "Table already has a primary key. Drop the existing primary key first.");
             }
 
-            if (columnHasDuplicates(
-                    updateColPKDto.getSchemaName(),
-                    updateColPKDto.getTableName(),
-                    updateColPKDto.getColumnName())) {
-                throw new UnauthorizedActionException(
-                        "Cannot add primary key constraint to column containing duplicate values."
-                );
-            }
-
-            String sql = String.format("ALTER TABLE %s.%s ADD PRIMARY KEY (%s)",
-                    updateColPKDto.getSchemaName(),
-                    updateColPKDto.getTableName(),
-                    updateColPKDto.getColumnName());
-
-            jdbcTemplate.execute(sql);
-        } else {
             if (!isCurrentlyPrimaryKey) {
-                throw new UnauthorizedActionException("Column is not a primary key");
-            }
+                if (compositeKeyHasDuplicates(
+                        updateColPKDto.getSchemaName(),
+                        updateColPKDto.getTableName(),
+                        currentPkColumns)) {
+                    throw new UnauthorizedActionException(
+                            "Cannot add primary key: the column combination would create duplicate values.");
+                }
 
-            List<String> referencingFkConstraints = getReferencingForeignKeyConstraints(
-                    updateColPKDto.getSchemaName(),
-                    updateColPKDto.getTableName(),
-                    updateColPKDto.getColumnName());
+                // Add the new composite primary key
+                String addPkSql = String.format("ALTER TABLE %s.%s ADD PRIMARY KEY (%s)",
+                        updateColPKDto.getSchemaName(),
+                        updateColPKDto.getTableName(),
+                        String.join(", ", currentPkColumns));
+                jdbcTemplate.execute(addPkSql);
+            }
+        } else {
+            List<String> referencingFkConstraints = new ArrayList<>();
+            currentPkColumns.forEach(colName -> {
+                List<String> constraints = getReferencingForeignKeyConstraints(
+                        updateColPKDto.getSchemaName(),
+                        updateColPKDto.getTableName(),
+                        colName);
+
+                referencingFkConstraints.addAll(constraints);
+            });
 
             if (!referencingFkConstraints.isEmpty() && !force) {
                 throw new UnauthorizedActionException(
                         "Cannot drop primary key constraint: " + referencingFkConstraints.size() +
-                                " foreign key constraints reference this column. Use force=true to proceed."
-                );
+                                " foreign key constraints reference this primary key. Use force=true to proceed.");
             }
 
             if (!referencingFkConstraints.isEmpty()) {
@@ -918,24 +915,25 @@ public class MySqlColumnManager implements ColumnService {
                 }
             }
 
-            UpdateColumnAutoIncrementDto updateAIDto = new UpdateColumnAutoIncrementDto();
-            updateAIDto.setSchemaName(updateColPKDto.getSchemaName());
-            updateAIDto.setTableName(updateColPKDto.getTableName());
-            updateAIDto.setColumnName(updateColPKDto.getColumnName());
-            updateAIDto.setAutoIncrement(false);
-
-            updateColumnAutoIncrement(updateAIDto);
+            // Remove auto increment if present
+            currentPkColumns.forEach(colName -> {
+                UpdateColumnAutoIncrementDto updateAIDto = new UpdateColumnAutoIncrementDto();
+                updateAIDto.setSchemaName(updateColPKDto.getSchemaName());
+                updateAIDto.setTableName(updateColPKDto.getTableName());
+                updateAIDto.setColumnName(colName);
+                updateAIDto.setAutoIncrement(false);
+                updateColumnAutoIncrement(updateAIDto);
+            });
 
             String sql = String.format("ALTER TABLE %s.%s DROP PRIMARY KEY",
                     updateColPKDto.getSchemaName(),
                     updateColPKDto.getTableName());
-
             jdbcTemplate.execute(sql);
         }
 
-        return getColumn(updateColPKDto.getSchemaName(),
-                updateColPKDto.getTableName(),
-                updateColPKDto.getColumnName());
+        return updateColPKDto.getColumnNames().stream()
+                .map(colName -> getColumn(updateColPKDto.getSchemaName(), updateColPKDto.getTableName(), colName))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -950,8 +948,7 @@ public class MySqlColumnManager implements ColumnService {
                     updateColFKDto.getColumnName(),
                     updateColFKDto.getReferencedSchemaName(),
                     updateColFKDto.getReferencedTableName(),
-                    updateColFKDto.getReferencedColumnName()
-            ));
+                    updateColFKDto.getReferencedColumnName()));
 
             if (updateColFKDto.getOnUpdateAction() != null && !updateColFKDto.getOnUpdateAction().isBlank()) {
                 fkSql.append(" ON UPDATE ").append(updateColFKDto.getOnUpdateAction());
@@ -998,8 +995,7 @@ public class MySqlColumnManager implements ColumnService {
                 (rs, rowNum) -> rs.getString("CONSTRAINT_NAME"),
                 schemaName,
                 tableName,
-                columnName
-        );
+                columnName);
 
         return constraints.isEmpty() ? null : constraints.get(0);
     }
@@ -1010,14 +1006,43 @@ public class MySqlColumnManager implements ColumnService {
                 dto.getSchemaName(), dto.getTableName(),
                 dto.getReferencedSchemaName(), dto.getReferencedTableName(),
                 dto.getColumnName(), dto.getReferencedColumnName(),
-                dto.getColumnName(), dto.getReferencedColumnName()
-        );
+                dto.getColumnName(), dto.getReferencedColumnName());
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class);
         if (count != null && count > 0) {
             throw new UnauthorizedActionException(
                     "Foreign key constraint violation: " + count + " value(s) in column '" + dto.getColumnName() +
-                            "' do not exist in referenced column '" + dto.getReferencedColumnName() + "'."
-            );
+                            "' do not exist in referenced column '" + dto.getReferencedColumnName() + "'.");
         }
+    }
+
+    private List<String> getCurrentPrimaryKeyColumns(String schemaName, String tableName) {
+        String sql = """
+                SELECT COLUMN_NAME
+                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND CONSTRAINT_NAME = 'PRIMARY'
+                ORDER BY ORDINAL_POSITION
+                """;
+
+        return jdbcTemplate.query(
+                sql,
+                (rs, rowNum) -> rs.getString("COLUMN_NAME"),
+                schemaName,
+                tableName);
+    }
+
+    private boolean compositeKeyHasDuplicates(String schemaName, String tableName, List<String> columnNames) {
+        if (columnNames.isEmpty()) {
+            return false;
+        }
+
+        String columnsStr = String.join(", ", columnNames);
+        String duplicateCheckSql = String.format(
+                "SELECT %s FROM %s.%s GROUP BY %s HAVING COUNT(*) > 1 LIMIT 1",
+                columnsStr, schemaName, tableName, columnsStr);
+
+        List<Object> duplicates = jdbcTemplate.query(
+                duplicateCheckSql,
+                (rs, rowNum) -> rs.getObject(1));
+        return !duplicates.isEmpty();
     }
 }

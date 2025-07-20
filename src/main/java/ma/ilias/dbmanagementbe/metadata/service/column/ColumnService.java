@@ -1,5 +1,7 @@
 package ma.ilias.dbmanagementbe.metadata.service.column;
 
+import java.util.List;
+
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.*;
@@ -27,7 +29,7 @@ public interface ColumnService {
 
     BaseColumnMetadataDto updateColumnDefault(UpdateColumnDefaultDto updateColumnDefaultDto);
 
-    BaseColumnMetadataDto updateColumnPrimaryKey(UpdateColumnPrimaryKeyDto updateColumnPrimaryKeyDto, boolean force);
+    List<BaseColumnMetadataDto> updateColumnPrimaryKey(UpdateColumnPrimaryKeyDto updateColumnPrimaryKeyDto, boolean force);
 
     BaseColumnMetadataDto updateColumnForeignKey(UpdateColumnForeignKeyDto updateColumnForeignKeyDto);
 }

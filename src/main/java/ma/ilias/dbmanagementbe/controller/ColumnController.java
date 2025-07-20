@@ -11,6 +11,9 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.*;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
 import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
+
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -166,15 +169,15 @@ public class ColumnController {
     }
 
     @PatchMapping("/primary-key")
-    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> updateColumnPrimaryKey(
+    public ResponseEntity<ApiResponse<List<BaseColumnMetadataDto>>> updateColumnPrimaryKey(
             @Valid @RequestBody UpdateColumnPrimaryKeyDto updateColumnPrimaryKeyDto,
             @RequestParam(defaultValue = "false") boolean force
     ) {
-        BaseColumnMetadataDto updatedColumn = columnService.updateColumnPrimaryKey(updateColumnPrimaryKeyDto, force);
-        return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
+        List<BaseColumnMetadataDto> updatedColumns = columnService.updateColumnPrimaryKey(updateColumnPrimaryKeyDto, force);
+        return ResponseEntity.ok(ApiResponse.<List<BaseColumnMetadataDto>>builder()
                 .message("Column primary key constraint updated successfully")
                 .success(true)
-                .data(updatedColumn)
+                .data(updatedColumns)
                 .build());
     }
 
