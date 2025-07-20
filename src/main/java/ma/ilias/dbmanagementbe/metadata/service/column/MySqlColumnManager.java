@@ -10,6 +10,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.ForeignKeyColumnMe
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.NewForeignKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.PrimaryKeyColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.NewPrimaryKeyForeignKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.StandardColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.*;
@@ -218,16 +219,27 @@ public class MySqlColumnManager implements ColumnService {
 
     @Override
     public BaseColumnMetadataDto createColumn(BaseNewColumnDto newColumnDto) {
-        if (newColumnDto instanceof NewPrimaryKeyColumnDto pkDto) {
-            return createPrimaryKeyColumn(pkDto);
+        if (newColumnDto instanceof NewPrimaryKeyForeignKeyColumnDto) {
+            throw new UnauthorizedActionException("Use createPrimaryKeyColumn or createForeignKeyColumn instead.");
+        }
+
+        String schemaName = newColumnDto.getSchemaName();
+        String tableName = newColumnDto.getTableName();
+        String columnName = newColumnDto.getColumnName();
+
+        if (newColumnDto instanceof NewPrimaryKeyColumnDto && tableHasPrimaryKey(schemaName, tableName)) {
+            throw new UnauthorizedActionException(
+                    "Table " + schemaName + "." + tableName
+                            + " already has a primary key. Drop the existing primary key first.");
+
         }
 
         StringBuilder alterSql = new StringBuilder("ALTER TABLE ")
-                .append(newColumnDto.getSchemaName())
+                .append(schemaName)
                 .append(".")
-                .append(newColumnDto.getTableName())
+                .append(tableName)
                 .append(" ADD COLUMN ")
-                .append(newColumnDto.getColumnName())
+                .append(columnName)
                 .append(" ")
                 .append(newColumnDto.getDataType());
 
@@ -260,16 +272,29 @@ public class MySqlColumnManager implements ColumnService {
                     alterSql.append(" DEFAULT '").append(standardCol.getColumnDefault()).append("'");
                 }
             }
+
+            jdbcTemplate.execute(alterSql.toString());
         } else if (newColumnDto instanceof NewPrimaryKeyColumnDto pkCol) {
+            // If auto-increment is used, existing rows will be automatically populated
             if (Boolean.TRUE.equals(pkCol.getAutoIncrement())) {
-                alterSql.append(" AUTO_INCREMENT");
+                alterSql.append(" AUTO_INCREMENT PRIMARY KEY");
+                jdbcTemplate.execute(alterSql.toString());
+            } else {
+
+                jdbcTemplate.execute(alterSql.toString());
+
+                // Populate existing rows if the table has data and auto-increment is not used
+                populatePrimaryKeyValues(pkCol);
+
+                // Add primary key constraint
+                String pkConstraintSql = String.format("ALTER TABLE %s.%s ADD PRIMARY KEY (%s)",
+                        schemaName, tableName, columnName);
+                jdbcTemplate.execute(pkConstraintSql);
             }
-        }
 
-        jdbcTemplate.execute(alterSql.toString());
+        } else if (newColumnDto instanceof NewForeignKeyColumnDto fkDto) {
+            jdbcTemplate.execute(alterSql.toString());
 
-        // Handle foreign key constraint if it's a foreign key column
-        if (newColumnDto instanceof NewForeignKeyColumnDto fkDto) {
             if (fkDto.getColumnDefault() != null && !fkDto.getColumnDefault().isBlank()) {
                 String updateSql = String.format("UPDATE %s.%s SET %s = ?",
                         fkDto.getSchemaName(), fkDto.getTableName(), fkDto.getColumnName());
@@ -278,9 +303,9 @@ public class MySqlColumnManager implements ColumnService {
 
             String fkConstraintSql = String.format(
                     "ALTER TABLE %s.%s ADD CONSTRAINT fk_%s_%s FOREIGN KEY (%s) REFERENCES %s.%s(%s)",
-                    newColumnDto.getSchemaName(), newColumnDto.getTableName(), newColumnDto.getTableName(),
-                    newColumnDto.getColumnName(),
-                    newColumnDto.getColumnName(), fkDto.getReferencedSchemaName(),
+                    schemaName, tableName, tableName,
+                    columnName,
+                    columnName, fkDto.getReferencedSchemaName(),
                     fkDto.getReferencedTableName(), fkDto.getReferencedColumnName());
 
             if (fkDto.getOnUpdateAction() != null && !fkDto.getOnUpdateAction().isBlank()) {
@@ -293,7 +318,7 @@ public class MySqlColumnManager implements ColumnService {
             jdbcTemplate.execute(fkConstraintSql);
         }
 
-        return getColumn(newColumnDto.getSchemaName(), newColumnDto.getTableName(), newColumnDto.getColumnName());
+        return getColumn(schemaName, tableName, columnName);
     }
 
     @Override
@@ -397,56 +422,6 @@ public class MySqlColumnManager implements ColumnService {
         return jdbcTemplate.query(sql,
                 (rs, rowNum) -> rs.getString("constraint_name") + " ON " + rs.getString("table_name"),
                 tableName, schemaName, columnName);
-    }
-
-    private BaseColumnMetadataDto createPrimaryKeyColumn(NewPrimaryKeyColumnDto pkDto) {
-        String schemaName = pkDto.getSchemaName();
-        String tableName = pkDto.getTableName();
-        String columnName = pkDto.getColumnName();
-
-        if (tableHasPrimaryKey(schemaName, tableName)) {
-            throw new UnauthorizedActionException(
-                    "Table " + schemaName + "." + tableName
-                            + " already has a primary key. Drop the existing primary key first.");
-        }
-
-        StringBuilder alterSql = new StringBuilder("ALTER TABLE ")
-                .append(schemaName)
-                .append(".")
-                .append(tableName)
-                .append(" ADD COLUMN ")
-                .append(columnName)
-                .append(" ")
-                .append(pkDto.getDataType());
-
-        if (pkDto.getCharacterMaxLength() != null) {
-            alterSql.append("(").append(pkDto.getCharacterMaxLength()).append(")");
-        } else if (pkDto.getNumericPrecision() != null) {
-            alterSql.append("(").append(pkDto.getNumericPrecision());
-            if (pkDto.getNumericScale() != null) {
-                alterSql.append(",").append(pkDto.getNumericScale());
-            }
-            alterSql.append(")");
-        }
-
-        // If auto-increment is used, existing rows will be automatically populated
-        if (Boolean.TRUE.equals(pkDto.getAutoIncrement())) {
-            alterSql.append(" AUTO_INCREMENT PRIMARY KEY");
-            jdbcTemplate.execute(alterSql.toString());
-            return getColumn(schemaName, tableName, columnName);
-        }
-
-        jdbcTemplate.execute(alterSql.toString());
-
-        // Populate existing rows if the table has data and auto-increment is not used
-        populatePrimaryKeyValues(pkDto);
-
-        // Add primary key constraint
-        String pkConstraintSql = String.format("ALTER TABLE %s.%s ADD PRIMARY KEY (%s)",
-                schemaName, tableName, columnName);
-        jdbcTemplate.execute(pkConstraintSql);
-
-        return getColumn(schemaName, tableName, pkDto.getColumnName());
     }
 
     private boolean tableHasPrimaryKey(String schemaName, String tableName) {
