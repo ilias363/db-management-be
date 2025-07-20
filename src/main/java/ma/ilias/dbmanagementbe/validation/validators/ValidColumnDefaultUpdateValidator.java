@@ -11,6 +11,7 @@ import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidColumnDefaultUpdate;
 
 import java.util.Objects;
+import java.util.Set;
 
 @RequiredArgsConstructor
 public class ValidColumnDefaultUpdateValidator
@@ -35,7 +36,8 @@ public class ValidColumnDefaultUpdateValidator
             return true;
         }
 
-        if (currentColumn.getColumnType() == ColumnType.PRIMARY_KEY) {
+        if (Set.of(ColumnType.PRIMARY_KEY, ColumnType.PRIMARY_KEY_FOREIGN_KEY)
+                .contains(currentColumn.getColumnType())) {
             ValidationUtils.addConstraintViolation(context,
                     "Column default can only be used for standard or foreign key columns",
                     null);

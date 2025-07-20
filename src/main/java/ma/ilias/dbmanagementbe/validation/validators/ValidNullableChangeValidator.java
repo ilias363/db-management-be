@@ -1,5 +1,7 @@
 package ma.ilias.dbmanagementbe.validation.validators;
 
+import java.util.Set;
+
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +27,8 @@ public class ValidNullableChangeValidator implements ConstraintValidator<ValidNu
                     dto.getSchemaName(),
                     dto.getTableName(),
                     dto.getColumnName());
-            if (currentColumn.getColumnType() == ColumnType.PRIMARY_KEY) {
+            if (Set.of(ColumnType.PRIMARY_KEY, ColumnType.PRIMARY_KEY_FOREIGN_KEY)
+                    .contains(currentColumn.getColumnType())) {
                 ValidationUtils.addConstraintViolation(context,
                         "Is nullable can only be used for standard or foreign key columns",
                         null);
