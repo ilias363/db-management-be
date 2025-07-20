@@ -183,7 +183,7 @@ public class MySqlTableManager implements TableService {
             if (!primaryKeyColumns.isEmpty()) {
                 createTableSql.append(", PRIMARY KEY (")
                         .append(String.join(", ", primaryKeyColumns))
-                        .append("), ");
+                        .append(") ");
             }
 
             // Add foreign key constraints
