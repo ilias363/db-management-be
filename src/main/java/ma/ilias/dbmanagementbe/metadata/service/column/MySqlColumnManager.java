@@ -11,6 +11,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.NewForeignKeyColum
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.PrimaryKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.NewPrimaryKeyForeignKeyColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.PrimaryKeyForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.StandardColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.*;
@@ -162,7 +163,26 @@ public class MySqlColumnManager implements ColumnService {
                     Boolean isNullable = !isPrimaryKey && "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
                     Boolean isUnique = isPrimaryKey || uniqueColumns.contains(colName);
 
-                    if (isPrimaryKey) {
+                    if (isPrimaryKey && !foreignKeyInfos.isEmpty()) {
+                        return PrimaryKeyForeignKeyColumnMetadataDto.builder()
+                                .columnName(colName)
+                                .ordinalPosition(ordinalPosition)
+                                .dataType(dataType)
+                                .characterMaxLength(characterMaxLength)
+                                .numericPrecision(numericPrecision)
+                                .numericScale(numericScale)
+                                .isNullable(false)
+                                .isUnique(true)
+                                .columnDefault(columnDefault)
+                                .autoIncrement(autoIncrement)
+                                .table(table)
+                                .referencedSchemaName(foreignKeyInfos.get(0).referencedSchemaName())
+                                .referencedTableName(foreignKeyInfos.get(0).referencedTableName())
+                                .referencedColumnName(foreignKeyInfos.get(0).referencedColumnName())
+                                .onDeleteAction(foreignKeyInfos.get(0).onDeleteAction())
+                                .onUpdateAction(foreignKeyInfos.get(0).onUpdateAction())
+                                .build();
+                    } else if (isPrimaryKey) {
                         return PrimaryKeyColumnMetadataDto.builder()
                                 .columnName(colName)
                                 .ordinalPosition(ordinalPosition)

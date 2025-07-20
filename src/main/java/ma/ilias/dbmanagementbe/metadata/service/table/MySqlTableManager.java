@@ -1,16 +1,5 @@
 package ma.ilias.dbmanagementbe.metadata.service.table;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.enums.ColumnType;
 import ma.ilias.dbmanagementbe.enums.IndexType;
@@ -23,6 +12,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewForeignKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.ForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.PrimaryKeyColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.PrimaryKeyForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.StandardColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.index.IndexMetadataDto;
@@ -32,6 +22,16 @@ import ma.ilias.dbmanagementbe.metadata.dto.table.NewTableDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.UpdateTableDto;
 import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -357,7 +357,26 @@ public class MySqlTableManager implements TableService {
             Boolean isUnique = isPrimaryKey || uniqueColumns.contains(columnName);
 
             BaseColumnMetadataDto column;
-            if (isPrimaryKey) {
+            if (isPrimaryKey && foreignKeyMap.containsKey(columnName)) {
+                ForeignKeyInfo fkInfo = foreignKeyMap.get(columnName);
+                column = PrimaryKeyForeignKeyColumnMetadataDto.builder()
+                        .columnName(columnName)
+                        .ordinalPosition(ordinalPosition)
+                        .dataType(dataType)
+                        .characterMaxLength(characterMaxLength)
+                        .numericPrecision(numericPrecision)
+                        .numericScale(numericScale)
+                        .isNullable(false)
+                        .columnDefault(columnDefault)
+                        .autoIncrement(autoIncrement)
+                        .isUnique(true)
+                        .referencedSchemaName(fkInfo.referencedSchemaName())
+                        .referencedTableName(fkInfo.referencedTableName())
+                        .referencedColumnName(fkInfo.referencedColumnName())
+                        .onUpdateAction(fkInfo.onUpdateAction())
+                        .onDeleteAction(fkInfo.onDeleteAction())
+                        .build();
+            } else if (isPrimaryKey) {
                 column = PrimaryKeyColumnMetadataDto.builder()
                         .columnName(columnName)
                         .ordinalPosition(ordinalPosition)
