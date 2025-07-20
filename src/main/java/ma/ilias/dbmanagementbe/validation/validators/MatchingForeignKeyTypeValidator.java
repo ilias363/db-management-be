@@ -4,19 +4,19 @@ import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import lombok.RequiredArgsConstructor;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
-import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.NewForeignKeyColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewForeignKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.MatchingForeignKeyType;
 
 @RequiredArgsConstructor
 public class MatchingForeignKeyTypeValidator
-        implements ConstraintValidator<MatchingForeignKeyType, NewForeignKeyColumnDto> {
+        implements ConstraintValidator<MatchingForeignKeyType, BaseNewForeignKeyColumnDto> {
 
     private final ColumnService columnService;
 
     @Override
-    public boolean isValid(NewForeignKeyColumnDto dto, ConstraintValidatorContext context) {
+    public boolean isValid(BaseNewForeignKeyColumnDto dto, ConstraintValidatorContext context) {
         if (dto == null ||
                 ValidationUtils.hasNullOrBlankValues(
                         dto.getReferencedSchemaName(),
@@ -51,7 +51,7 @@ public class MatchingForeignKeyTypeValidator
         return isValid;
     }
 
-    private boolean validateDataTypeProperties(NewForeignKeyColumnDto dto, BaseColumnMetadataDto referencedColumn,
+    private boolean validateDataTypeProperties(BaseNewForeignKeyColumnDto dto, BaseColumnMetadataDto referencedColumn,
             ConstraintValidatorContext context) {
         String dataType = dto.getDataType().toUpperCase();
 
