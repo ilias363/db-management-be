@@ -1,11 +1,25 @@
 package ma.ilias.dbmanagementbe.metadata.service.table;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import lombok.AllArgsConstructor;
+import ma.ilias.dbmanagementbe.enums.ColumnType;
+import ma.ilias.dbmanagementbe.enums.IndexType;
 import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
 import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewForeignKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.ForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.PrimaryKeyColumnMetadataDto;
@@ -18,17 +32,6 @@ import ma.ilias.dbmanagementbe.metadata.dto.table.NewTableDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.UpdateTableDto;
 import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
-import ma.ilias.dbmanagementbe.enums.IndexType;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -62,7 +65,8 @@ public class MySqlTableManager implements TableService {
     }
 
     @Override
-    public TableMetadataDto getTable(String schemaName, String tableName, boolean includeColumns, boolean includeIndexes) {
+    public TableMetadataDto getTable(String schemaName, String tableName, boolean includeColumns,
+            boolean includeIndexes) {
         if (!tableExists(schemaName, tableName)) {
             throw new TableNotFoundException(schemaName.toLowerCase(), tableName.toLowerCase());
         }
@@ -163,50 +167,53 @@ public class MySqlTableManager implements TableService {
             return sb.toString();
         };
 
-        // Add primary key column
-        if (newTable.getPrimaryKey() != null) {
-            createTableSql.append(columnSqlBuilder.apply(newTable.getPrimaryKey())).append(" PRIMARY KEY");
-            createTableSql.append(", ");
-        }
-
-        // Add standard columns
         if (!newTable.getColumns().isEmpty()) {
             String columnsSql = newTable.getColumns().stream()
                     .map(columnSqlBuilder)
                     .collect(Collectors.joining(", "));
             createTableSql.append(columnsSql);
-        }
 
-        // Add foreign key columns
-        if (newTable.getForeignKeyColumns() != null && !newTable.getForeignKeyColumns().isEmpty()) {
-            createTableSql.append(", ");
-            String fkColumnsSql = newTable.getForeignKeyColumns().stream()
-                    .map(columnSqlBuilder)
-                    .collect(Collectors.joining(", "));
-            createTableSql.append(fkColumnsSql);
-        }
+            // Add primary key constraint
+            List<String> primaryKeyColumns = newTable.getColumns().stream()
+                    .filter(col -> col.getColumnType() == ColumnType.PRIMARY_KEY
+                            || col.getColumnType() == ColumnType.PRIMARY_KEY_FOREIGN_KEY)
+                    .map(BaseNewColumnDto::getColumnName)
+                    .collect(Collectors.toList());
 
-        // Add foreign key constraints
-        if (newTable.getForeignKeyColumns() != null && !newTable.getForeignKeyColumns().isEmpty()) {
-            createTableSql.append(", ");
-            String fksSql = newTable.getForeignKeyColumns().stream()
-                    .map(fk -> {
-                        StringBuilder fkSql = new StringBuilder(String.format(
-                                "FOREIGN KEY (%s) REFERENCES %s.%s(%s)",
-                                fk.getColumnName(),
-                                fk.getReferencedSchemaName(),
-                                fk.getReferencedTableName(),
-                                fk.getReferencedColumnName()));
-                        if (fk.getOnUpdateAction() != null && !fk.getOnUpdateAction().isBlank()) {
-                            fkSql.append(" ON UPDATE ").append(fk.getOnUpdateAction());
-                        }
-                        if (fk.getOnDeleteAction() != null && !fk.getOnDeleteAction().isBlank()) {
-                            fkSql.append(" ON DELETE ").append(fk.getOnDeleteAction());
-                        }
-                        return fkSql.toString();
-                    })
-                    .collect(Collectors.joining(", "));
-            createTableSql.append(fksSql);
+            if (!primaryKeyColumns.isEmpty()) {
+                createTableSql.append(", PRIMARY KEY (")
+                        .append(String.join(", ", primaryKeyColumns))
+                        .append("), ");
+            }
+
+            // Add foreign key constraints
+            List<BaseNewColumnDto> foreignKeyColumns = newTable.getColumns().stream()
+                    .filter(col -> col.getColumnType() == ColumnType.FOREIGN_KEY
+                            || col.getColumnType() == ColumnType.PRIMARY_KEY_FOREIGN_KEY)
+                    .collect(Collectors.toList());
+
+            if (!foreignKeyColumns.isEmpty()) {
+                createTableSql.append(", ");
+                String fksSql = newTable.getColumns().stream()
+                        .map(col -> {
+                            BaseNewForeignKeyColumnDto fk = (BaseNewForeignKeyColumnDto) col;
+                            StringBuilder fkSql = new StringBuilder(String.format(
+                                    "FOREIGN KEY (%s) REFERENCES %s.%s(%s)",
+                                    fk.getColumnName(),
+                                    fk.getReferencedSchemaName(),
+                                    fk.getReferencedTableName(),
+                                    fk.getReferencedColumnName()));
+                            if (fk.getOnUpdateAction() != null && !fk.getOnUpdateAction().isBlank()) {
+                                fkSql.append(" ON UPDATE ").append(fk.getOnUpdateAction());
+                            }
+                            if (fk.getOnDeleteAction() != null && !fk.getOnDeleteAction().isBlank()) {
+                                fkSql.append(" ON DELETE ").append(fk.getOnDeleteAction());
+                            }
+                            return fkSql.toString();
+                        })
+                        .collect(Collectors.joining(", "));
+                createTableSql.append(fksSql);
+            }
         }
 
         createTableSql.append(")");

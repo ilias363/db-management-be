@@ -1,5 +1,8 @@
 package ma.ilias.dbmanagementbe.metadata.dto.column;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -7,6 +10,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import ma.ilias.dbmanagementbe.enums.ColumnType;
+import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.NewForeignKeyColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.NewPrimaryKeyForeignKeyColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.common.ColumnDataTypeDefinition;
 import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnReference;
 import ma.ilias.dbmanagementbe.validation.annotations.RequiredColumnDefault;
@@ -19,6 +26,17 @@ import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "columnType"
+)
+@JsonSubTypes({
+    @JsonSubTypes.Type(value = NewStandardColumnDto.class, name = "STANDARD"),
+    @JsonSubTypes.Type(value = NewPrimaryKeyColumnDto.class, name = "PRIMARY_KEY"),
+    @JsonSubTypes.Type(value = NewForeignKeyColumnDto.class, name = "FOREIGN_KEY"),
+    @JsonSubTypes.Type(value = NewPrimaryKeyForeignKeyColumnDto.class, name = "PRIMARY_KEY_FOREIGN_KEY")
+})
 @ValidDataTypeDefinition
 @ValidColumnDefault
 @RequiredColumnDefault(groups = StandaloneColumnCreation.class)
