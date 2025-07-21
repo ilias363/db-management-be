@@ -2,34 +2,24 @@ package ma.ilias.dbmanagementbe.metadata.service.table;
 
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.enums.ColumnType;
-import ma.ilias.dbmanagementbe.enums.IndexType;
 import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
 import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
-import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewForeignKeyColumnDto;
-import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.ForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
-import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.PrimaryKeyColumnMetadataDto;
-import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.PrimaryKeyForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
-import ma.ilias.dbmanagementbe.metadata.dto.column.standard.StandardColumnMetadataDto;
-import ma.ilias.dbmanagementbe.metadata.dto.index.IndexMetadataDto;
-import ma.ilias.dbmanagementbe.metadata.dto.index.indexcolumn.IndexColumnMetadataDto;
-import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.NewTableDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.UpdateTableDto;
+import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
+import ma.ilias.dbmanagementbe.metadata.service.index.IndexService;
 import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -40,6 +30,8 @@ public class MySqlTableManager implements TableService {
 
     private final JdbcTemplate jdbcTemplate;
     private final SchemaService schemaService;
+    private final ColumnService columnService;
+    private final IndexService indexService;
 
     @Override
     public Boolean tableExists(String schemaName, String tableName) {
@@ -65,9 +57,9 @@ public class MySqlTableManager implements TableService {
     }
 
     @Override
-    public TableMetadataDto getTable(String schemaName, String tableName, boolean includeColumns,
-            boolean includeIndexes) {
-        if (!tableExists(schemaName, tableName)) {
+    public TableMetadataDto getTable(String schemaName, String tableName, boolean includeSchema,
+                                     boolean includeColumns, boolean includeIndexes, boolean checkTableExists) {
+        if (checkTableExists && !tableExists(schemaName, tableName)) {
             throw new TableNotFoundException(schemaName.toLowerCase(), tableName.toLowerCase());
         }
 
@@ -90,22 +82,18 @@ public class MySqlTableManager implements TableService {
                         .columnCount(rs.getInt("COLUMN_COUNT"))
                         .rowCount(rs.getLong("TABLE_ROWS"))
                         .sizeInBytes(rs.getLong("SIZE_IN_BYTES"))
-                        .schema(
-                                SchemaMetadataDto.builder()
-                                        .schemaName(schemaName.toLowerCase())
-                                        .isSystemSchema(schemaService.isSystemSchemaByName(schemaName))
-                                        .creationDate(null)
-                                        .build())
-                        .columns(includeColumns ? queryColumnsForTable(schemaName, tableName) : null)
-                        .indexes(includeIndexes ? queryIndexesForTable(schemaName, tableName) : null)
+                        .schema(includeSchema ? schemaService.getSchemaByName(schemaName, false, false) : null)
+                        .columns(includeColumns ? columnService.getColumnsByTable(schemaName, tableName, false, false) : null)
+                        .indexes(includeIndexes ? indexService.getIndexesByTable(schemaName, tableName, false, false) : null)
                         .build(),
                 schemaName,
                 tableName);
     }
 
     @Override
-    public List<TableMetadataDto> getTablesBySchema(String schemaName) {
-        if (!schemaService.schemaExists(schemaName)) {
+    public List<TableMetadataDto> getTablesBySchema(String schemaName, boolean includeSchema, boolean includeColumns,
+                                                    boolean includeIndexes, boolean checkSchemaExists) {
+        if (checkSchemaExists && !schemaService.schemaExists(schemaName)) {
             throw new SchemaNotFoundException(schemaName.toLowerCase());
         }
 
@@ -115,10 +103,19 @@ public class MySqlTableManager implements TableService {
                 WHERE TABLE_SCHEMA = ?
                 """;
 
-        return jdbcTemplate.query(
+        var tables = jdbcTemplate.query(
                 tableSql,
-                ps -> ps.setString(1, schemaName),
-                (rs, rowNum) -> getTable(schemaName, rs.getString("TABLE_NAME"), true, true));
+                (rs, rowNum) -> getTable(
+                        schemaName, rs.getString("TABLE_NAME"),
+                        false, includeColumns, includeIndexes, false),
+                schemaName);
+
+        if (includeSchema) {
+            var schema = schemaService.getSchemaByName(schemaName, false, false);
+            tables.forEach(table -> table.setSchema(schema));
+        }
+
+        return tables;
     }
 
     @Override
@@ -190,7 +187,7 @@ public class MySqlTableManager implements TableService {
             List<BaseNewColumnDto> foreignKeyColumns = newTable.getColumns().stream()
                     .filter(col -> col.getColumnType() == ColumnType.FOREIGN_KEY
                             || col.getColumnType() == ColumnType.PRIMARY_KEY_FOREIGN_KEY)
-                    .collect(Collectors.toList());
+                    .toList();
 
             if (!foreignKeyColumns.isEmpty()) {
                 createTableSql.append(", ");
@@ -220,7 +217,8 @@ public class MySqlTableManager implements TableService {
 
         jdbcTemplate.execute(createTableSql.toString());
 
-        return getTable(newTable.getSchemaName(), newTable.getTableName(), true, true);
+        return getTable(newTable.getSchemaName(), newTable.getTableName(),
+                true, true, true, false);
     }
 
     @Override
@@ -232,7 +230,8 @@ public class MySqlTableManager implements TableService {
             jdbcTemplate.execute(renameSql);
         }
 
-        return getTable(updateTableDto.getSchemaName(), updateTableDto.getUpdatedTableName(), true, true);
+        return getTable(updateTableDto.getSchemaName(), updateTableDto.getUpdatedTableName(),
+                true, true, true, false);
     }
 
     @Override
@@ -269,225 +268,6 @@ public class MySqlTableManager implements TableService {
         jdbcTemplate.execute(sql);
 
         return !tableExists(schemaName, tableName);
-    }
-
-    private List<BaseColumnMetadataDto> queryColumnsForTable(String schemaName, String tableName) {
-        List<BaseColumnMetadataDto> allColumns = new ArrayList<>();
-
-        String allColumnsSql = """
-                SELECT  c.COLUMN_NAME,
-                        c.ORDINAL_POSITION,
-                        c.DATA_TYPE,
-                        c.CHARACTER_MAXIMUM_LENGTH,
-                        c.NUMERIC_PRECISION,
-                        c.NUMERIC_SCALE,
-                        c.IS_NULLABLE,
-                        c.COLUMN_DEFAULT,
-                        c.COLUMN_KEY,
-                        c.EXTRA
-                FROM INFORMATION_SCHEMA.COLUMNS c
-                WHERE c.TABLE_SCHEMA = ? AND c.TABLE_NAME = ?
-                ORDER BY c.ORDINAL_POSITION
-                """;
-
-        // Get foreign key information
-        String fkInfoSql = """
-                SELECT kcu.COLUMN_NAME,
-                       kcu.REFERENCED_TABLE_SCHEMA,
-                       kcu.REFERENCED_TABLE_NAME,
-                       kcu.REFERENCED_COLUMN_NAME,
-                       rc.UPDATE_RULE,
-                       rc.DELETE_RULE
-                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
-                JOIN INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
-                ON kcu.CONSTRAINT_NAME = rc.CONSTRAINT_NAME
-                AND kcu.CONSTRAINT_SCHEMA = rc.CONSTRAINT_SCHEMA
-                WHERE kcu.TABLE_SCHEMA = ? AND kcu.TABLE_NAME = ?
-                AND kcu.REFERENCED_TABLE_NAME IS NOT NULL
-                """;
-
-        // Get unique columns
-        String uniqueColsSql = """
-                SELECT c.COLUMN_NAME
-                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE c
-                JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS t
-                  ON c.CONSTRAINT_NAME = t.CONSTRAINT_NAME
-                WHERE c.TABLE_SCHEMA = ? AND c.TABLE_NAME = ? AND t.CONSTRAINT_TYPE = 'UNIQUE'
-                """;
-
-        // Get foreign key column information
-        Map<String, ForeignKeyInfo> foreignKeyMap = new HashMap<>();
-        jdbcTemplate.query(fkInfoSql, ps -> {
-            ps.setString(1, schemaName);
-            ps.setString(2, tableName);
-        }, (rs, rowNum) -> {
-            String columnName = rs.getString("COLUMN_NAME");
-            ForeignKeyInfo fkInfo = new ForeignKeyInfo(
-                    rs.getString("REFERENCED_TABLE_SCHEMA"),
-                    rs.getString("REFERENCED_TABLE_NAME"),
-                    rs.getString("REFERENCED_COLUMN_NAME"),
-                    rs.getString("UPDATE_RULE"),
-                    rs.getString("DELETE_RULE"));
-            foreignKeyMap.put(columnName, fkInfo);
-            return null;
-        });
-
-        // Get unique columns
-        List<String> uniqueColumns = jdbcTemplate.query(uniqueColsSql, ps -> {
-            ps.setString(1, schemaName);
-            ps.setString(2, tableName);
-        }, (rs, rowNum) -> rs.getString("COLUMN_NAME"));
-
-        // Process all columns
-        jdbcTemplate.query(allColumnsSql, ps -> {
-            ps.setString(1, schemaName);
-            ps.setString(2, tableName);
-        }, (rs, rowNum) -> {
-            String columnName = rs.getString("COLUMN_NAME");
-            Integer ordinalPosition = rs.getObject("ORDINAL_POSITION", Integer.class);
-            String dataType = rs.getString("DATA_TYPE");
-            Long characterMaxLength = rs.getObject("CHARACTER_MAXIMUM_LENGTH", Long.class);
-            Integer numericPrecision = rs.getObject("NUMERIC_PRECISION", Integer.class);
-            Integer numericScale = rs.getObject("NUMERIC_SCALE", Integer.class);
-            String columnDefault = rs.getString("COLUMN_DEFAULT");
-            Boolean autoIncrement = rs.getString("EXTRA") != null
-                    && rs.getString("EXTRA").toLowerCase().contains("auto_increment");
-            boolean isPrimaryKey = "PRI".equalsIgnoreCase(rs.getString("COLUMN_KEY"));
-            Boolean isNullable = !isPrimaryKey && "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
-            Boolean isUnique = isPrimaryKey || uniqueColumns.contains(columnName);
-
-            BaseColumnMetadataDto column;
-            if (isPrimaryKey && foreignKeyMap.containsKey(columnName)) {
-                ForeignKeyInfo fkInfo = foreignKeyMap.get(columnName);
-                column = PrimaryKeyForeignKeyColumnMetadataDto.builder()
-                        .columnName(columnName)
-                        .ordinalPosition(ordinalPosition)
-                        .dataType(dataType)
-                        .characterMaxLength(characterMaxLength)
-                        .numericPrecision(numericPrecision)
-                        .numericScale(numericScale)
-                        .isNullable(false)
-                        .columnDefault(columnDefault)
-                        .autoIncrement(autoIncrement)
-                        .isUnique(true)
-                        .referencedSchemaName(fkInfo.referencedSchemaName())
-                        .referencedTableName(fkInfo.referencedTableName())
-                        .referencedColumnName(fkInfo.referencedColumnName())
-                        .onUpdateAction(fkInfo.onUpdateAction())
-                        .onDeleteAction(fkInfo.onDeleteAction())
-                        .build();
-            } else if (isPrimaryKey) {
-                column = PrimaryKeyColumnMetadataDto.builder()
-                        .columnName(columnName)
-                        .ordinalPosition(ordinalPosition)
-                        .dataType(dataType)
-                        .characterMaxLength(characterMaxLength)
-                        .numericPrecision(numericPrecision)
-                        .numericScale(numericScale)
-                        .isNullable(false)
-                        .columnDefault(columnDefault)
-                        .autoIncrement(autoIncrement)
-                        .isUnique(true)
-                        .build();
-            } else if (foreignKeyMap.containsKey(columnName)) {
-                ForeignKeyInfo fkInfo = foreignKeyMap.get(columnName);
-                column = ForeignKeyColumnMetadataDto.builder()
-                        .columnName(columnName)
-                        .ordinalPosition(ordinalPosition)
-                        .dataType(dataType)
-                        .characterMaxLength(characterMaxLength)
-                        .numericPrecision(numericPrecision)
-                        .numericScale(numericScale)
-                        .isNullable(isNullable)
-                        .columnDefault(columnDefault)
-                        .autoIncrement(autoIncrement)
-                        .isUnique(isUnique)
-                        .referencedSchemaName(fkInfo.referencedSchemaName())
-                        .referencedTableName(fkInfo.referencedTableName())
-                        .referencedColumnName(fkInfo.referencedColumnName())
-                        .onUpdateAction(fkInfo.onUpdateAction())
-                        .onDeleteAction(fkInfo.onDeleteAction())
-                        .build();
-            } else {
-                column = StandardColumnMetadataDto.builder()
-                        .columnName(columnName)
-                        .ordinalPosition(ordinalPosition)
-                        .dataType(dataType)
-                        .characterMaxLength(characterMaxLength)
-                        .numericPrecision(numericPrecision)
-                        .numericScale(numericScale)
-                        .isNullable(isNullable)
-                        .columnDefault(columnDefault)
-                        .autoIncrement(autoIncrement)
-                        .isUnique(isUnique)
-                        .build();
-            }
-
-            allColumns.add(column);
-            return null;
-        });
-
-        return allColumns;
-    }
-
-    // Helper record for foreign key information
-    private record ForeignKeyInfo(String referencedSchemaName, String referencedTableName,
-            String referencedColumnName, String onUpdateAction, String onDeleteAction) {
-    }
-
-    private List<IndexMetadataDto> queryIndexesForTable(String schemaName, String tableName) {
-        String indexesSql = """
-                SELECT INDEX_NAME, NON_UNIQUE, INDEX_TYPE
-                FROM INFORMATION_SCHEMA.STATISTICS
-                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
-                GROUP BY INDEX_NAME, NON_UNIQUE, INDEX_TYPE
-                """;
-
-        String indexColumnsSql = """
-                SELECT INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX, COLLATION
-                FROM INFORMATION_SCHEMA.STATISTICS
-                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
-                ORDER BY INDEX_NAME, SEQ_IN_INDEX
-                """;
-
-        var indexColumnsMap = new HashMap<String, List<IndexColumnMetadataDto>>();
-        jdbcTemplate.query(
-                indexColumnsSql,
-                ps -> {
-                    ps.setString(1, schemaName);
-                    ps.setString(2, tableName);
-                },
-                (rs) -> {
-                    String idxName = rs.getString("INDEX_NAME");
-                    IndexColumnMetadataDto colDto = IndexColumnMetadataDto.builder()
-                            .columnName(rs.getString("COLUMN_NAME"))
-                            .ordinalPosition(rs.getInt("SEQ_IN_INDEX"))
-                            .sortOrder(
-                                    rs.getString("COLLATION") == null ? null
-                                            : (rs.getString("COLLATION").equals("A") ? "ASC"
-                                                    : (rs.getString("COLLATION").equals("D") ? "DESC"
-                                                            : rs.getString("COLLATION"))))
-                            .build();
-                    indexColumnsMap.computeIfAbsent(idxName, k -> new ArrayList<>()).add(colDto);
-                });
-
-        return jdbcTemplate.query(
-                indexesSql,
-                ps -> {
-                    ps.setString(1, schemaName);
-                    ps.setString(2, tableName);
-                },
-                (rs, rowNum) -> {
-                    String idxName = rs.getString("INDEX_NAME");
-                    String indexTypeStr = rs.getString("INDEX_TYPE");
-                    IndexType indexType = indexTypeStr != null ? IndexType.valueOf(indexTypeStr.toUpperCase()) : null;
-                    return IndexMetadataDto.builder()
-                            .indexName(idxName)
-                            .isUnique(!rs.getBoolean("NON_UNIQUE"))
-                            .indexType(indexType)
-                            .indexColumns(indexColumnsMap.getOrDefault(idxName, List.of()))
-                            .build();
-                });
     }
 
     private List<String> getForeignKeyConstraints(String schemaName, String tableName) {

@@ -9,7 +9,6 @@ import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.UpdateTableDto;
 import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
 import ma.ilias.dbmanagementbe.validation.groups.NotStandaloneColumnCreation;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -29,7 +28,7 @@ public class TableController {
             @PathVariable String schemaName,
             @PathVariable String tableName
     ) {
-        TableMetadataDto table = tableService.getTable(schemaName, tableName, true, true);
+        TableMetadataDto table = tableService.getTable(schemaName, tableName, true, true, true, true);
         return ResponseEntity.ok(ApiResponse.<TableMetadataDto>builder()
                 .message("Table fetched successfully")
                 .success(true)
@@ -39,7 +38,7 @@ public class TableController {
 
     @GetMapping("/{schemaName}")
     public ResponseEntity<ApiResponse<List<TableMetadataDto>>> getAllTablesInSchema(@PathVariable String schemaName) {
-        List<TableMetadataDto> tables = tableService.getTablesBySchema(schemaName);
+        List<TableMetadataDto> tables = tableService.getTablesBySchema(schemaName, true, true, true, true);
         return ResponseEntity.ok(ApiResponse.<List<TableMetadataDto>>builder()
                 .message("Tables fetched successfully")
                 .success(true)
@@ -49,7 +48,7 @@ public class TableController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<TableMetadataDto>> createTable(
-			@Validated({NotStandaloneColumnCreation.class, Default.class}) @RequestBody NewTableDto newTableDto) {
+            @Validated({NotStandaloneColumnCreation.class, Default.class}) @RequestBody NewTableDto newTableDto) {
         TableMetadataDto createdTable = tableService.createTable(newTableDto);
         return new ResponseEntity<>(ApiResponse.<TableMetadataDto>builder()
                 .message("Table created successfully")
