@@ -15,7 +15,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.PrimaryK
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.StandardColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.*;
-import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.common.ColumnDataTypeDefinition;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
 import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
@@ -26,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -52,8 +51,9 @@ public class MySqlColumnManager implements ColumnService {
     }
 
     @Override
-    public BaseColumnMetadataDto getColumn(String schemaName, String tableName, String columnName) {
-        if (!columnExists(schemaName, tableName, columnName)) {
+    public BaseColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
+                                           boolean includeTable, boolean checkColumnExists) {
+        if (checkColumnExists && !columnExists(schemaName, tableName, columnName)) {
             throw new ColumnNotFoundException(schemaName, tableName, columnName);
         }
 
@@ -118,35 +118,6 @@ public class MySqlColumnManager implements ColumnService {
                         rs.getString("DELETE_RULE"),
                         rs.getString("UPDATE_RULE")));
 
-        String tableSql = """
-                SELECT t.TABLE_NAME,
-                       COUNT(c.COLUMN_NAME) AS COLUMN_COUNT,
-                       t.TABLE_ROWS,
-                       (t.DATA_LENGTH + t.INDEX_LENGTH) AS SIZE_IN_BYTES
-                FROM INFORMATION_SCHEMA.TABLES t
-                LEFT JOIN INFORMATION_SCHEMA.COLUMNS c
-                    ON t.TABLE_SCHEMA = c.TABLE_SCHEMA AND t.TABLE_NAME = c.TABLE_NAME
-                WHERE t.TABLE_SCHEMA = ? AND t.TABLE_NAME = ?
-                GROUP BY t.TABLE_NAME, t.TABLE_ROWS, t.DATA_LENGTH, t.INDEX_LENGTH
-                """;
-
-        TableMetadataDto table = jdbcTemplate.queryForObject(
-                tableSql,
-                (rs, rowNum) -> TableMetadataDto.builder()
-                        .tableName(rs.getString("TABLE_NAME"))
-                        .columnCount(rs.getInt("COLUMN_COUNT"))
-                        .rowCount(rs.getLong("TABLE_ROWS"))
-                        .sizeInBytes(rs.getLong("SIZE_IN_BYTES"))
-                        .schema(
-                                SchemaMetadataDto.builder()
-                                        .schemaName(schemaName.toLowerCase())
-                                        .isSystemSchema(schemaService.isSystemSchemaByName(schemaName))
-                                        .creationDate(null)
-                                        .build())
-                        .build(),
-                schemaName,
-                tableName);
-
         return jdbcTemplate.queryForObject(
                 sql,
                 (rs, rowNum) -> {
@@ -162,6 +133,8 @@ public class MySqlColumnManager implements ColumnService {
                     boolean isPrimaryKey = "PRI".equalsIgnoreCase(rs.getString("COLUMN_KEY"));
                     Boolean isNullable = !isPrimaryKey && "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
                     Boolean isUnique = isPrimaryKey || uniqueColumns.contains(colName);
+
+                    TableMetadataDto table = includeTable ? tableService.getTable(schemaName, tableName, false, false, false) : null;
 
                     if (isPrimaryKey && !foreignKeyInfos.isEmpty()) {
                         return PrimaryKeyForeignKeyColumnMetadataDto.builder()
@@ -260,18 +233,9 @@ public class MySqlColumnManager implements ColumnService {
                 .append(tableName)
                 .append(" ADD COLUMN ")
                 .append(columnName)
-                .append(" ")
-                .append(newColumnDto.getDataType());
+                .append(" ");
 
-        if (newColumnDto.getCharacterMaxLength() != null) {
-            alterSql.append("(").append(newColumnDto.getCharacterMaxLength()).append(")");
-        } else if (newColumnDto.getNumericPrecision() != null) {
-            alterSql.append("(").append(newColumnDto.getNumericPrecision());
-            if (newColumnDto.getNumericScale() != null) {
-                alterSql.append(",").append(newColumnDto.getNumericScale());
-            }
-            alterSql.append(")");
-        }
+        alterSql.append(buildColumnDefinition(newColumnDto));
 
         // Add column constraints
         if (newColumnDto instanceof NewStandardColumnDto standardCol) {
@@ -338,7 +302,7 @@ public class MySqlColumnManager implements ColumnService {
             jdbcTemplate.execute(fkConstraintSql);
         }
 
-        return getColumn(schemaName, tableName, columnName);
+        return getColumn(schemaName, tableName, columnName, true, false);
     }
 
     @Override
@@ -567,7 +531,7 @@ public class MySqlColumnManager implements ColumnService {
 
     // Helper record for foreign key information
     private record ForeignKeyInfo(String referencedSchemaName, String referencedTableName,
-            String referencedColumnName, String onUpdateAction, String onDeleteAction) {
+                                  String referencedColumnName, String onUpdateAction, String onDeleteAction) {
     }
 
     @Override
@@ -577,83 +541,66 @@ public class MySqlColumnManager implements ColumnService {
 
         jdbcTemplate.execute(sql);
 
-        return getColumn(renameColumnDto.getSchemaName(), renameColumnDto.getTableName(),
-                renameColumnDto.getNewColumnName());
+        return getColumn(
+                renameColumnDto.getSchemaName(),
+                renameColumnDto.getTableName(),
+                renameColumnDto.getNewColumnName(),
+                true, false);
     }
 
     @Override
     public BaseColumnMetadataDto updateColumnDataType(UpdateColumnDataTypeDto updateColDataTypeDto) {
-        StringBuilder dataTypeDefinition = new StringBuilder(updateColDataTypeDto.getDataType());
-
-        if (updateColDataTypeDto.getCharacterMaxLength() != null) {
-            dataTypeDefinition.append("(").append(updateColDataTypeDto.getCharacterMaxLength()).append(")");
-        } else if (updateColDataTypeDto.getNumericPrecision() != null) {
-            dataTypeDefinition.append("(").append(updateColDataTypeDto.getNumericPrecision());
-            if (updateColDataTypeDto.getNumericScale() != null) {
-                dataTypeDefinition.append(",").append(updateColDataTypeDto.getNumericScale());
-            }
-            dataTypeDefinition.append(")");
-        }
-
         String sql = "ALTER TABLE " + updateColDataTypeDto.getSchemaName() + "." + updateColDataTypeDto.getTableName() +
-                " MODIFY COLUMN " + updateColDataTypeDto.getColumnName() + " " + dataTypeDefinition;
+                " MODIFY COLUMN " + updateColDataTypeDto.getColumnName() + " " + buildColumnDefinition(updateColDataTypeDto);
 
         jdbcTemplate.execute(sql);
 
-        return getColumn(updateColDataTypeDto.getSchemaName(),
+        return getColumn(
+                updateColDataTypeDto.getSchemaName(),
                 updateColDataTypeDto.getTableName(),
-                updateColDataTypeDto.getColumnName());
+                updateColDataTypeDto.getColumnName(),
+                true, false);
     }
 
     @Override
     public BaseColumnMetadataDto updateColumnAutoIncrement(UpdateColumnAutoIncrementDto updateColAutoIncrementDto) {
-        BaseColumnMetadataDto currentColumn = getColumn(updateColAutoIncrementDto.getSchemaName(),
+        BaseColumnMetadataDto currentColumn = getColumn(
+                updateColAutoIncrementDto.getSchemaName(),
                 updateColAutoIncrementDto.getTableName(),
-                updateColAutoIncrementDto.getColumnName());
+                updateColAutoIncrementDto.getColumnName(),
+                false, false);
 
         if (currentColumn.getAutoIncrement() == updateColAutoIncrementDto.getAutoIncrement()) {
             return currentColumn;
         }
 
-        StringBuilder columnDefinition = new StringBuilder(currentColumn.getDataType());
-
-        if (currentColumn.getCharacterMaxLength() != null) {
-            columnDefinition.append("(").append(currentColumn.getCharacterMaxLength()).append(")");
-        } else if (Set.of("NUMERIC", "DECIMAL").contains(currentColumn.getDataType().toUpperCase()) &&
-                currentColumn.getNumericPrecision() != null) {
-            columnDefinition.append("(").append(currentColumn.getNumericPrecision());
-            if (currentColumn.getNumericScale() != null) {
-                columnDefinition.append(",").append(currentColumn.getNumericScale());
-            }
-            columnDefinition.append(")");
-        }
-
-        if (updateColAutoIncrementDto.getAutoIncrement()) {
-            columnDefinition.append(" AUTO_INCREMENT");
-        }
-
         String sql = "ALTER TABLE " + updateColAutoIncrementDto.getSchemaName() + "."
                 + updateColAutoIncrementDto.getTableName() +
-                " MODIFY COLUMN " + updateColAutoIncrementDto.getColumnName() + " " + columnDefinition;
+                " MODIFY COLUMN " + updateColAutoIncrementDto.getColumnName() + " "
+                + buildColumnDefinition(currentColumn) + (updateColAutoIncrementDto.getAutoIncrement() ? " AUTO_INCREMENT" : "");
 
         jdbcTemplate.execute(sql);
 
-        return getColumn(updateColAutoIncrementDto.getSchemaName(),
+        return getColumn(
+                updateColAutoIncrementDto.getSchemaName(),
                 updateColAutoIncrementDto.getTableName(),
-                updateColAutoIncrementDto.getColumnName());
+                updateColAutoIncrementDto.getColumnName(),
+                true, false);
     }
 
     @Override
     public BaseColumnMetadataDto updateColumnNullable(UpdateColumnNullableDto updateColNullableDto, boolean populate) {
-        BaseColumnMetadataDto currentColumn = getColumn(updateColNullableDto.getSchemaName(),
+        BaseColumnMetadataDto currentColumn = getColumn(
+                updateColNullableDto.getSchemaName(),
                 updateColNullableDto.getTableName(),
-                updateColNullableDto.getColumnName());
+                updateColNullableDto.getColumnName(),
+                false, false);
 
         if (currentColumn.getIsNullable() == updateColNullableDto.getIsNullable()) {
             return currentColumn;
         }
 
-        Integer nullCount = getColumnNullCount(
+        int nullCount = getColumnNullCount(
                 updateColNullableDto.getSchemaName(),
                 updateColNullableDto.getTableName(),
                 updateColNullableDto.getColumnName());
@@ -681,32 +628,17 @@ public class MySqlColumnManager implements ColumnService {
             }
         }
 
-        StringBuilder columnDefinition = new StringBuilder(currentColumn.getDataType());
-
-        if (currentColumn.getCharacterMaxLength() != null) {
-            columnDefinition.append("(").append(currentColumn.getCharacterMaxLength()).append(")");
-        } else if (Set.of("NUMERIC", "DECIMAL").contains(currentColumn.getDataType().toUpperCase()) &&
-                currentColumn.getNumericPrecision() != null) {
-            columnDefinition.append("(").append(currentColumn.getNumericPrecision());
-            if (currentColumn.getNumericScale() != null) {
-                columnDefinition.append(",").append(currentColumn.getNumericScale());
-            }
-            columnDefinition.append(")");
-        }
-
-        if (updateColNullableDto.getIsNullable()) {
-            columnDefinition.append(" NULL");
-        } else {
-            columnDefinition.append(" NOT NULL");
-        }
-
         String sql = "ALTER TABLE " + updateColNullableDto.getSchemaName() + "." + updateColNullableDto.getTableName() +
-                " MODIFY COLUMN " + updateColNullableDto.getColumnName() + " " + columnDefinition;
+                " MODIFY COLUMN " + updateColNullableDto.getColumnName() + " "
+                + buildColumnDefinition(currentColumn) + (updateColNullableDto.getIsNullable() ? "" : " NOT NULL");
 
         jdbcTemplate.execute(sql);
 
-        return getColumn(updateColNullableDto.getSchemaName(), updateColNullableDto.getTableName(),
-                updateColNullableDto.getColumnName());
+        return getColumn(
+                updateColNullableDto.getSchemaName(),
+                updateColNullableDto.getTableName(),
+                updateColNullableDto.getColumnName(),
+                true, false);
     }
 
     private Integer getColumnNullCount(String schemaName, String tableName, String columnName) {
@@ -760,9 +692,11 @@ public class MySqlColumnManager implements ColumnService {
                 (rs, rowNum) -> rs.getString("CONSTRAINT_NAME"));
 
         if (updateColUniqueDto.getIsUnique() == !uniqueConstraints.isEmpty()) {
-            return getColumn(updateColUniqueDto.getSchemaName(),
+            return getColumn(
+                    updateColUniqueDto.getSchemaName(),
                     updateColUniqueDto.getTableName(),
-                    updateColUniqueDto.getColumnName());
+                    updateColUniqueDto.getColumnName(),
+                    true, false);
         }
 
         if (updateColUniqueDto.getIsUnique()) {
@@ -789,9 +723,11 @@ public class MySqlColumnManager implements ColumnService {
         }
 
         jdbcTemplate.execute(sql);
-        return getColumn(updateColUniqueDto.getSchemaName(),
+        return getColumn(
+                updateColUniqueDto.getSchemaName(),
                 updateColUniqueDto.getTableName(),
-                updateColUniqueDto.getColumnName());
+                updateColUniqueDto.getColumnName(),
+                true, false);
     }
 
     private boolean columnHasDuplicates(String schemaName, String tableName, String columnName) {
@@ -810,20 +746,10 @@ public class MySqlColumnManager implements ColumnService {
         BaseColumnMetadataDto currentColumn = getColumn(
                 updateColDefaultDto.getSchemaName(),
                 updateColDefaultDto.getTableName(),
-                updateColDefaultDto.getColumnName());
+                updateColDefaultDto.getColumnName(),
+                false, false);
 
-        StringBuilder columnDefinition = new StringBuilder(currentColumn.getDataType());
-
-        if (currentColumn.getCharacterMaxLength() != null) {
-            columnDefinition.append("(").append(currentColumn.getCharacterMaxLength()).append(")");
-        } else if (Set.of("NUMERIC", "DECIMAL").contains(currentColumn.getDataType().toUpperCase()) &&
-                currentColumn.getNumericPrecision() != null) {
-            columnDefinition.append("(").append(currentColumn.getNumericPrecision());
-            if (currentColumn.getNumericScale() != null) {
-                columnDefinition.append(",").append(currentColumn.getNumericScale());
-            }
-            columnDefinition.append(")");
-        }
+        StringBuilder columnDefinition = new StringBuilder(buildColumnDefinition(currentColumn));
 
         if (currentColumn.getIsNullable() != null && !currentColumn.getIsNullable()) {
             columnDefinition.append(" NOT NULL");
@@ -847,8 +773,11 @@ public class MySqlColumnManager implements ColumnService {
 
         jdbcTemplate.execute(sql);
 
-        return getColumn(updateColDefaultDto.getSchemaName(), updateColDefaultDto.getTableName(),
-                updateColDefaultDto.getColumnName());
+        return getColumn(
+                updateColDefaultDto.getSchemaName(),
+                updateColDefaultDto.getTableName(),
+                updateColDefaultDto.getColumnName(),
+                true, false);
     }
 
     @Override
@@ -926,9 +855,20 @@ public class MySqlColumnManager implements ColumnService {
             jdbcTemplate.execute(sql);
         }
 
-        return updateColPKDto.getColumnNames().stream()
-                .map(colName -> getColumn(updateColPKDto.getSchemaName(), updateColPKDto.getTableName(), colName))
-                .collect(Collectors.toList());
+        TableMetadataDto table = tableService.getTable(
+                updateColPKDto.getSchemaName(), updateColPKDto.getTableName(),
+                false, false, false);
+
+        List<BaseColumnMetadataDto> pksMetadata = updateColPKDto.getColumnNames().stream()
+                .map(colName -> getColumn(
+                        updateColPKDto.getSchemaName(),
+                        updateColPKDto.getTableName(),
+                        colName,
+                        false, false))
+                .toList();
+
+        pksMetadata.forEach(pk -> pk.setTable(table));
+        return pksMetadata;
     }
 
     @Override
@@ -972,9 +912,11 @@ public class MySqlColumnManager implements ColumnService {
             jdbcTemplate.execute(sql);
         }
 
-        return getColumn(updateColFKDto.getSchemaName(),
+        return getColumn(
+                updateColFKDto.getSchemaName(),
                 updateColFKDto.getTableName(),
-                updateColFKDto.getColumnName());
+                updateColFKDto.getColumnName(),
+                true, false);
     }
 
     private String getForeignKeyConstraintName(String schemaName, String tableName, String columnName) {
@@ -1039,5 +981,21 @@ public class MySqlColumnManager implements ColumnService {
                 duplicateCheckSql,
                 (rs, rowNum) -> rs.getObject(1));
         return !duplicates.isEmpty();
+    }
+
+    public String buildColumnDefinition(ColumnDataTypeDefinition colDto) {
+        StringBuilder sb = new StringBuilder(colDto.getDataType());
+        if (colDto.getCharacterMaxLength() != null) {
+            sb.append("(").append(colDto.getCharacterMaxLength()).append(")");
+        } else if (Set.of("NUMERIC", "DECIMAL").contains(colDto.getDataType().toUpperCase()) &&
+                colDto.getNumericPrecision() != null) {
+            sb.append("(").append(colDto.getNumericPrecision());
+            if (colDto.getNumericScale() != null) {
+                sb.append(",").append(colDto.getNumericScale());
+            }
+            sb.append(")");
+        }
+
+        return sb.toString();
     }
 }

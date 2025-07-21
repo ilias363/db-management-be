@@ -11,13 +11,12 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.*;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
 import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
-
-import java.util.List;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/columns")
@@ -32,7 +31,7 @@ public class ColumnController {
             @PathVariable String tableName,
             @PathVariable String columnName
     ) {
-        BaseColumnMetadataDto column = columnService.getColumn(schemaName, tableName, columnName);
+        BaseColumnMetadataDto column = columnService.getColumn(schemaName, tableName, columnName, true, true);
         return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
                 .message("Column fetched successfully")
                 .success(true)

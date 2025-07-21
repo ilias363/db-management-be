@@ -1,15 +1,16 @@
 package ma.ilias.dbmanagementbe.metadata.service.column;
 
-import java.util.List;
-
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.*;
 
+import java.util.List;
+
 public interface ColumnService {
     Boolean columnExists(String schemaName, String tableName, String columnName);
 
-    BaseColumnMetadataDto getColumn(String schemaName, String tableName, String columnName);
+    BaseColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
+                                    boolean includeTable, boolean checkColumnExists);
 
     BaseColumnMetadataDto createColumn(BaseNewColumnDto newColumnDto);
 

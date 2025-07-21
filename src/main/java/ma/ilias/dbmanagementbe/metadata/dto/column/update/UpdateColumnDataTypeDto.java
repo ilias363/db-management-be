@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseUpdateColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.common.ColumnDataTypeDefinition;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidDataTypeChange;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidDataTypeDefinition;
 
@@ -11,7 +12,7 @@ import ma.ilias.dbmanagementbe.validation.annotations.ValidDataTypeDefinition;
 @EqualsAndHashCode(callSuper = true)
 @ValidDataTypeChange
 @ValidDataTypeDefinition
-public class UpdateColumnDataTypeDto extends BaseUpdateColumnDto {
+public class UpdateColumnDataTypeDto extends BaseUpdateColumnDto implements ColumnDataTypeDefinition {
     @NotBlank(message = "Data type is required")
     private String dataType;
 

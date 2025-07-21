@@ -4,13 +4,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import ma.ilias.dbmanagementbe.enums.ColumnType;
+import ma.ilias.dbmanagementbe.metadata.dto.common.ColumnDataTypeDefinition;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 
 @Data
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public abstract class BaseColumnMetadataDto {
+public abstract class BaseColumnMetadataDto implements ColumnDataTypeDefinition {
     private String columnName;
     private Integer ordinalPosition;
     private String dataType;
