@@ -28,7 +28,9 @@ public class ValidColumnDefaultUpdateValidator
         BaseColumnMetadataDto currentColumn;
 
         try {
-            currentColumn = columnService.getColumn(dto.getSchemaName(), dto.getTableName(), dto.getColumnName());
+            currentColumn = columnService.getColumn(
+                    dto.getSchemaName(), dto.getTableName(), dto.getColumnName(),
+                    false, false);
             if (currentColumn == null) {
                 return true;
             }

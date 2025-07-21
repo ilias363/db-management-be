@@ -33,7 +33,8 @@ public class MatchingForeignKeyTypeValidator
             BaseColumnMetadataDto referencedColumn = columnService.getColumn(
                     dto.getReferencedSchemaName(),
                     dto.getReferencedTableName(),
-                    dto.getReferencedColumnName());
+                    dto.getReferencedColumnName(),
+                    false, false);
 
             // Check if data types match
             if (!ValidationUtils.validateDataTypeMatch(dto.getDataType(), referencedColumn.getDataType(), context,
@@ -52,7 +53,7 @@ public class MatchingForeignKeyTypeValidator
     }
 
     private boolean validateDataTypeProperties(BaseNewForeignKeyColumnDto dto, BaseColumnMetadataDto referencedColumn,
-            ConstraintValidatorContext context) {
+                                               ConstraintValidatorContext context) {
         String dataType = dto.getDataType().toUpperCase();
 
         return switch (dataType) {

@@ -35,7 +35,8 @@ public class ValidAutoIncrementValidator implements ConstraintValidator<ValidAut
                     var currentColumn = columnService.getColumn(
                             updateDto.getSchemaName(),
                             updateDto.getTableName(),
-                            updateDto.getColumnName());
+                            updateDto.getColumnName(),
+                            false, false);
                     if (currentColumn.getColumnType() != ColumnType.PRIMARY_KEY) {
                         ValidationUtils.addConstraintViolation(context,
                                 "Auto-increment can only be used with primary key columns",

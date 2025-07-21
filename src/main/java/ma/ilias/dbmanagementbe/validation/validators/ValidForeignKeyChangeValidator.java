@@ -1,7 +1,5 @@
 package ma.ilias.dbmanagementbe.validation.validators;
 
-import java.util.Set;
-
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +9,8 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnForeignKey
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidForeignKeyChange;
+
+import java.util.Set;
 
 @RequiredArgsConstructor
 public class ValidForeignKeyChangeValidator
@@ -30,7 +30,8 @@ public class ValidForeignKeyChangeValidator
             var currentColumn = columnService.getColumn(
                     dto.getSchemaName(),
                     dto.getTableName(),
-                    dto.getColumnName());
+                    dto.getColumnName(),
+                    false, false);
 
             boolean isCurrentlyForeignKey = Set.of(ColumnType.FOREIGN_KEY, ColumnType.PRIMARY_KEY_FOREIGN_KEY)
                     .contains(currentColumn.getColumnType());
@@ -53,7 +54,7 @@ public class ValidForeignKeyChangeValidator
     }
 
     private boolean validateForeignKeyConstraints(UpdateColumnForeignKeyDto dto, BaseColumnMetadataDto currentColumn,
-            ConstraintValidatorContext context) {
+                                                  ConstraintValidatorContext context) {
         boolean isValid = true;
 
         isValid &= ValidationUtils.validateRequiredStringField(dto.getReferencedSchemaName(), context,
@@ -73,7 +74,8 @@ public class ValidForeignKeyChangeValidator
             var referencedColumn = columnService.getColumn(
                     dto.getReferencedSchemaName(),
                     dto.getReferencedTableName(),
-                    dto.getReferencedColumnName());
+                    dto.getReferencedColumnName(),
+                    false, false);
 
             isValid &= ValidationUtils.validateDataTypeMatch(currentColumn.getDataType(),
                     referencedColumn.getDataType(), context, null);
@@ -90,8 +92,8 @@ public class ValidForeignKeyChangeValidator
     }
 
     private boolean validateDataTypeProperties(BaseColumnMetadataDto currentColumn,
-            BaseColumnMetadataDto referencedColumn,
-            ConstraintValidatorContext context) {
+                                               BaseColumnMetadataDto referencedColumn,
+                                               ConstraintValidatorContext context) {
         String dataType = currentColumn.getDataType().toUpperCase();
 
         return switch (dataType) {

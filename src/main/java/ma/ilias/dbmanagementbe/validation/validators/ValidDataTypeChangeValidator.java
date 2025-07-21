@@ -24,7 +24,8 @@ public class ValidDataTypeChangeValidator implements ConstraintValidator<ValidDa
             BaseColumnMetadataDto currentColumn = columnService.getColumn(
                     value.getSchemaName(),
                     value.getTableName(),
-                    value.getColumnName());
+                    value.getColumnName(),
+                    false, false);
 
             if (currentColumn == null) {
                 return true;

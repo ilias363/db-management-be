@@ -1,9 +1,5 @@
 package ma.ilias.dbmanagementbe.validation.validators;
 
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +9,9 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnPrimaryKey
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidPrimaryKeyChange;
+
+import java.util.List;
+import java.util.Set;
 
 @RequiredArgsConstructor
 public class ValidPrimaryKeyChangeValidator
@@ -28,8 +27,10 @@ public class ValidPrimaryKeyChangeValidator
 
         try {
             List<BaseColumnMetadataDto> currentColumns = dto.getColumnNames().stream()
-                    .map(colName -> columnService.getColumn(dto.getSchemaName(), dto.getTableName(), colName))
-                    .collect(Collectors.toList());
+                    .map(colName -> columnService.getColumn(
+                            dto.getSchemaName(), dto.getTableName(), colName,
+                            false, false))
+                    .toList();
 
             boolean isCurrentlyPrimaryKey = currentColumns.stream().anyMatch(col -> Set
                     .of(ColumnType.PRIMARY_KEY, ColumnType.PRIMARY_KEY_FOREIGN_KEY).contains(col.getColumnType()));

@@ -1,7 +1,5 @@
 package ma.ilias.dbmanagementbe.validation.validators;
 
-import java.util.Set;
-
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +8,8 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnNullableDt
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidNullableChange;
+
+import java.util.Set;
 
 @RequiredArgsConstructor
 public class ValidNullableChangeValidator implements ConstraintValidator<ValidNullableChange, UpdateColumnNullableDto> {
@@ -26,7 +26,8 @@ public class ValidNullableChangeValidator implements ConstraintValidator<ValidNu
             var currentColumn = columnService.getColumn(
                     dto.getSchemaName(),
                     dto.getTableName(),
-                    dto.getColumnName());
+                    dto.getColumnName(),
+                    false, false);
             if (Set.of(ColumnType.PRIMARY_KEY, ColumnType.PRIMARY_KEY_FOREIGN_KEY)
                     .contains(currentColumn.getColumnType())) {
                 ValidationUtils.addConstraintViolation(context,

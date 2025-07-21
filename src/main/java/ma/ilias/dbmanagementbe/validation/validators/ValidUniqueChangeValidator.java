@@ -24,7 +24,8 @@ public class ValidUniqueChangeValidator implements ConstraintValidator<ValidUniq
             var currentColumn = columnService.getColumn(
                     dto.getSchemaName(),
                     dto.getTableName(),
-                    dto.getColumnName());
+                    dto.getColumnName(),
+                    false, false);
             if (currentColumn.getColumnType() != ColumnType.STANDARD) {
                 ValidationUtils.addConstraintViolation(context,
                         "Is unique can only be used for standard columns",
