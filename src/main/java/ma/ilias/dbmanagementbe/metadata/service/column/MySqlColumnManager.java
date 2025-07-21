@@ -134,7 +134,7 @@ public class MySqlColumnManager implements ColumnService {
                     Boolean isNullable = !isPrimaryKey && "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
                     Boolean isUnique = isPrimaryKey || uniqueColumns.contains(colName);
 
-                    TableMetadataDto table = includeTable ? tableService.getTable(schemaName, tableName, false, false, false) : null;
+                    TableMetadataDto table = includeTable ? tableService.getTable(schemaName, tableName, true, false, false, false) : null;
 
                     if (isPrimaryKey && !foreignKeyInfos.isEmpty()) {
                         return PrimaryKeyForeignKeyColumnMetadataDto.builder()
@@ -230,7 +230,7 @@ public class MySqlColumnManager implements ColumnService {
                 schemaName, tableName);
 
         if (includeTable) {
-            TableMetadataDto table = tableService.getTable(schemaName, tableName, false, false, false);
+            TableMetadataDto table = tableService.getTable(schemaName, tableName, true, false, false, false);
             columns.forEach(col -> col.setTable(table));
         }
 
@@ -884,7 +884,7 @@ public class MySqlColumnManager implements ColumnService {
 
         TableMetadataDto table = tableService.getTable(
                 updateColPKDto.getSchemaName(), updateColPKDto.getTableName(),
-                false, false, false);
+                true, false, false, false);
 
         List<BaseColumnMetadataDto> pksMetadata = updateColPKDto.getColumnNames().stream()
                 .map(colName -> getColumn(

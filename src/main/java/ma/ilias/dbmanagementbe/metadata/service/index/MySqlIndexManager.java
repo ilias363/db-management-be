@@ -100,7 +100,7 @@ public class MySqlIndexManager implements IndexService {
                             .isUnique(!rs.getBoolean("NON_UNIQUE"))
                             .indexType(indexType)
                             .table(includeTable ?
-                                    tableService.getTable(schemaName, tableName, false, false, false)
+                                    tableService.getTable(schemaName, tableName, true, false, false, false)
                                     : null)
                             .indexColumns(indexColumns)
                             .build();
@@ -129,7 +129,7 @@ public class MySqlIndexManager implements IndexService {
                 schemaName, tableName);
 
         if (includeTable) {
-            TableMetadataDto table = tableService.getTable(schemaName, tableName, false, false, false);
+            TableMetadataDto table = tableService.getTable(schemaName, tableName, true, false, false, false);
             indexes.forEach(index -> index.setTable(table));
         }
         return indexes;
