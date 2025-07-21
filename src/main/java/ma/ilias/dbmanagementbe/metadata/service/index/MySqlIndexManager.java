@@ -10,6 +10,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.index.NewIndexDto;
 import ma.ilias.dbmanagementbe.metadata.dto.index.indexcolumn.IndexColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
+import ma.ilias.dbmanagementbe.util.SqlSecurityUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +37,10 @@ public class MySqlIndexManager implements IndexService {
                 WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?
                 """;
 
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, schemaName, tableName, indexName);
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class,
+                SqlSecurityUtils.validateSchemaName(schemaName, false),
+                SqlSecurityUtils.validateTableName(tableName, false),
+                SqlSecurityUtils.validateIndexName(indexName, false));
         return count != null && count > 0;
     }
 
@@ -45,7 +49,7 @@ public class MySqlIndexManager implements IndexService {
             String schemaName, String tableName, String indexName,
             boolean includeTable, boolean checkIndexExists) {
         if (checkIndexExists && !indexExists(schemaName, tableName, indexName)) {
-            throw new IndexNotFoundException(schemaName, tableName, indexName);
+            throw new IndexNotFoundException(schemaName.toLowerCase(), tableName.toLowerCase(), indexName.toLowerCase());
         }
 
         String indexSql = """
@@ -143,17 +147,17 @@ public class MySqlIndexManager implements IndexService {
             createIndexSql.append("UNIQUE ");
         }
 
-        createIndexSql.append("INDEX ").append(newIndexDto.getIndexName());
+        createIndexSql.append("INDEX ").append(SqlSecurityUtils.validateIndexName(newIndexDto.getIndexName(), true));
 
         createIndexSql.append(" ON ")
-                .append(newIndexDto.getSchemaName())
+                .append(SqlSecurityUtils.validateSchemaName(newIndexDto.getSchemaName(), true))
                 .append(".")
-                .append(newIndexDto.getTableName())
+                .append(SqlSecurityUtils.validateTableName(newIndexDto.getTableName(), true))
                 .append(" (");
 
         String columnsPart = newIndexDto.getIndexColumns().stream()
                 .map(col -> {
-                    StringBuilder colSql = new StringBuilder(col.getColumnName());
+                    StringBuilder colSql = new StringBuilder(SqlSecurityUtils.validateColumnName(col.getColumnName(), true));
                     if (col.getSortOrder() != null && !col.getSortOrder().isBlank()) {
                         colSql.append(" ").append(col.getSortOrder().toUpperCase());
                     }
@@ -182,7 +186,10 @@ public class MySqlIndexManager implements IndexService {
                     "Cannot drop PRIMARY KEY index. Use the table's primary key management instead.");
 
         } else {
-            String sql = String.format("DROP INDEX %s ON %s.%s", indexName, schemaName, tableName);
+            String sql = String.format("DROP INDEX %s ON %s.%s",
+                    SqlSecurityUtils.validateIndexName(indexName, true),
+                    SqlSecurityUtils.validateSchemaName(schemaName, true),
+                    SqlSecurityUtils.validateTableName(tableName, true));
             jdbcTemplate.execute(sql);
         }
 
