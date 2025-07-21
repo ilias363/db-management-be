@@ -24,8 +24,8 @@ public class MySqlSchemaManager implements SchemaService {
 
     @Override
     public Boolean schemaExists(String schemaName) {
-        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName, false);
-        
+        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
+
         String schemaSql = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?";
 
         List<String> schemas = jdbcTemplate.query(
@@ -82,8 +82,8 @@ public class MySqlSchemaManager implements SchemaService {
 
     @Override
     public SchemaMetadataDto createSchema(NewSchemaDto newSchema) {
-        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(newSchema.getSchemaName(), true);
-        
+        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(newSchema.getSchemaName());
+
         jdbcTemplate.execute("CREATE DATABASE " + validatedSchemaName);
 
         return getSchemaByName(newSchema.getSchemaName(), false, false);
@@ -91,8 +91,8 @@ public class MySqlSchemaManager implements SchemaService {
 
     @Override
     public Boolean deleteSchema(String schemaName) {
-        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName, true);
-        
+        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
+
         if (isSystemSchemaByName(schemaName)) {
             throw new UnauthorizedActionException("Cannot delete system schema: " + schemaName);
         }

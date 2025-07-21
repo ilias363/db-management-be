@@ -38,9 +38,9 @@ public class MySqlIndexManager implements IndexService {
                 """;
 
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class,
-                SqlSecurityUtils.validateSchemaName(schemaName, false),
-                SqlSecurityUtils.validateTableName(tableName, false),
-                SqlSecurityUtils.validateIndexName(indexName, false));
+                SqlSecurityUtils.validateSchemaName(schemaName),
+                SqlSecurityUtils.validateTableName(tableName),
+                SqlSecurityUtils.validateIndexName(indexName));
         return count != null && count > 0;
     }
 
@@ -147,17 +147,17 @@ public class MySqlIndexManager implements IndexService {
             createIndexSql.append("UNIQUE ");
         }
 
-        createIndexSql.append("INDEX ").append(SqlSecurityUtils.validateIndexName(newIndexDto.getIndexName(), true));
+        createIndexSql.append("INDEX ").append(SqlSecurityUtils.validateIndexName(newIndexDto.getIndexName()));
 
         createIndexSql.append(" ON ")
-                .append(SqlSecurityUtils.validateSchemaName(newIndexDto.getSchemaName(), true))
+                .append(SqlSecurityUtils.validateSchemaName(newIndexDto.getSchemaName()))
                 .append(".")
-                .append(SqlSecurityUtils.validateTableName(newIndexDto.getTableName(), true))
+                .append(SqlSecurityUtils.validateTableName(newIndexDto.getTableName()))
                 .append(" (");
 
         String columnsPart = newIndexDto.getIndexColumns().stream()
                 .map(col -> {
-                    StringBuilder colSql = new StringBuilder(SqlSecurityUtils.validateColumnName(col.getColumnName(), true));
+                    StringBuilder colSql = new StringBuilder(SqlSecurityUtils.validateColumnName(col.getColumnName()));
                     if (col.getSortOrder() != null && !col.getSortOrder().isBlank()) {
                         colSql.append(" ").append(col.getSortOrder().toUpperCase());
                     }
@@ -187,9 +187,9 @@ public class MySqlIndexManager implements IndexService {
 
         } else {
             String sql = String.format("DROP INDEX %s ON %s.%s",
-                    SqlSecurityUtils.validateIndexName(indexName, true),
-                    SqlSecurityUtils.validateSchemaName(schemaName, true),
-                    SqlSecurityUtils.validateTableName(tableName, true));
+                    SqlSecurityUtils.validateIndexName(indexName),
+                    SqlSecurityUtils.validateSchemaName(schemaName),
+                    SqlSecurityUtils.validateTableName(tableName));
             jdbcTemplate.execute(sql);
         }
 

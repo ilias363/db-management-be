@@ -39,9 +39,9 @@ public class MySqlColumnManager implements ColumnService {
 
     @Override
     public Boolean columnExists(String schemaName, String tableName, String columnName) {
-        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName, false);
-        String validatedTableName = SqlSecurityUtils.validateTableName(tableName, false);
-        String validatedColumnName = SqlSecurityUtils.validateColumnName(columnName, false);
+        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
+        String validatedTableName = SqlSecurityUtils.validateTableName(tableName);
+        String validatedColumnName = SqlSecurityUtils.validateColumnName(columnName);
 
         if (!tableService.tableExists(validatedSchemaName, validatedTableName)) {
             throw new TableNotFoundException(validatedSchemaName.toLowerCase(), validatedTableName.toLowerCase());
@@ -248,9 +248,9 @@ public class MySqlColumnManager implements ColumnService {
             throw new UnauthorizedActionException("Use createPrimaryKeyColumn or createForeignKeyColumn instead.");
         }
 
-        String escapedSchemaName = SqlSecurityUtils.validateSchemaName(newColumnDto.getSchemaName(), true);
-        String escapedTableName = SqlSecurityUtils.validateTableName(newColumnDto.getTableName(), true);
-        String escapedColumnName = SqlSecurityUtils.validateColumnName(newColumnDto.getColumnName(), true);
+        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(newColumnDto.getSchemaName());
+        String validatedTableName = SqlSecurityUtils.validateTableName(newColumnDto.getTableName());
+        String validatedColumnName = SqlSecurityUtils.validateColumnName(newColumnDto.getColumnName());
 
         String schemaName = newColumnDto.getSchemaName();
         String tableName = newColumnDto.getTableName();
@@ -264,11 +264,11 @@ public class MySqlColumnManager implements ColumnService {
         }
 
         StringBuilder alterSql = new StringBuilder("ALTER TABLE ")
-                .append(escapedSchemaName)
+                .append(validatedSchemaName)
                 .append(".")
-                .append(escapedTableName)
+                .append(validatedTableName)
                 .append(" ADD COLUMN ")
-                .append(escapedColumnName)
+                .append(validatedColumnName)
                 .append(" ");
 
         alterSql.append(buildColumnDefinition(newColumnDto));
@@ -308,7 +308,7 @@ public class MySqlColumnManager implements ColumnService {
 
                 // Add primary key constraint
                 String pkConstraintSql = String.format("ALTER TABLE %s.%s ADD PRIMARY KEY (%s)",
-                        escapedSchemaName, escapedTableName, escapedColumnName);
+                        validatedSchemaName, validatedTableName, validatedColumnName);
                 jdbcTemplate.execute(pkConstraintSql);
             }
 
@@ -317,20 +317,20 @@ public class MySqlColumnManager implements ColumnService {
 
             if (fkDto.getColumnDefault() != null && !fkDto.getColumnDefault().isBlank()) {
                 String updateSql = String.format("UPDATE %s.%s SET %s = ?",
-                        escapedSchemaName, escapedTableName, escapedColumnName);
+                        validatedSchemaName, validatedTableName, validatedColumnName);
                 jdbcTemplate.update(updateSql, fkDto.getColumnDefault());
             }
 
-            String escapedRefSchemaName = SqlSecurityUtils.validateSchemaName(fkDto.getReferencedSchemaName(), true);
-            String escapedRefTableName = SqlSecurityUtils.validateTableName(fkDto.getReferencedTableName(), true);
-            String escapedRefColumnName = SqlSecurityUtils.validateColumnName(fkDto.getReferencedColumnName(), true);
+            String validatedRefSchemaName = SqlSecurityUtils.validateSchemaName(fkDto.getReferencedSchemaName());
+            String validatedRefTableName = SqlSecurityUtils.validateTableName(fkDto.getReferencedTableName());
+            String validatedRefColumnName = SqlSecurityUtils.validateColumnName(fkDto.getReferencedColumnName());
 
             String fkConstraintSql = String.format(
                     "ALTER TABLE %s.%s ADD CONSTRAINT fk_%s_%s FOREIGN KEY (%s) REFERENCES %s.%s(%s)",
-                    escapedSchemaName, escapedTableName, escapedTableName,
-                    escapedColumnName,
-                    escapedColumnName, escapedRefSchemaName,
-                    escapedRefTableName, escapedRefColumnName);
+                    validatedSchemaName, validatedTableName, validatedTableName,
+                    validatedColumnName,
+                    validatedColumnName, validatedRefSchemaName,
+                    validatedRefTableName, validatedRefColumnName);
 
             if (fkDto.getOnUpdateAction() != null && !fkDto.getOnUpdateAction().isBlank()) {
                 fkConstraintSql += " ON UPDATE " + fkDto.getOnUpdateAction();
@@ -347,9 +347,9 @@ public class MySqlColumnManager implements ColumnService {
 
     @Override
     public Boolean deleteColumn(String schemaName, String tableName, String columnName, boolean force) {
-        String escapedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName, true);
-        String escapedTableName = SqlSecurityUtils.validateTableName(tableName, true);
-        String escapedColumnName = SqlSecurityUtils.validateColumnName(columnName, true);
+        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
+        String validatedTableName = SqlSecurityUtils.validateTableName(tableName);
+        String validatedColumnName = SqlSecurityUtils.validateColumnName(columnName);
 
         if (!columnExists(schemaName, tableName, columnName)) {
             throw new ColumnNotFoundException(schemaName.toLowerCase(), tableName.toLowerCase(),
@@ -399,8 +399,8 @@ public class MySqlColumnManager implements ColumnService {
 
         if (force && !fkConstraints.isEmpty()) {
             for (String fkConstraint : fkConstraints) {
-                String sql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s", escapedSchemaName, escapedTableName,
-                        SqlSecurityUtils.validateIdentifier(fkConstraint, "Constraint name", true));
+                String sql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s", validatedSchemaName, validatedTableName,
+                        SqlSecurityUtils.validateIdentifier(fkConstraint, "Constraint name"));
                 jdbcTemplate.execute(sql);
             }
         }
@@ -411,14 +411,14 @@ public class MySqlColumnManager implements ColumnService {
                 String[] parts = fkConstraint.split(" ON ");
                 String constraintName = parts[0];
                 String referencingTableName = parts[1];
-                String dropFkSql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s", escapedSchemaName,
-                        SqlSecurityUtils.validateTableName(referencingTableName, true),
-                        SqlSecurityUtils.validateIdentifier(constraintName, "Constraint name", true));
+                String dropFkSql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s", validatedSchemaName,
+                        SqlSecurityUtils.validateTableName(referencingTableName),
+                        SqlSecurityUtils.validateIdentifier(constraintName, "Constraint name"));
                 jdbcTemplate.execute(dropFkSql);
             }
         }
 
-        String alterSql = String.format("ALTER TABLE %s.%s DROP COLUMN %s", escapedSchemaName, escapedTableName, escapedColumnName);
+        String alterSql = String.format("ALTER TABLE %s.%s DROP COLUMN %s", validatedSchemaName, validatedTableName, validatedColumnName);
         jdbcTemplate.execute(alterSql);
 
         return !columnExists(schemaName, tableName, columnName);

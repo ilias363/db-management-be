@@ -29,7 +29,7 @@ public class SqlSecurityUtils {
      * @return the validated identifier
      * @throws IllegalArgumentException if the identifier is invalid or potentially dangerous
      */
-    public static String validateIdentifier(String identifier, String identifierType, boolean escape) {
+    public static String validateIdentifier(String identifier, String identifierType) {
         if (identifier == null || identifier.isBlank()) {
             throw new IllegalArgumentException(identifierType + " cannot be null or empty");
         }
@@ -56,7 +56,7 @@ public class SqlSecurityUtils {
             }
         }
 
-        return escape ? escapeIdentifier(trimmed) : trimmed;
+        return trimmed;
     }
 
     /**
@@ -66,8 +66,8 @@ public class SqlSecurityUtils {
      * @return the validated schema name
      * @throws IllegalArgumentException if the schema name is invalid
      */
-    public static String validateSchemaName(String schemaName, boolean escape) {
-        return validateIdentifier(schemaName, "Schema name", escape);
+    public static String validateSchemaName(String schemaName) {
+        return validateIdentifier(schemaName, "Schema name");
     }
 
     /**
@@ -77,8 +77,8 @@ public class SqlSecurityUtils {
      * @return the validated table name
      * @throws IllegalArgumentException if the table name is invalid
      */
-    public static String validateTableName(String tableName, boolean escape) {
-        return validateIdentifier(tableName, "Table name", escape);
+    public static String validateTableName(String tableName) {
+        return validateIdentifier(tableName, "Table name");
     }
 
     /**
@@ -88,8 +88,8 @@ public class SqlSecurityUtils {
      * @return the validated column name
      * @throws IllegalArgumentException if the column name is invalid
      */
-    public static String validateColumnName(String columnName, boolean escape) {
-        return validateIdentifier(columnName, "Column name", escape);
+    public static String validateColumnName(String columnName) {
+        return validateIdentifier(columnName, "Column name");
     }
 
     /**
@@ -99,23 +99,7 @@ public class SqlSecurityUtils {
      * @return the validated index name
      * @throws IllegalArgumentException if the index name is invalid
      */
-    public static String validateIndexName(String indexName, boolean escape) {
-        return validateIdentifier(indexName, "Index name", escape);
-    }
-
-    /**
-     * Escapes an identifier for use in SQL by wrapping it in backticks.
-     * This is a MySQL-specific method for escaping identifiers.
-     *
-     * @param identifier the identifier to escape
-     * @return the escaped identifier
-     */
-    public static String escapeIdentifier(String identifier) {
-        if (identifier == null) {
-            throw new IllegalArgumentException("Identifier cannot be null");
-        }
-        // Remove any existing backticks
-        String escaped = identifier.replace("`", "");
-        return "`" + escaped + "`";
+    public static String validateIndexName(String indexName) {
+        return validateIdentifier(indexName, "Index name");
     }
 }
