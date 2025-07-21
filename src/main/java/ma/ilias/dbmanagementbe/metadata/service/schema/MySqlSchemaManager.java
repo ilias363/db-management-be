@@ -5,12 +5,11 @@ import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
 import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.NewSchemaDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
-import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,6 +19,7 @@ import java.util.List;
 public class MySqlSchemaManager implements SchemaService {
 
     private final JdbcTemplate jdbcTemplate;
+    private final TableService tableService;
 
     @Override
     public Boolean schemaExists(String schemaName) {
@@ -40,66 +40,9 @@ public class MySqlSchemaManager implements SchemaService {
                 .contains(schemaName.trim().toLowerCase());
     }
 
-    private List<TableMetadataDto> queryTablesForSchema(String schemaName) {
-        String tableSql = """
-                SELECT t.TABLE_NAME,
-                       COUNT(c.COLUMN_NAME) AS COLUMN_COUNT,
-                       t.TABLE_ROWS,
-                       (t.DATA_LENGTH + t.INDEX_LENGTH) AS SIZE_IN_BYTES
-                FROM INFORMATION_SCHEMA.TABLES t
-                LEFT JOIN INFORMATION_SCHEMA.COLUMNS c
-                    ON t.TABLE_SCHEMA = c.TABLE_SCHEMA AND t.TABLE_NAME = c.TABLE_NAME
-                WHERE t.TABLE_SCHEMA = ?
-                GROUP BY t.TABLE_NAME, t.TABLE_ROWS, t.DATA_LENGTH, t.INDEX_LENGTH
-                """;
-
-        return jdbcTemplate.query(
-                connection -> {
-                    PreparedStatement ps = connection.prepareStatement(tableSql);
-                    ps.setString(1, schemaName);
-                    return ps;
-                },
-                (trs, tRowNum) -> TableMetadataDto.builder()
-                        .tableName(trs.getString("TABLE_NAME"))
-                        .columnCount(trs.getInt("COLUMN_COUNT"))
-                        .rowCount(trs.getLong("TABLE_ROWS"))
-                        .sizeInBytes(trs.getLong("SIZE_IN_BYTES"))
-                        .build()
-        );
-    }
-
     @Override
-    public List<SchemaMetadataDto> getAllSchemas(Boolean includeSystemSchema) {
-        String schemaSql = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA";
-
-        return jdbcTemplate.query(schemaSql, (rs) -> {
-            List<SchemaMetadataDto> result = new ArrayList<>();
-
-            while (rs.next()) {
-                String schemaName = rs.getString("SCHEMA_NAME");
-                boolean isSystem = isSystemSchemaByName(schemaName);
-
-                if (!includeSystemSchema && isSystem) {
-                    continue;
-                }
-
-                List<TableMetadataDto> tables = queryTablesForSchema(schemaName);
-
-                result.add(SchemaMetadataDto.builder()
-                        .schemaName(schemaName)
-                        .isSystemSchema(isSystem)
-                        .creationDate(null) // MySQL doesn't provide this
-                        .tables(tables)
-                        .build());
-            }
-
-            return result;
-        });
-    }
-
-    @Override
-    public SchemaMetadataDto getSchemaByName(String schemaName) {
-        if (!schemaExists(schemaName)) {
+    public SchemaMetadataDto getSchemaByName(String schemaName, boolean includeTables, boolean checkSchemaExists) {
+        if (checkSchemaExists && !schemaExists(schemaName)) {
             throw new SchemaNotFoundException(schemaName);
         }
 
@@ -107,20 +50,38 @@ public class MySqlSchemaManager implements SchemaService {
                 .schemaName(schemaName.toLowerCase())
                 .isSystemSchema(isSystemSchemaByName(schemaName))
                 .creationDate(null)
-                .tables(queryTablesForSchema(schemaName))
+                .tables(includeTables ?
+                        tableService.getTablesBySchema(schemaName, false, false, false, false)
+                        : null)
                 .build();
+    }
+
+    @Override
+    public List<SchemaMetadataDto> getAllSchemas(Boolean includeSystemSchemas) {
+        String schemaSql = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA";
+
+        return jdbcTemplate.query(schemaSql, (rs) -> {
+            List<SchemaMetadataDto> result = new ArrayList<>();
+
+            while (rs.next()) {
+                String schemaName = rs.getString("SCHEMA_NAME");
+
+                if (isSystemSchemaByName(schemaName) && !includeSystemSchemas) {
+                    continue;
+                }
+
+                result.add(getSchemaByName(schemaName, true, false));
+            }
+
+            return result;
+        });
     }
 
     @Override
     public SchemaMetadataDto createSchema(NewSchemaDto newSchema) {
         jdbcTemplate.execute("CREATE DATABASE " + newSchema.getSchemaName().toLowerCase());
 
-        return SchemaMetadataDto.builder()
-                .schemaName(newSchema.getSchemaName().toLowerCase())
-                .isSystemSchema(false)
-                .creationDate(null)
-                .tables(new ArrayList<>())
-                .build();
+        return getSchemaByName(newSchema.getSchemaName(), false, false);
     }
 
     @Override
