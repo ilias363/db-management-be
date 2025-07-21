@@ -1,5 +1,6 @@
 package ma.ilias.dbmanagementbe.util;
 
+import java.util.Set;
 import java.util.regex.Pattern;
 
 public class SqlSecurityUtils {
@@ -11,14 +12,15 @@ public class SqlSecurityUtils {
     private static final int MAX_IDENTIFIER_LENGTH = 64;
 
     // Reserved MySQL keywords that should not be used as identifiers
-    private static final String[] MYSQL_RESERVED_KEYWORDS = {
+// Using HashSet for O(1) lookup instead of O(n) array search
+    private static final Set<String> MYSQL_RESERVED_KEYWORDS = Set.of(
             "SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "DROP", "ALTER", "TABLE",
             "DATABASE", "SCHEMA", "INDEX", "PRIMARY", "FOREIGN", "KEY", "CONSTRAINT",
             "FROM", "WHERE", "GROUP", "ORDER", "BY", "HAVING", "UNION", "JOIN",
             "INNER", "LEFT", "RIGHT", "OUTER", "ON", "AS", "DISTINCT", "ALL",
             "AND", "OR", "NOT", "NULL", "TRUE", "FALSE", "IS", "IN", "EXISTS",
             "BETWEEN", "LIKE", "REGEXP", "RLIKE", "CASE", "WHEN", "THEN", "ELSE", "END"
-    };
+    );
 
     /**
      * Validates that an identifier (schema name, table name, column name) is safe to use in SQL.
@@ -36,24 +38,18 @@ public class SqlSecurityUtils {
 
         String trimmed = identifier.trim();
 
-        // Check length
         if (trimmed.length() > MAX_IDENTIFIER_LENGTH) {
             throw new IllegalArgumentException(identifierType + " is too long (max " + MAX_IDENTIFIER_LENGTH + " characters)");
         }
 
-        // Check pattern
+        if (MYSQL_RESERVED_KEYWORDS.contains(trimmed.toUpperCase())) {
+            throw new IllegalArgumentException(identifierType + " cannot be a reserved MySQL keyword: " + trimmed);
+        }
+
         if (!VALID_IDENTIFIER.matcher(trimmed).matches()) {
             throw new IllegalArgumentException(identifierType +
                     " contains invalid characters. Only letters, numbers, and underscores are allowed," +
                     " and it must start with a letter or underscore.");
-        }
-
-        // Check for reserved keywords
-        String upperIdentifier = trimmed.toUpperCase();
-        for (String keyword : MYSQL_RESERVED_KEYWORDS) {
-            if (keyword.equals(upperIdentifier)) {
-                throw new IllegalArgumentException(identifierType + " cannot be a reserved MySQL keyword: " + trimmed);
-            }
         }
 
         return trimmed;
