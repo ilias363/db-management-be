@@ -211,6 +211,33 @@ public class MySqlColumnManager implements ColumnService {
     }
 
     @Override
+    public List<BaseColumnMetadataDto> getColumnsByTable(String schemaName, String tableName,
+                                                         boolean includeTable, boolean checkTableExists) {
+        if (checkTableExists && !tableService.tableExists(schemaName, tableName)) {
+            throw new TableNotFoundException(schemaName, tableName);
+        }
+
+        String columnsSql = """
+                SELECT  c.COLUMN_NAME
+                FROM INFORMATION_SCHEMA.COLUMNS c
+                WHERE c.TABLE_SCHEMA = ? AND c.TABLE_NAME = ?
+                ORDER BY c.ORDINAL_POSITION
+                """;
+
+        List<BaseColumnMetadataDto> columns = jdbcTemplate.query(
+                columnsSql,
+                (rs, rowNum) -> getColumn(schemaName, tableName, rs.getString("COLUMN_NAME"), false, false),
+                schemaName, tableName);
+
+        if (includeTable) {
+            TableMetadataDto table = tableService.getTable(schemaName, tableName, false, false, false);
+            columns.forEach(col -> col.setTable(table));
+        }
+
+        return columns;
+    }
+
+    @Override
     public BaseColumnMetadataDto createColumn(BaseNewColumnDto newColumnDto) {
         if (newColumnDto instanceof NewPrimaryKeyForeignKeyColumnDto) {
             throw new UnauthorizedActionException("Use createPrimaryKeyColumn or createForeignKeyColumn instead.");

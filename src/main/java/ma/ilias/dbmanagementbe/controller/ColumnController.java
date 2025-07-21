@@ -39,6 +39,19 @@ public class ColumnController {
                 .build());
     }
 
+    @GetMapping("/{schemaName}/{tableName}")
+    public ResponseEntity<ApiResponse<List<BaseColumnMetadataDto>>> getColumnsByTable(
+            @PathVariable String schemaName,
+            @PathVariable String tableName
+    ) {
+        List<BaseColumnMetadataDto> columns = columnService.getColumnsByTable(schemaName, tableName, true, true);
+        return ResponseEntity.ok(ApiResponse.<List<BaseColumnMetadataDto>>builder()
+                .message("Column fetched successfully")
+                .success(true)
+                .data(columns)
+                .build());
+    }
+
     @PostMapping("/standard")
     public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> createStandardColumn(
             @Validated({StandaloneColumnCreation.class, Default.class}) @RequestBody NewStandardColumnDto newStandardColumnDto

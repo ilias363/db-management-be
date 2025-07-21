@@ -12,6 +12,9 @@ public interface ColumnService {
     BaseColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
                                     boolean includeTable, boolean checkColumnExists);
 
+    List<BaseColumnMetadataDto> getColumnsByTable(String schemaName, String tableName,
+                                                  boolean includeTable, boolean checkTableExists);
+
     BaseColumnMetadataDto createColumn(BaseNewColumnDto newColumnDto);
 
     Boolean deleteColumn(String schemaName, String tableName, String columnName, boolean force);
