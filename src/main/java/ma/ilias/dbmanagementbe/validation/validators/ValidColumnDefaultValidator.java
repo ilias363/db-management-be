@@ -20,7 +20,7 @@ public class ValidColumnDefaultValidator implements ConstraintValidator<ValidCol
         String defaultValue = null;
         Boolean isNullable = null;
         Boolean isUnique = null;
-        Integer charLen = null;
+        Long charLen = null;
         Integer numPrecision = null;
         Integer numScale = null;
 

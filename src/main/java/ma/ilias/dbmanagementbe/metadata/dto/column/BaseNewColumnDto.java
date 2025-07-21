@@ -62,5 +62,10 @@ public abstract class BaseNewColumnDto implements IColumnDataTypeDefinition, ICo
     @NotBlank(message = "Column type cannot be blank", groups = NotStandaloneColumnCreation.class)
     private ColumnType columnType;
 
+    @Override
+    public Long getCharacterMaxLength() {
+        return characterMaxLength != null ? characterMaxLength.longValue() : null;
+    }
+
     public abstract ColumnType getColumnType();
 }

@@ -19,4 +19,9 @@ public class UpdateColumnDataTypeDto extends BaseUpdateColumnDto implements ICol
     private Integer characterMaxLength;
     private Integer numericPrecision;
     private Integer numericScale;
+
+    @Override
+    public Long getCharacterMaxLength() {
+        return characterMaxLength != null ? characterMaxLength.longValue() : null;
+    }
 }
