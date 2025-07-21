@@ -19,6 +19,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.common.ColumnDataTypeDefinition;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
 import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
+import ma.ilias.dbmanagementbe.util.SqlSecurityUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,15 +39,19 @@ public class MySqlColumnManager implements ColumnService {
 
     @Override
     public Boolean columnExists(String schemaName, String tableName, String columnName) {
-        if (!tableService.tableExists(schemaName, tableName)) {
-            throw new TableNotFoundException(schemaName.toLowerCase(), tableName.toLowerCase());
+        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName, false);
+        String validatedTableName = SqlSecurityUtils.validateTableName(tableName, false);
+        String validatedColumnName = SqlSecurityUtils.validateColumnName(columnName, false);
+
+        if (!tableService.tableExists(validatedSchemaName, validatedTableName)) {
+            throw new TableNotFoundException(validatedSchemaName.toLowerCase(), validatedTableName.toLowerCase());
         }
 
         String sql = """
                 SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
                 WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
                 """;
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, schemaName, tableName, columnName);
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, validatedSchemaName, validatedTableName, validatedColumnName);
         return count != null && count > 0;
     }
 
@@ -243,6 +248,10 @@ public class MySqlColumnManager implements ColumnService {
             throw new UnauthorizedActionException("Use createPrimaryKeyColumn or createForeignKeyColumn instead.");
         }
 
+        String escapedSchemaName = SqlSecurityUtils.validateSchemaName(newColumnDto.getSchemaName(), true);
+        String escapedTableName = SqlSecurityUtils.validateTableName(newColumnDto.getTableName(), true);
+        String escapedColumnName = SqlSecurityUtils.validateColumnName(newColumnDto.getColumnName(), true);
+
         String schemaName = newColumnDto.getSchemaName();
         String tableName = newColumnDto.getTableName();
         String columnName = newColumnDto.getColumnName();
@@ -255,11 +264,11 @@ public class MySqlColumnManager implements ColumnService {
         }
 
         StringBuilder alterSql = new StringBuilder("ALTER TABLE ")
-                .append(schemaName)
+                .append(escapedSchemaName)
                 .append(".")
-                .append(tableName)
+                .append(escapedTableName)
                 .append(" ADD COLUMN ")
-                .append(columnName)
+                .append(escapedColumnName)
                 .append(" ");
 
         alterSql.append(buildColumnDefinition(newColumnDto));
@@ -299,7 +308,7 @@ public class MySqlColumnManager implements ColumnService {
 
                 // Add primary key constraint
                 String pkConstraintSql = String.format("ALTER TABLE %s.%s ADD PRIMARY KEY (%s)",
-                        schemaName, tableName, columnName);
+                        escapedSchemaName, escapedTableName, escapedColumnName);
                 jdbcTemplate.execute(pkConstraintSql);
             }
 
@@ -308,16 +317,20 @@ public class MySqlColumnManager implements ColumnService {
 
             if (fkDto.getColumnDefault() != null && !fkDto.getColumnDefault().isBlank()) {
                 String updateSql = String.format("UPDATE %s.%s SET %s = ?",
-                        fkDto.getSchemaName(), fkDto.getTableName(), fkDto.getColumnName());
+                        escapedSchemaName, escapedTableName, escapedColumnName);
                 jdbcTemplate.update(updateSql, fkDto.getColumnDefault());
             }
 
+            String escapedRefSchemaName = SqlSecurityUtils.validateSchemaName(fkDto.getReferencedSchemaName(), true);
+            String escapedRefTableName = SqlSecurityUtils.validateTableName(fkDto.getReferencedTableName(), true);
+            String escapedRefColumnName = SqlSecurityUtils.validateColumnName(fkDto.getReferencedColumnName(), true);
+
             String fkConstraintSql = String.format(
                     "ALTER TABLE %s.%s ADD CONSTRAINT fk_%s_%s FOREIGN KEY (%s) REFERENCES %s.%s(%s)",
-                    schemaName, tableName, tableName,
-                    columnName,
-                    columnName, fkDto.getReferencedSchemaName(),
-                    fkDto.getReferencedTableName(), fkDto.getReferencedColumnName());
+                    escapedSchemaName, escapedTableName, escapedTableName,
+                    escapedColumnName,
+                    escapedColumnName, escapedRefSchemaName,
+                    escapedRefTableName, escapedRefColumnName);
 
             if (fkDto.getOnUpdateAction() != null && !fkDto.getOnUpdateAction().isBlank()) {
                 fkConstraintSql += " ON UPDATE " + fkDto.getOnUpdateAction();
@@ -334,6 +347,10 @@ public class MySqlColumnManager implements ColumnService {
 
     @Override
     public Boolean deleteColumn(String schemaName, String tableName, String columnName, boolean force) {
+        String escapedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName, true);
+        String escapedTableName = SqlSecurityUtils.validateTableName(tableName, true);
+        String escapedColumnName = SqlSecurityUtils.validateColumnName(columnName, true);
+
         if (!columnExists(schemaName, tableName, columnName)) {
             throw new ColumnNotFoundException(schemaName.toLowerCase(), tableName.toLowerCase(),
                     columnName.toLowerCase());
@@ -382,26 +399,26 @@ public class MySqlColumnManager implements ColumnService {
 
         if (force && !fkConstraints.isEmpty()) {
             for (String fkConstraint : fkConstraints) {
-                String sql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s", schemaName, tableName,
-                        fkConstraint);
+                String sql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s", escapedSchemaName, escapedTableName,
+                        SqlSecurityUtils.validateIdentifier(fkConstraint, "Constraint name", true));
                 jdbcTemplate.execute(sql);
             }
         }
 
         if (isPrimaryKey) {
-            List<String> referencingFkConstraints = getReferencingForeignKeyConstraints(schemaName, tableName,
-                    columnName);
+            List<String> referencingFkConstraints = getReferencingForeignKeyConstraints(schemaName, tableName, columnName);
             for (String fkConstraint : referencingFkConstraints) {
                 String[] parts = fkConstraint.split(" ON ");
                 String constraintName = parts[0];
                 String referencingTableName = parts[1];
-                String dropFkSql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s", schemaName,
-                        referencingTableName, constraintName);
+                String dropFkSql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s", escapedSchemaName,
+                        SqlSecurityUtils.validateTableName(referencingTableName, true),
+                        SqlSecurityUtils.validateIdentifier(constraintName, "Constraint name", true));
                 jdbcTemplate.execute(dropFkSql);
             }
         }
 
-        String alterSql = String.format("ALTER TABLE %s.%s DROP COLUMN %s", schemaName, tableName, columnName);
+        String alterSql = String.format("ALTER TABLE %s.%s DROP COLUMN %s", escapedSchemaName, escapedTableName, escapedColumnName);
         jdbcTemplate.execute(alterSql);
 
         return !columnExists(schemaName, tableName, columnName);
@@ -554,11 +571,6 @@ public class MySqlColumnManager implements ColumnService {
 
         jdbcTemplate.execute("SET @row_number = 0");
         jdbcTemplate.execute(updateSql);
-    }
-
-    // Helper record for foreign key information
-    private record ForeignKeyInfo(String referencedSchemaName, String referencedTableName,
-                                  String referencedColumnName, String onUpdateAction, String onDeleteAction) {
     }
 
     @Override
@@ -1024,5 +1036,10 @@ public class MySqlColumnManager implements ColumnService {
         }
 
         return sb.toString();
+    }
+
+    // Helper record for foreign key information
+    private record ForeignKeyInfo(String referencedSchemaName, String referencedTableName,
+                                  String referencedColumnName, String onUpdateAction, String onDeleteAction) {
     }
 }
