@@ -15,7 +15,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.PrimaryK
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.StandardColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.*;
-import ma.ilias.dbmanagementbe.metadata.dto.common.ColumnDataTypeDefinition;
+import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnDataTypeDefinition;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
 import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
@@ -1022,7 +1022,7 @@ public class MySqlColumnManager implements ColumnService {
         return !duplicates.isEmpty();
     }
 
-    public String buildColumnDefinition(ColumnDataTypeDefinition colDto) {
+    public String buildColumnDefinition(IColumnDataTypeDefinition colDto) {
         StringBuilder sb = new StringBuilder(colDto.getDataType());
         if (colDto.getCharacterMaxLength() != null) {
             sb.append("(").append(colDto.getCharacterMaxLength()).append(")");

@@ -1,7 +1,7 @@
 package ma.ilias.dbmanagementbe.validation;
 
 import jakarta.validation.ConstraintValidatorContext;
-import ma.ilias.dbmanagementbe.metadata.dto.common.ColumnDataTypeDefinition;
+import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnDataTypeDefinition;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.lang.reflect.Method;
@@ -91,7 +91,7 @@ public class ValidationUtils {
      * @param context the validation context
      * @return true if validation passes
      */
-    public static boolean validateNumericAndCharFieldsNull(ColumnDataTypeDefinition dto,
+    public static boolean validateNumericAndCharFieldsNull(IColumnDataTypeDefinition dto,
                                                            ConstraintValidatorContext context) {
         return validateNumericFieldsNull(dto, context) && validateCharFieldNull(dto, context);
     }
@@ -103,7 +103,7 @@ public class ValidationUtils {
      * @param context the validation context
      * @return true if validation passes
      */
-    public static boolean validateNumericFieldsNull(ColumnDataTypeDefinition dto, ConstraintValidatorContext context) {
+    public static boolean validateNumericFieldsNull(IColumnDataTypeDefinition dto, ConstraintValidatorContext context) {
         if (dto.getNumericPrecision() != null || dto.getNumericScale() != null) {
             addConstraintViolation(context,
                     "NumericPrecision and numericScale must be null for this data type",
@@ -120,7 +120,7 @@ public class ValidationUtils {
      * @param context the validation context
      * @return true if validation passes
      */
-    public static boolean validateCharFieldNull(ColumnDataTypeDefinition dto, ConstraintValidatorContext context) {
+    public static boolean validateCharFieldNull(IColumnDataTypeDefinition dto, ConstraintValidatorContext context) {
         if (dto.getCharacterMaxLength() != null) {
             addConstraintViolation(context,
                     "characterMaxLength must be null for this data type",
@@ -137,7 +137,7 @@ public class ValidationUtils {
      * @param context the validation context
      * @return true if validation passes
      */
-    public static boolean validateVarcharOrChar(ColumnDataTypeDefinition dto, ConstraintValidatorContext context) {
+    public static boolean validateVarcharOrChar(IColumnDataTypeDefinition dto, ConstraintValidatorContext context) {
         context.disableDefaultConstraintViolation();
 
         if (dto.getCharacterMaxLength() == null) {
@@ -164,7 +164,7 @@ public class ValidationUtils {
      * @param context the validation context
      * @return true if validation passes
      */
-    public static boolean validateDecimalOrNumeric(ColumnDataTypeDefinition dto, ConstraintValidatorContext context) {
+    public static boolean validateDecimalOrNumeric(IColumnDataTypeDefinition dto, ConstraintValidatorContext context) {
         context.disableDefaultConstraintViolation();
         boolean isValid = true;
 

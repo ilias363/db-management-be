@@ -2,7 +2,6 @@ package ma.ilias.dbmanagementbe.metadata.dto.column;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -14,7 +13,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.NewForeignKeyColum
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.NewPrimaryKeyForeignKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
-import ma.ilias.dbmanagementbe.metadata.dto.common.ColumnDataTypeDefinition;
+import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnDataTypeDefinition;
 import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnReference;
 import ma.ilias.dbmanagementbe.validation.annotations.RequiredColumnDefault;
 import ma.ilias.dbmanagementbe.validation.annotations.UniqueColumnName;
@@ -38,7 +37,7 @@ import ma.ilias.dbmanagementbe.validation.groups.StandaloneColumnCreation;
 @ValidColumnDefault
 @RequiredColumnDefault(groups = StandaloneColumnCreation.class)
 @UniqueColumnName(groups = StandaloneColumnCreation.class)
-public abstract class BaseNewColumnDto implements ColumnDataTypeDefinition, IColumnReference {
+public abstract class BaseNewColumnDto implements IColumnDataTypeDefinition, IColumnReference {
     @NotBlank(message = "Schema name cannot be blank", groups = StandaloneColumnCreation.class)
     // schemaName existence is checked in @UniqueColumnName
     private String schemaName;
@@ -52,8 +51,8 @@ public abstract class BaseNewColumnDto implements ColumnDataTypeDefinition, ICol
 
     @NotBlank(message = "Data type cannot be blank")
     @Pattern(
-        regexp = "^(?i)(VARCHAR|CHAR|TEXT|INT|INTEGER|SMALLINT|BIGINT|DECIMAL|NUMERIC|FLOAT|REAL|DOUBLE|BOOLEAN|DATE|TIME|TIMESTAMP)$",
-        message = "Invalid data type")
+            regexp = "^(?i)(VARCHAR|CHAR|TEXT|INT|INTEGER|SMALLINT|BIGINT|DECIMAL|NUMERIC|FLOAT|REAL|DOUBLE|BOOLEAN|DATE|TIME|TIMESTAMP)$",
+            message = "Invalid data type")
     private String dataType;
 
     private Integer characterMaxLength;
