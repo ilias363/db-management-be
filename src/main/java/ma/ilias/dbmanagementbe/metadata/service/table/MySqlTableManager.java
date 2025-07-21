@@ -15,6 +15,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.table.UpdateTableDto;
 import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
 import ma.ilias.dbmanagementbe.metadata.service.index.IndexService;
 import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
+import ma.ilias.dbmanagementbe.util.SqlSecurityUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,8 +36,11 @@ public class MySqlTableManager implements TableService {
 
     @Override
     public Boolean tableExists(String schemaName, String tableName) {
-        if (!schemaService.schemaExists(schemaName)) {
-            throw new SchemaNotFoundException(schemaName.toLowerCase());
+        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName, false);
+        String validatedTableName = SqlSecurityUtils.validateTableName(tableName, false);
+
+        if (!schemaService.schemaExists(validatedSchemaName)) {
+            throw new SchemaNotFoundException(validatedSchemaName.toLowerCase());
         }
 
         String tableSql = """
@@ -48,8 +52,8 @@ public class MySqlTableManager implements TableService {
         List<String> tables = jdbcTemplate.query(
                 tableSql,
                 ps -> {
-                    ps.setString(1, schemaName);
-                    ps.setString(2, tableName);
+                    ps.setString(1, validatedSchemaName);
+                    ps.setString(2, validatedTableName);
                 },
                 (rs, rowNum) -> rs.getString("TABLE_NAME"));
 
@@ -120,15 +124,19 @@ public class MySqlTableManager implements TableService {
 
     @Override
     public TableMetadataDto createTable(NewTableDto newTable) {
+        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(newTable.getSchemaName(), true);
+        String validatedTableName = SqlSecurityUtils.validateTableName(newTable.getTableName(), true);
+
         StringBuilder createTableSql = new StringBuilder("CREATE TABLE ")
-                .append(newTable.getSchemaName())
+                .append(validatedSchemaName)
                 .append(".")
-                .append(newTable.getTableName())
+                .append(validatedTableName)
                 .append(" (");
 
         Function<BaseNewColumnDto, String> columnSqlBuilder = col -> {
             StringBuilder sb = new StringBuilder();
-            sb.append(col.getColumnName()).append(" ").append(col.getDataType());
+            String validatedColumnName = SqlSecurityUtils.validateColumnName(col.getColumnName(), true);
+            sb.append(validatedColumnName).append(" ").append(col.getDataType());
             if (col.getCharacterMaxLength() != null) {
                 sb.append("(").append(col.getCharacterMaxLength()).append(")");
             } else if (col.getNumericPrecision() != null) {
@@ -174,7 +182,7 @@ public class MySqlTableManager implements TableService {
             List<String> primaryKeyColumns = newTable.getColumns().stream()
                     .filter(col -> col.getColumnType() == ColumnType.PRIMARY_KEY
                             || col.getColumnType() == ColumnType.PRIMARY_KEY_FOREIGN_KEY)
-                    .map(BaseNewColumnDto::getColumnName)
+                    .map(col -> SqlSecurityUtils.validateColumnName(col.getColumnName(), true))
                     .collect(Collectors.toList());
 
             if (!primaryKeyColumns.isEmpty()) {
@@ -194,12 +202,13 @@ public class MySqlTableManager implements TableService {
                 String fksSql = newTable.getColumns().stream()
                         .map(col -> {
                             BaseNewForeignKeyColumnDto fk = (BaseNewForeignKeyColumnDto) col;
+
                             StringBuilder fkSql = new StringBuilder(String.format(
                                     "FOREIGN KEY (%s) REFERENCES %s.%s(%s)",
-                                    fk.getColumnName(),
-                                    fk.getReferencedSchemaName(),
-                                    fk.getReferencedTableName(),
-                                    fk.getReferencedColumnName()));
+                                    SqlSecurityUtils.validateColumnName(fk.getColumnName(), true),
+                                    SqlSecurityUtils.validateSchemaName(fk.getReferencedSchemaName(), true),
+                                    SqlSecurityUtils.validateTableName(fk.getReferencedTableName(), true),
+                                    SqlSecurityUtils.validateColumnName(fk.getReferencedColumnName(), true)));
                             if (fk.getOnUpdateAction() != null && !fk.getOnUpdateAction().isBlank()) {
                                 fkSql.append(" ON UPDATE ").append(fk.getOnUpdateAction());
                             }
@@ -223,10 +232,12 @@ public class MySqlTableManager implements TableService {
 
     @Override
     public TableMetadataDto renameTable(UpdateTableDto updateTableDto) {
+        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(updateTableDto.getSchemaName(), true);
+
         if (!updateTableDto.getTableName().equalsIgnoreCase(updateTableDto.getUpdatedTableName())) {
             String renameSql = String.format("RENAME TABLE %s.%s TO %s.%s",
-                    updateTableDto.getSchemaName(), updateTableDto.getTableName(),
-                    updateTableDto.getSchemaName(), updateTableDto.getUpdatedTableName());
+                    validatedSchemaName, SqlSecurityUtils.validateTableName(updateTableDto.getTableName(), true),
+                    validatedSchemaName, SqlSecurityUtils.validateTableName(updateTableDto.getUpdatedTableName(), true));
             jdbcTemplate.execute(renameSql);
         }
 
@@ -236,6 +247,9 @@ public class MySqlTableManager implements TableService {
 
     @Override
     public Boolean deleteTable(String schemaName, String tableName, boolean force) {
+        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName, true);
+        String validatedTableName = SqlSecurityUtils.validateTableName(tableName, true);
+
         if (schemaService.isSystemSchemaByName(schemaName)) {
             throw new UnauthorizedActionException("Cannot delete system table: " + schemaName + "." + tableName);
         }
@@ -257,14 +271,17 @@ public class MySqlTableManager implements TableService {
                 String[] parts = fk.split(" ON ");
                 String constraintName = parts[0];
                 String childTable = parts[1];
-                String sql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s", schemaName, childTable,
-                        constraintName);
+                String sql = String.format("ALTER TABLE %s.%s DROP FOREIGN KEY %s",
+                        validatedSchemaName,
+                        SqlSecurityUtils.validateTableName(childTable, true),
+                        SqlSecurityUtils.validateIdentifier(constraintName, "Constraint name", true));
+
                 jdbcTemplate.execute(sql);
             }
         }
 
         // Drop the table
-        String sql = String.format("DROP TABLE %s.%s", schemaName, tableName);
+        String sql = String.format("DROP TABLE %s.%s", validatedSchemaName, validatedTableName);
         jdbcTemplate.execute(sql);
 
         return !tableExists(schemaName, tableName);

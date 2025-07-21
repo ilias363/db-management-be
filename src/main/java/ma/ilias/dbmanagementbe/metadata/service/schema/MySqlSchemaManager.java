@@ -6,6 +6,7 @@ import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.NewSchemaDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
+import ma.ilias.dbmanagementbe.util.SqlSecurityUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,11 +24,13 @@ public class MySqlSchemaManager implements SchemaService {
 
     @Override
     public Boolean schemaExists(String schemaName) {
+        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName, false);
+        
         String schemaSql = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?";
 
         List<String> schemas = jdbcTemplate.query(
                 schemaSql,
-                ps -> ps.setString(1, schemaName),
+                ps -> ps.setString(1, validatedSchemaName),
                 (rs, rowNum) -> rs.getString("SCHEMA_NAME")
         );
 
@@ -79,13 +82,17 @@ public class MySqlSchemaManager implements SchemaService {
 
     @Override
     public SchemaMetadataDto createSchema(NewSchemaDto newSchema) {
-        jdbcTemplate.execute("CREATE DATABASE " + newSchema.getSchemaName().toLowerCase());
+        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(newSchema.getSchemaName(), true);
+        
+        jdbcTemplate.execute("CREATE DATABASE " + validatedSchemaName);
 
         return getSchemaByName(newSchema.getSchemaName(), false, false);
     }
 
     @Override
     public Boolean deleteSchema(String schemaName) {
+        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName, true);
+        
         if (isSystemSchemaByName(schemaName)) {
             throw new UnauthorizedActionException("Cannot delete system schema: " + schemaName);
         }
@@ -94,7 +101,7 @@ public class MySqlSchemaManager implements SchemaService {
             throw new SchemaNotFoundException(schemaName);
         }
 
-        jdbcTemplate.execute("DROP DATABASE " + schemaName);
+        jdbcTemplate.execute("DROP DATABASE " + validatedSchemaName);
         return !schemaExists(schemaName);
     }
 }
