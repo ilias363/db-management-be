@@ -2,7 +2,6 @@ package ma.ilias.dbmanagementbe.metadata.service.table;
 
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.enums.ColumnType;
-import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
 import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
@@ -12,9 +11,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto
 import ma.ilias.dbmanagementbe.metadata.dto.table.NewTableDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.UpdateTableDto;
-import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
-import ma.ilias.dbmanagementbe.metadata.service.index.IndexService;
-import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
+import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.util.SqlSecurityUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -30,96 +27,23 @@ import java.util.stream.Collectors;
 public class MySqlTableManager implements TableService {
 
     private final JdbcTemplate jdbcTemplate;
-    private final SchemaService schemaService;
-    private final ColumnService columnService;
-    private final IndexService indexService;
+    private final MetadataProviderService metadataProviderService;
 
     @Override
     public Boolean tableExists(String schemaName, String tableName) {
-        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
-        String validatedTableName = SqlSecurityUtils.validateTableName(tableName);
-
-        if (!schemaService.schemaExists(validatedSchemaName)) {
-            throw new SchemaNotFoundException(validatedSchemaName.toLowerCase());
-        }
-
-        String tableSql = """
-                SELECT TABLE_NAME
-                FROM INFORMATION_SCHEMA.TABLES
-                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
-                """;
-
-        List<String> tables = jdbcTemplate.query(
-                tableSql,
-                ps -> {
-                    ps.setString(1, validatedSchemaName);
-                    ps.setString(2, validatedTableName);
-                },
-                (rs, rowNum) -> rs.getString("TABLE_NAME"));
-
-        return !tables.isEmpty();
+        return metadataProviderService.tableExists(schemaName, tableName);
     }
 
     @Override
     public TableMetadataDto getTable(String schemaName, String tableName, boolean includeSchema,
                                      boolean includeColumns, boolean includeIndexes, boolean checkTableExists) {
-        if (checkTableExists && !tableExists(schemaName, tableName)) {
-            throw new TableNotFoundException(schemaName.toLowerCase(), tableName.toLowerCase());
-        }
-
-        String tableSql = """
-                SELECT t.TABLE_NAME,
-                       COUNT(c.COLUMN_NAME) AS COLUMN_COUNT,
-                       t.TABLE_ROWS,
-                       (t.DATA_LENGTH + t.INDEX_LENGTH) AS SIZE_IN_BYTES
-                FROM INFORMATION_SCHEMA.TABLES t
-                LEFT JOIN INFORMATION_SCHEMA.COLUMNS c
-                    ON t.TABLE_SCHEMA = c.TABLE_SCHEMA AND t.TABLE_NAME = c.TABLE_NAME
-                WHERE t.TABLE_SCHEMA = ? AND t.TABLE_NAME = ?
-                GROUP BY t.TABLE_NAME, t.TABLE_ROWS, t.DATA_LENGTH, t.INDEX_LENGTH
-                """;
-
-        return jdbcTemplate.queryForObject(
-                tableSql,
-                (rs, rowNum) -> TableMetadataDto.builder()
-                        .tableName(rs.getString("TABLE_NAME"))
-                        .columnCount(rs.getInt("COLUMN_COUNT"))
-                        .rowCount(rs.getLong("TABLE_ROWS"))
-                        .sizeInBytes(rs.getLong("SIZE_IN_BYTES"))
-                        .schema(includeSchema ? schemaService.getSchemaByName(schemaName, false, false) : null)
-                        .columns(includeColumns ? columnService.getColumnsByTable(schemaName, tableName, false, false) : null)
-                        .indexes(includeIndexes ? indexService.getIndexesByTable(schemaName, tableName, false, false) : null)
-                        .build(),
-                schemaName,
-                tableName);
+        return metadataProviderService.getTable(schemaName, tableName, includeSchema, includeColumns, includeIndexes, checkTableExists);
     }
 
     @Override
     public List<TableMetadataDto> getTablesBySchema(String schemaName, boolean includeSchema, boolean includeColumns,
                                                     boolean includeIndexes, boolean checkSchemaExists) {
-        if (checkSchemaExists && !schemaService.schemaExists(schemaName)) {
-            throw new SchemaNotFoundException(schemaName.toLowerCase());
-        }
-
-        String tableSql = """
-                SELECT TABLE_NAME
-                FROM INFORMATION_SCHEMA.TABLES
-                WHERE TABLE_SCHEMA = ?
-                """;
-
-        var tables = jdbcTemplate.query(
-                tableSql,
-                (rs, rowNum) -> getTable(
-                        schemaName, rs.getString("TABLE_NAME"),
-                        false, includeColumns, includeIndexes, false),
-                schemaName);
-
-        if (includeSchema) {
-            var schema = schemaService.getSchemaByName(schemaName, false, false);
-            tables.forEach(table -> table.setSchema(schema));
-        }
-
-        return tables;
+        return metadataProviderService.getTablesBySchema(schemaName, includeSchema, includeColumns, includeIndexes, checkSchemaExists);
     }
 
     @Override
@@ -250,7 +174,7 @@ public class MySqlTableManager implements TableService {
         String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
         String validatedTableName = SqlSecurityUtils.validateTableName(tableName);
 
-        if (schemaService.isSystemSchemaByName(schemaName)) {
+        if (metadataProviderService.isSystemSchemaByName(schemaName)) {
             throw new UnauthorizedActionException("Cannot delete system table: " + schemaName + "." + tableName);
         }
 
