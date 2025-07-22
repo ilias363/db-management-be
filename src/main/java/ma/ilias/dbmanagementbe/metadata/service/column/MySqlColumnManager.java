@@ -2,23 +2,17 @@ package ma.ilias.dbmanagementbe.metadata.service.column;
 
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.exception.ColumnNotFoundException;
-import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
 import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
-import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.ForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.NewForeignKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
-import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.PrimaryKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.NewPrimaryKeyForeignKeyColumnDto;
-import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.PrimaryKeyForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
-import ma.ilias.dbmanagementbe.metadata.dto.column.standard.StandardColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.*;
 import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnDataTypeDefinition;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
-import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
-import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
+import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.util.SqlSecurityUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -34,212 +28,23 @@ import java.util.Set;
 public class MySqlColumnManager implements ColumnService {
 
     private final JdbcTemplate jdbcTemplate;
-    private final SchemaService schemaService;
-    private final TableService tableService;
+    private final MetadataProviderService metadataProviderService;
 
     @Override
     public Boolean columnExists(String schemaName, String tableName, String columnName) {
-        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
-        String validatedTableName = SqlSecurityUtils.validateTableName(tableName);
-        String validatedColumnName = SqlSecurityUtils.validateColumnName(columnName);
-
-        if (!tableService.tableExists(validatedSchemaName, validatedTableName)) {
-            throw new TableNotFoundException(validatedSchemaName.toLowerCase(), validatedTableName.toLowerCase());
-        }
-
-        String sql = """
-                SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
-                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
-                """;
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, validatedSchemaName, validatedTableName, validatedColumnName);
-        return count != null && count > 0;
+        return metadataProviderService.columnExists(schemaName, tableName, columnName);
     }
 
     @Override
     public BaseColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
                                            boolean includeTable, boolean checkColumnExists) {
-        if (checkColumnExists && !columnExists(schemaName, tableName, columnName)) {
-            throw new ColumnNotFoundException(schemaName, tableName, columnName);
-        }
-
-        String sql = """
-                SELECT  c.COLUMN_NAME,
-                        c.ORDINAL_POSITION,
-                        c.DATA_TYPE,
-                        c.CHARACTER_MAXIMUM_LENGTH,
-                        c.NUMERIC_PRECISION,
-                        c.NUMERIC_SCALE,
-                        c.IS_NULLABLE,
-                        c.COLUMN_DEFAULT,
-                        c.COLUMN_KEY,
-                        c.EXTRA
-                FROM INFORMATION_SCHEMA.COLUMNS c
-                WHERE c.TABLE_SCHEMA = ? AND c.TABLE_NAME = ? AND c.COLUMN_NAME = ?
-                """;
-
-        String uniqueColsSql = """
-                SELECT c.COLUMN_NAME
-                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE c
-                JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS t
-                  ON c.CONSTRAINT_NAME = t.CONSTRAINT_NAME
-                WHERE c.TABLE_SCHEMA = ? AND c.TABLE_NAME = ? AND t.CONSTRAINT_TYPE = 'UNIQUE'
-                  AND c.COLUMN_NAME = ?
-                """;
-
-        List<String> uniqueColumns = jdbcTemplate.query(
-                uniqueColsSql,
-                ps -> {
-                    ps.setString(1, schemaName);
-                    ps.setString(2, tableName);
-                    ps.setString(3, columnName);
-                },
-                (rs, rowNum) -> rs.getString("COLUMN_NAME"));
-
-        // Get foreign key information
-        String foreignKeySql = """
-                SELECT kcu.REFERENCED_TABLE_SCHEMA,
-                       kcu.REFERENCED_TABLE_NAME,
-                       kcu.REFERENCED_COLUMN_NAME,
-                       rc.UPDATE_RULE,
-                       rc.DELETE_RULE
-                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
-                JOIN INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
-                    ON kcu.CONSTRAINT_NAME = rc.CONSTRAINT_NAME
-                    AND kcu.CONSTRAINT_SCHEMA = rc.CONSTRAINT_SCHEMA
-                WHERE kcu.TABLE_SCHEMA = ? AND kcu.TABLE_NAME = ? AND kcu.COLUMN_NAME = ?
-                """;
-
-        List<ForeignKeyInfo> foreignKeyInfos = jdbcTemplate.query(
-                foreignKeySql,
-                ps -> {
-                    ps.setString(1, schemaName);
-                    ps.setString(2, tableName);
-                    ps.setString(3, columnName);
-                },
-                (rs, rowNum) -> new ForeignKeyInfo(
-                        rs.getString("REFERENCED_TABLE_SCHEMA"),
-                        rs.getString("REFERENCED_TABLE_NAME"),
-                        rs.getString("REFERENCED_COLUMN_NAME"),
-                        rs.getString("DELETE_RULE"),
-                        rs.getString("UPDATE_RULE")));
-
-        return jdbcTemplate.queryForObject(
-                sql,
-                (rs, rowNum) -> {
-                    String colName = rs.getString("COLUMN_NAME");
-                    Integer ordinalPosition = rs.getObject("ORDINAL_POSITION", Integer.class);
-                    String dataType = rs.getString("DATA_TYPE");
-                    Long characterMaxLength = rs.getObject("CHARACTER_MAXIMUM_LENGTH", Long.class);
-                    Integer numericPrecision = rs.getObject("NUMERIC_PRECISION", Integer.class);
-                    Integer numericScale = rs.getObject("NUMERIC_SCALE", Integer.class);
-                    String columnDefault = rs.getString("COLUMN_DEFAULT");
-                    Boolean autoIncrement = rs.getString("EXTRA") != null
-                            && rs.getString("EXTRA").toLowerCase().contains("auto_increment");
-                    boolean isPrimaryKey = "PRI".equalsIgnoreCase(rs.getString("COLUMN_KEY"));
-                    Boolean isNullable = !isPrimaryKey && "YES".equalsIgnoreCase(rs.getString("IS_NULLABLE"));
-                    Boolean isUnique = isPrimaryKey || uniqueColumns.contains(colName);
-
-                    TableMetadataDto table = includeTable ? tableService.getTable(schemaName, tableName, true, false, false, false) : null;
-
-                    if (isPrimaryKey && !foreignKeyInfos.isEmpty()) {
-                        return PrimaryKeyForeignKeyColumnMetadataDto.builder()
-                                .columnName(colName)
-                                .ordinalPosition(ordinalPosition)
-                                .dataType(dataType)
-                                .characterMaxLength(characterMaxLength)
-                                .numericPrecision(numericPrecision)
-                                .numericScale(numericScale)
-                                .isNullable(false)
-                                .isUnique(true)
-                                .columnDefault(columnDefault)
-                                .autoIncrement(autoIncrement)
-                                .table(table)
-                                .referencedSchemaName(foreignKeyInfos.get(0).referencedSchemaName())
-                                .referencedTableName(foreignKeyInfos.get(0).referencedTableName())
-                                .referencedColumnName(foreignKeyInfos.get(0).referencedColumnName())
-                                .onDeleteAction(foreignKeyInfos.get(0).onDeleteAction())
-                                .onUpdateAction(foreignKeyInfos.get(0).onUpdateAction())
-                                .build();
-                    } else if (isPrimaryKey) {
-                        return PrimaryKeyColumnMetadataDto.builder()
-                                .columnName(colName)
-                                .ordinalPosition(ordinalPosition)
-                                .dataType(dataType)
-                                .characterMaxLength(characterMaxLength)
-                                .numericPrecision(numericPrecision)
-                                .numericScale(numericScale)
-                                .isNullable(false)
-                                .isUnique(true)
-                                .columnDefault(columnDefault)
-                                .autoIncrement(autoIncrement)
-                                .table(table)
-                                .build();
-                    } else if (!foreignKeyInfos.isEmpty()) {
-                        ForeignKeyInfo fkInfo = foreignKeyInfos.get(0);
-                        return ForeignKeyColumnMetadataDto.builder()
-                                .columnName(colName)
-                                .ordinalPosition(ordinalPosition)
-                                .dataType(dataType)
-                                .characterMaxLength(characterMaxLength)
-                                .numericPrecision(numericPrecision)
-                                .numericScale(numericScale)
-                                .isNullable(isNullable)
-                                .isUnique(isUnique)
-                                .columnDefault(columnDefault)
-                                .autoIncrement(autoIncrement)
-                                .table(table)
-                                .referencedSchemaName(fkInfo.referencedSchemaName())
-                                .referencedTableName(fkInfo.referencedTableName())
-                                .referencedColumnName(fkInfo.referencedColumnName())
-                                .onDeleteAction(fkInfo.onDeleteAction())
-                                .onUpdateAction(fkInfo.onUpdateAction())
-                                .build();
-                    } else {
-                        return StandardColumnMetadataDto.builder()
-                                .columnName(colName)
-                                .ordinalPosition(ordinalPosition)
-                                .dataType(dataType)
-                                .characterMaxLength(characterMaxLength)
-                                .numericPrecision(numericPrecision)
-                                .numericScale(numericScale)
-                                .isNullable(isNullable)
-                                .isUnique(isUnique)
-                                .columnDefault(columnDefault)
-                                .autoIncrement(autoIncrement)
-                                .table(table)
-                                .build();
-                    }
-                },
-                schemaName,
-                tableName,
-                columnName);
+        return metadataProviderService.getColumn(schemaName, tableName, columnName, includeTable, checkColumnExists);
     }
 
     @Override
     public List<BaseColumnMetadataDto> getColumnsByTable(String schemaName, String tableName,
                                                          boolean includeTable, boolean checkTableExists) {
-        if (checkTableExists && !tableService.tableExists(schemaName, tableName)) {
-            throw new TableNotFoundException(schemaName, tableName);
-        }
-
-        String columnsSql = """
-                SELECT  c.COLUMN_NAME
-                FROM INFORMATION_SCHEMA.COLUMNS c
-                WHERE c.TABLE_SCHEMA = ? AND c.TABLE_NAME = ?
-                ORDER BY c.ORDINAL_POSITION
-                """;
-
-        List<BaseColumnMetadataDto> columns = jdbcTemplate.query(
-                columnsSql,
-                (rs, rowNum) -> getColumn(schemaName, tableName, rs.getString("COLUMN_NAME"), false, false),
-                schemaName, tableName);
-
-        if (includeTable) {
-            TableMetadataDto table = tableService.getTable(schemaName, tableName, true, false, false, false);
-            columns.forEach(col -> col.setTable(table));
-        }
-
-        return columns;
+        return metadataProviderService.getColumnsByTable(schemaName, tableName, includeTable, checkTableExists);
     }
 
     @Override
@@ -356,7 +161,7 @@ public class MySqlColumnManager implements ColumnService {
                     columnName.toLowerCase());
         }
 
-        if (schemaService.isSystemSchemaByName(schemaName)) {
+        if (metadataProviderService.isSystemSchemaByName(schemaName)) {
             throw new UnauthorizedActionException(
                     "Cannot delete column from system table: " + schemaName + "." + tableName);
         }
@@ -426,14 +231,7 @@ public class MySqlColumnManager implements ColumnService {
 
     @Override
     public Boolean isColumnPrimaryKey(String schemaName, String tableName, String columnName) {
-        String pkCheckSql = """
-                SELECT COUNT(*) FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
-                  AND CONSTRAINT_NAME = 'PRIMARY'
-                """;
-
-        Integer pkCount = jdbcTemplate.queryForObject(pkCheckSql, Integer.class, schemaName, tableName, columnName);
-        return pkCount != null && pkCount > 0;
+        return metadataProviderService.isColumnPrimaryKey(schemaName, tableName, columnName);
     }
 
     private List<String> getReferencingForeignKeyConstraints(String schemaName, String tableName, String columnName) {
@@ -894,7 +692,7 @@ public class MySqlColumnManager implements ColumnService {
             jdbcTemplate.execute(sql);
         }
 
-        TableMetadataDto table = tableService.getTable(
+        TableMetadataDto table = metadataProviderService.getTable(
                 updateColPKDto.getSchemaName(), updateColPKDto.getTableName(),
                 true, false, false, false);
 
@@ -1036,10 +834,5 @@ public class MySqlColumnManager implements ColumnService {
         }
 
         return sb.toString();
-    }
-
-    // Helper record for foreign key information
-    private record ForeignKeyInfo(String referencedSchemaName, String referencedTableName,
-                                  String referencedColumnName, String onUpdateAction, String onDeleteAction) {
     }
 }
