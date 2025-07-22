@@ -1,10 +1,13 @@
 package ma.ilias.dbmanagementbe.controller;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
+import ma.ilias.dbmanagementbe.record.dto.NewRecordDto;
 import ma.ilias.dbmanagementbe.record.dto.RecordDto;
 import ma.ilias.dbmanagementbe.record.dto.RecordPageDto;
 import ma.ilias.dbmanagementbe.record.service.RecordService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,6 +49,18 @@ public class RecordController {
                 .success(true)
                 .data(record)
                 .build());
+    }
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<RecordDto>> createRecord(
+            @Valid @RequestBody NewRecordDto newRecordDto
+    ) {
+        RecordDto createdRecord = recordService.createRecord(newRecordDto);
+        return new ResponseEntity<>(ApiResponse.<RecordDto>builder()
+                .message("Record created successfully")
+                .success(true)
+                .data(createdRecord)
+                .build(), HttpStatus.CREATED);
     }
 
     @GetMapping("/{schemaName}/{tableName}/count")

@@ -1,15 +1,20 @@
 package ma.ilias.dbmanagementbe.record.service;
 
 import lombok.AllArgsConstructor;
+import ma.ilias.dbmanagementbe.enums.ColumnType;
 import ma.ilias.dbmanagementbe.exception.ColumnNotFoundException;
 import ma.ilias.dbmanagementbe.exception.InvalidRecordDataException;
 import ma.ilias.dbmanagementbe.exception.RecordNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.ForeignKeyColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.PrimaryKeyForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
+import ma.ilias.dbmanagementbe.record.dto.NewRecordDto;
 import ma.ilias.dbmanagementbe.record.dto.RecordDto;
 import ma.ilias.dbmanagementbe.record.dto.RecordPageDto;
 import ma.ilias.dbmanagementbe.util.SqlSecurityUtils;
+import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -17,10 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -35,8 +38,9 @@ public class MySqlRecordManager implements RecordService {
                                     String sortBy, String sortDirection) {
         validateTableExists(schemaName, tableName);
 
-        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName).toLowerCase();
-        String validatedTableName = SqlSecurityUtils.validateTableName(tableName).toLowerCase();
+        // schema name and table name are validated during the table existence check
+        String validatedSchemaName = schemaName.trim().toLowerCase();
+        String validatedTableName = tableName.trim().toLowerCase();
 
         int offset = page * size;
 
@@ -82,8 +86,9 @@ public class MySqlRecordManager implements RecordService {
     public RecordDto getRecord(String schemaName, String tableName, Map<String, Object> primaryKeyValues) {
         validateTableExists(schemaName, tableName);
 
-        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
-        String validatedTableName = SqlSecurityUtils.validateTableName(tableName);
+        // schema name and table name are validated during the table existence check
+        String validatedSchemaName = schemaName.trim().toLowerCase();
+        String validatedTableName = tableName.trim().toLowerCase();
 
         List<BaseColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
 
@@ -126,6 +131,77 @@ public class MySqlRecordManager implements RecordService {
     }
 
     @Override
+    public RecordDto createRecord(NewRecordDto newRecordDto) {
+        validateTableExists(newRecordDto.getSchemaName(), newRecordDto.getTableName());
+
+        // schema name and table name are validated during the table existence check
+        String validatedSchemaName = newRecordDto.getSchemaName().trim().toLowerCase();
+        String validatedTableName = newRecordDto.getTableName().trim().toLowerCase();
+
+        List<BaseColumnMetadataDto> columns = metadataProviderService.getColumnsByTable(
+                validatedSchemaName, validatedTableName, false, false);
+
+        validateRecordData(validatedSchemaName, validatedTableName, newRecordDto.getData(), columns, false);
+
+        // Prepare column names and values
+        List<String> columnNames = new ArrayList<>();
+        List<Object> values = new ArrayList<>();
+        List<String> placeholders = new ArrayList<>();
+
+        for (BaseColumnMetadataDto column : columns) {
+            String columnName = column.getColumnName();
+            if (newRecordDto.getData().containsKey(columnName)) {
+                columnNames.add(columnName);
+                values.add(newRecordDto.getData().get(columnName));
+                placeholders.add("?");
+            } else if (!column.getIsNullable() && !column.getAutoIncrement()) {
+                throw new InvalidRecordDataException(validatedTableName,
+                        "Missing required value for non-nullable column: " + columnName);
+            }
+        }
+
+        if (columnNames.isEmpty()) {
+            throw new InvalidRecordDataException(validatedTableName, "No valid column data provided");
+        }
+
+        String query = "INSERT INTO " + validatedSchemaName + "." + validatedTableName +
+                " (" + String.join(", ", columnNames) + ") VALUES (" +
+                String.join(", ", placeholders) + ")";
+
+        try {
+            jdbcTemplate.update(query, values.toArray());
+
+            // For tables with auto-increment primary key, get the generated key
+            List<BaseColumnMetadataDto> primaryKeyColumns = columns.stream()
+                    .filter(column -> Set.of(ColumnType.PRIMARY_KEY, ColumnType.PRIMARY_KEY_FOREIGN_KEY)
+                            .contains(column.getColumnType()))
+                    .toList();
+
+            // TODO: handle the case where a table doesnt have a pk (after implementing the getRecordByValues)
+
+            if (primaryKeyColumns.size() == 1 && primaryKeyColumns.get(0).getAutoIncrement()) {
+                Long generatedId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+                Map<String, Object> pkValues = new HashMap<>();
+                pkValues.put(primaryKeyColumns.get(0).getColumnName(), generatedId);
+                return getRecord(validatedSchemaName, validatedTableName, pkValues);
+            } else {
+                // Build primary key values from the inserted data
+                Map<String, Object> pkValues = new HashMap<>();
+                for (BaseColumnMetadataDto pkColumn : primaryKeyColumns) {
+                    String columnName = pkColumn.getColumnName();
+                    if (newRecordDto.getData().containsKey(columnName)) {
+                        pkValues.put(columnName, newRecordDto.getData().get(columnName));
+                    }
+                }
+                return getRecord(validatedSchemaName, validatedTableName, pkValues);
+            }
+
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to create record: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public long getRecordCount(String schemaName, String tableName, boolean checkTableExists) {
         String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
         String validatedTableName = SqlSecurityUtils.validateTableName(tableName);
@@ -142,10 +218,208 @@ public class MySqlRecordManager implements RecordService {
         }
     }
 
+    @Override
+    public void validateRecordData(String schemaName, String tableName, Map<String, Object> data,
+                                   List<BaseColumnMetadataDto> columns, boolean isUpdate) {
+        if (data == null || data.isEmpty()) {
+            throw new InvalidRecordDataException(tableName, "Record data cannot be null or empty");
+        }
+
+        if (columns == null) {
+            // columns are either provided from outside (already fetched),
+            // or fetched here if 'columns=null'
+            columns = metadataProviderService.getColumnsByTable(schemaName, tableName, false, false);
+        }
+        Map<String, BaseColumnMetadataDto> columnMap = columns.stream()
+                .collect(Collectors.toMap(BaseColumnMetadataDto::getColumnName, col -> col));
+
+        // Validate each provided column
+        for (Map.Entry<String, Object> entry : data.entrySet()) {
+            String columnName = entry.getKey();
+            Object value = entry.getValue();
+
+            BaseColumnMetadataDto column = columnMap.get(columnName);
+            if (column == null) {
+                throw new InvalidRecordDataException(tableName, "Column does not exist: " + columnName);
+            }
+
+            // Skip validation for auto-increment columns during insert
+            if (!isUpdate && column.getAutoIncrement()) {
+                continue;
+            }
+
+            // Validate null values
+            if (value == null && !column.getIsNullable()) {
+                throw new InvalidRecordDataException(tableName,
+                        "Cannot insert null value into non-nullable column: " + columnName);
+            }
+
+            if (column.getIsUnique()) {
+                validateValueUniqueness(schemaName, tableName, columnName, value);
+            }
+
+            if (column instanceof ForeignKeyColumnMetadataDto fkCol) {
+                validateFKValueExists(
+                        fkCol.getReferencedSchemaName(),
+                        fkCol.getReferencedTableName(),
+                        fkCol.getReferencedColumnName(),
+                        value);
+            }
+            if (column instanceof PrimaryKeyForeignKeyColumnMetadataDto pkFkCol) {
+                validateFKValueExists(
+                        pkFkCol.getReferencedSchemaName(),
+                        pkFkCol.getReferencedTableName(),
+                        pkFkCol.getReferencedColumnName(),
+                        value);
+            }
+
+            validateValueDatatype(tableName, columnName, value, column);
+        }
+    }
+
+    private void validateValueDatatype(String tableName, String columnName, Object value, BaseColumnMetadataDto column) {
+        switch (column.getDataType().toUpperCase()) {
+            case "VARCHAR", "CHAR" -> {
+                if (value instanceof String stringValue) {
+                    if (stringValue.length() > column.getCharacterMaxLength()) {
+                        throw new InvalidRecordDataException(tableName,
+                                "Value for column " + columnName + " exceeds max length of " + column.getCharacterMaxLength());
+                    }
+                } else {
+                    throw new InvalidRecordDataException(tableName,
+                            "Value for column " + columnName + " must be a string");
+                }
+            }
+            case "TEXT" -> {
+                if (!(value instanceof String)) {
+                    throw new InvalidRecordDataException(tableName, "Value for column " + columnName + " must be a string");
+                }
+            }
+            case "INT", "INTEGER", "SMALLINT", "BIGINT" -> {
+                if (value instanceof String stringValue) {
+                    if (!ValidationUtils.validateIntegerValue(stringValue)) {
+                        throw new InvalidRecordDataException(tableName,
+                                "Value for column " + columnName + " must be a valid integer");
+                    }
+                } else if (!(value instanceof Integer || value instanceof Long)) {
+                    throw new InvalidRecordDataException(tableName, "Value for column " + columnName + " must be a integer");
+                }
+            }
+            case "DECIMAL", "NUMERIC" -> {
+                if (value instanceof Number numberValue) {
+                    if (!ValidationUtils.validateDecimalFormat(
+                            numberValue.toString(),
+                            column.getNumericPrecision(),
+                            column.getNumericScale())) {
+                        throw new InvalidRecordDataException(tableName,
+                                "Value for column " + columnName + " must be a valid decimal with precision " +
+                                        column.getNumericPrecision() + " and scale " + column.getNumericScale());
+                    }
+                } else if (value instanceof String stringValue) {
+                    if (!ValidationUtils.validateDecimalFormat(stringValue, column.getNumericPrecision(), column.getNumericScale())) {
+                        throw new InvalidRecordDataException(tableName,
+                                "Value for column " + columnName + " must be a valid decimal with precision " +
+                                        column.getNumericPrecision() + " and scale " + column.getNumericScale());
+                    }
+
+                    if (!ValidationUtils.validateDecimalValue(stringValue)) {
+                        throw new InvalidRecordDataException(tableName, "Value for column " + columnName + " must be a decimal");
+                    }
+                } else {
+                    throw new InvalidRecordDataException(tableName, "Value for column " + columnName + " must be a decimal");
+                }
+            }
+            case "FLOAT", "REAL", "DOUBLE" -> {
+                if (value instanceof String stringValue) {
+                    if (!ValidationUtils.validateFloatValue(stringValue)) {
+                        throw new InvalidRecordDataException(tableName, "Value for column " + columnName + " must be a number");
+                    }
+                } else if (!(value instanceof Double)) {
+                    throw new InvalidRecordDataException(tableName, "Value for column " + columnName + " must be a number");
+                }
+            }
+            case "BOOLEAN" -> {
+                if (!(value instanceof Boolean)) {
+                    throw new InvalidRecordDataException(tableName, "Value for column " + columnName + " must be a boolean");
+                }
+            }
+            case "DATE" -> {
+                if (value instanceof String stringValue) {
+                    if (!ValidationUtils.validateDateValue(stringValue)) {
+                        throw new InvalidRecordDataException(tableName, "Value for column " + columnName +
+                                " must be a valid date (yyyy-MM-dd)");
+                    }
+                } else {
+                    throw new InvalidRecordDataException(tableName, "Value for column " + columnName +
+                            " must be a string representing a date (yyyy-MM-dd");
+                }
+            }
+            case "TIME" -> {
+                if (value instanceof String stringValue) {
+                    if (!ValidationUtils.validateTimeValue(stringValue)) {
+                        throw new InvalidRecordDataException(tableName, "Value for column " + columnName +
+                                " must be a valid time (HH:mm:ss)");
+                    }
+                } else {
+                    throw new InvalidRecordDataException(tableName, "Value for column " + columnName +
+                            " must be a string representing a time (HH:mm:ss)");
+                }
+            }
+            case "TIMESTAMP" -> {
+                if (value instanceof String stringValue) {
+                    if (!ValidationUtils.validateTimestampValue(stringValue)) {
+                        throw new InvalidRecordDataException(tableName, "Value for column " + columnName +
+                                " must be a valid timestamp (yyyy-MM-dd HH:mm:ss)");
+                    }
+                } else {
+                    throw new InvalidRecordDataException(tableName, "Value for column " + columnName +
+                            " must be a string representing a timestamp (yyyy-MM-dd HH:mm:ss)");
+                }
+            }
+            default -> throw new InvalidRecordDataException(tableName, "Invalid data type for column" + columnName);
+        }
+    }
+
+    private void validateValueUniqueness(String schemaName, String tableName, String columnName, Object value) {
+        try {
+            String checkSql = String.format(
+                    "SELECT COUNT(*) FROM %s.%s WHERE %s = ?",
+                    schemaName, tableName, columnName);
+
+            Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, value);
+
+            if (count != null && count > 0) {
+                throw new InvalidRecordDataException(
+                        String.format("Column value '%s' already exists in column %s", value, columnName));
+            }
+        } catch (Exception e) {
+            throw new InvalidRecordDataException("Unable to validate column value uniqueness");
+        }
+    }
+
+    private void validateFKValueExists(String schemaName, String tableName, String columnName, Object value) {
+        try {
+            String checkSql = String.format(
+                    "SELECT COUNT(*) FROM %s.%s WHERE %s = ?",
+                    schemaName, tableName, columnName);
+
+            Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, value);
+
+            if (count == null || count == 0) {
+                throw new InvalidRecordDataException(
+                        String.format("Column value '%s' does not exist in the referenced table '%s.%s' column '%s'",
+                                value, schemaName, tableName, columnName));
+            }
+        } catch (Exception e) {
+            throw new InvalidRecordDataException("Unable to validate column value in referenced table");
+        }
+    }
+
     private List<BaseColumnMetadataDto> getPrimaryKeyColumns(String schemaName, String tableName) {
         return metadataProviderService.getColumnsByTable(schemaName, tableName, false, false)
                 .stream()
-                .filter(column -> metadataProviderService.isColumnPrimaryKey(schemaName, tableName, column.getColumnName()))
+                .filter(column -> Set.of(ColumnType.PRIMARY_KEY, ColumnType.PRIMARY_KEY_FOREIGN_KEY)
+                        .contains(column.getColumnType()))
                 .toList();
     }
 
