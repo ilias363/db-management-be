@@ -2,10 +2,13 @@ package ma.ilias.dbmanagementbe.controller;
 
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
+import ma.ilias.dbmanagementbe.record.dto.RecordDto;
 import ma.ilias.dbmanagementbe.record.dto.RecordPageDto;
 import ma.ilias.dbmanagementbe.record.service.RecordService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/records")
@@ -28,6 +31,20 @@ public class RecordController {
                 .message("Records fetched successfully")
                 .success(true)
                 .data(records)
+                .build());
+    }
+
+    @GetMapping("/{schemaName}/{tableName}/record")
+    public ResponseEntity<ApiResponse<RecordDto>> getRecord(
+            @PathVariable String schemaName,
+            @PathVariable String tableName,
+            @RequestParam Map<String, Object> primaryKeyValues
+    ) {
+        RecordDto record = recordService.getRecord(schemaName, tableName, primaryKeyValues);
+        return ResponseEntity.ok(ApiResponse.<RecordDto>builder()
+                .message("Record fetched successfully")
+                .success(true)
+                .data(record)
                 .build());
     }
 

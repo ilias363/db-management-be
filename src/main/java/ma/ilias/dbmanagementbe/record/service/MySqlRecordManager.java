@@ -2,7 +2,10 @@ package ma.ilias.dbmanagementbe.record.service;
 
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.exception.ColumnNotFoundException;
+import ma.ilias.dbmanagementbe.exception.InvalidRecordDataException;
+import ma.ilias.dbmanagementbe.exception.RecordNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.record.dto.RecordDto;
 import ma.ilias.dbmanagementbe.record.dto.RecordPageDto;
@@ -14,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,6 +79,53 @@ public class MySqlRecordManager implements RecordService {
     }
 
     @Override
+    public RecordDto getRecord(String schemaName, String tableName, Map<String, Object> primaryKeyValues) {
+        validateTableExists(schemaName, tableName);
+
+        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
+        String validatedTableName = SqlSecurityUtils.validateTableName(tableName);
+
+        List<BaseColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
+
+        if (primaryKeyColumns.isEmpty()) {
+            throw new InvalidRecordDataException(validatedTableName, "Table has no primary key defined");
+        }
+
+        // Build WHERE clause for primary key
+        StringBuilder whereClause = new StringBuilder();
+        List<Object> parameters = new ArrayList<>();
+
+        for (int i = 0; i < primaryKeyColumns.size(); i++) {
+            if (i > 0) whereClause.append(" AND ");
+
+            String columnName = primaryKeyColumns.get(i).getColumnName();
+            whereClause.append(columnName).append(" = ?");
+
+            Object value = primaryKeyValues.get(columnName);
+            if (value == null) {
+                throw new InvalidRecordDataException(validatedTableName,
+                        "Missing primary key value for column: " + columnName);
+            }
+            parameters.add(value);
+        }
+
+        String query = "SELECT * FROM " + validatedSchemaName + "." + validatedTableName +
+                " WHERE " + whereClause;
+
+        try {
+            RecordDto record = jdbcTemplate.queryForObject(query, this::mapRowToRecord, parameters.toArray());
+            if (record == null) {
+                throw new RecordNotFoundException(validatedTableName, primaryKeyValues);
+            }
+            record.setSchemaName(validatedSchemaName);
+            record.setTableName(validatedTableName);
+            return record;
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to fetch record: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public long getRecordCount(String schemaName, String tableName, boolean checkTableExists) {
         String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
         String validatedTableName = SqlSecurityUtils.validateTableName(tableName);
@@ -89,6 +140,13 @@ public class MySqlRecordManager implements RecordService {
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to get record count: " + e.getMessage(), e);
         }
+    }
+
+    private List<BaseColumnMetadataDto> getPrimaryKeyColumns(String schemaName, String tableName) {
+        return metadataProviderService.getColumnsByTable(schemaName, tableName, false, false)
+                .stream()
+                .filter(column -> metadataProviderService.isColumnPrimaryKey(schemaName, tableName, column.getColumnName()))
+                .toList();
     }
 
     private RecordDto mapRowToRecord(ResultSet rs, int rowNum) throws SQLException {
