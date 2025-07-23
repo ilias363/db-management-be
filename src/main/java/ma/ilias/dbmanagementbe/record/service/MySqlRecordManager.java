@@ -1047,41 +1047,13 @@ public class MySqlRecordManager implements RecordService {
         return direction;
     }
 
-    private static class ValidatedRecordData {
-        final String query;
-        final Object[] values;
-        final Map<String, Object> originalData;
-        final List<String> columnNames;
-
-        ValidatedRecordData(String query, Object[] values, Map<String, Object> originalData, List<String> columnNames) {
-            this.query = query;
-            this.values = values;
-            this.originalData = originalData;
-            this.columnNames = columnNames;
-        }
+    private record ValidatedRecordData(String query, Object[] values, Map<String, Object> originalData,
+                                       List<String> columnNames) {
     }
 
-    private static class ValidatedUpdateData {
-        final String query;
-        final Object[] values;
-        final Map<String, Object> primaryKeyValues;
-
-        ValidatedUpdateData(String query, Object[] values, Map<String, Object> primaryKeyValues) {
-            this.query = query;
-            this.values = values;
-            this.primaryKeyValues = primaryKeyValues;
-        }
+    private record ValidatedUpdateData(String query, Object[] values, Map<String, Object> primaryKeyValues) {
     }
 
-    private static class ValidatedDeleteData {
-        final String query;
-        final Object[] values;
-        final Map<String, Object> primaryKeyValues;
-
-        ValidatedDeleteData(String query, Object[] values, Map<String, Object> primaryKeyValues) {
-            this.query = query;
-            this.values = values;
-            this.primaryKeyValues = primaryKeyValues;
-        }
+    private record ValidatedDeleteData(String query, Object[] values, Map<String, Object> primaryKeyValues) {
     }
 }
