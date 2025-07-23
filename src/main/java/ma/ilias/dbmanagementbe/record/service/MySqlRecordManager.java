@@ -94,7 +94,7 @@ public class MySqlRecordManager implements RecordService {
         List<BaseColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
 
         if (primaryKeyColumns.isEmpty()) {
-            throw new InvalidRecordDataException(validatedTableName, "Table has no primary key defined");
+            throw new InvalidRecordDataException(validatedTableName, "Table has no primary key defined, use get by values");
         }
 
         // Build WHERE clause for primary key
@@ -178,9 +178,13 @@ public class MySqlRecordManager implements RecordService {
                             .contains(column.getColumnType()))
                     .toList();
 
-            // TODO: handle the case where a table doesnt have a pk (after implementing the getRecordByValues)
-
-            if (primaryKeyColumns.size() == 1 && primaryKeyColumns.get(0).getAutoIncrement()) {
+            if (primaryKeyColumns.isEmpty()) {
+                Map<String, Object> identifyingValues = new HashMap<>();
+                for (String columnName : columnNames) {
+                    identifyingValues.put(columnName, newRecordDto.getData().get(columnName));
+                }
+                return getRecordByValues(validatedSchemaName, validatedTableName, identifyingValues);
+            } else if (primaryKeyColumns.size() == 1 && primaryKeyColumns.get(0).getAutoIncrement()) {
                 Long generatedId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
                 Map<String, Object> pkValues = new HashMap<>();
                 pkValues.put(primaryKeyColumns.get(0).getColumnName(), generatedId);
@@ -301,6 +305,58 @@ public class MySqlRecordManager implements RecordService {
 
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to delete record: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public RecordDto getRecordByValues(String schemaName, String tableName, Map<String, Object> identifyingValues) {
+        validateTableExists(schemaName, tableName);
+
+        // schema name and table name are validated during the table existence check
+        String validatedSchemaName = schemaName.trim().toLowerCase();
+        String validatedTableName = tableName.trim().toLowerCase();
+
+        if (identifyingValues == null || identifyingValues.isEmpty()) {
+            throw new InvalidRecordDataException(validatedTableName, "Identifying values cannot be null or empty");
+        }
+
+        List<String> columnNames = metadataProviderService.getColumnsByTable(
+                        validatedSchemaName,
+                        validatedTableName,
+                        false, false).stream()
+                .map(BaseColumnMetadataDto::getColumnName)
+                .toList();
+
+        // Build WHERE clause using identifying values
+        List<String> whereClauses = new ArrayList<>();
+        List<Object> values = new ArrayList<>();
+
+        for (Map.Entry<String, Object> entry : identifyingValues.entrySet()) {
+            String columnName = SqlSecurityUtils.validateColumnName(entry.getKey());
+            if (!columnNames.contains(columnName)) {
+                throw new InvalidRecordDataException(tableName, "Column '" + columnName + "' does not exist");
+            }
+            if (entry.getValue() == null) {
+                whereClauses.add(columnName + " IS NULL");
+            } else {
+                whereClauses.add(columnName + " = ?");
+                values.add(entry.getValue());
+            }
+        }
+
+        String query = "SELECT * FROM " + validatedSchemaName + "." + validatedTableName +
+                " WHERE " + String.join(" AND ", whereClauses) + " LIMIT 1";
+
+        try {
+            RecordDto record = jdbcTemplate.queryForObject(query, this::mapRowToRecord, values.toArray());
+            if (record == null) {
+                throw new RecordNotFoundException("No record found matching the provided identifying values in table: " + validatedTableName);
+            }
+            record.setSchemaName(validatedSchemaName);
+            record.setTableName(validatedTableName);
+            return record;
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to fetch record by values: " + e.getMessage(), e);
         }
     }
 

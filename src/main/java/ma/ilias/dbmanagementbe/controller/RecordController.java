@@ -89,6 +89,20 @@ public class RecordController {
                 .build());
     }
 
+    @GetMapping("/{schemaName}/{tableName}/record/by-values")
+    public ResponseEntity<ApiResponse<RecordDto>> getRecordByValues(
+            @PathVariable String schemaName,
+            @PathVariable String tableName,
+            @RequestParam Map<String, Object> identifyingValues
+    ) {
+        RecordDto record = recordService.getRecordByValues(schemaName, tableName, identifyingValues);
+        return ResponseEntity.ok(ApiResponse.<RecordDto>builder()
+                .message("Record fetched successfully using identifying values")
+                .success(true)
+                .data(record)
+                .build());
+    }
+
     @GetMapping("/{schemaName}/{tableName}/count")
     public ResponseEntity<ApiResponse<Long>> getRecordCount(
             @PathVariable String schemaName,
