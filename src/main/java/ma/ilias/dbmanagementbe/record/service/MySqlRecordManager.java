@@ -560,6 +560,87 @@ public class MySqlRecordManager implements RecordService {
     }
 
     @Override
+    public List<RecordDto> updateRecords(BatchUpdateRecordsDto batchUpdateRecords) {
+        if (batchUpdateRecords == null || batchUpdateRecords.getUpdates() == null || batchUpdateRecords.getUpdates().isEmpty()) {
+            throw new InvalidRecordDataException("No records provided for batch update");
+        }
+
+        validateTableExists(batchUpdateRecords.getSchemaName(), batchUpdateRecords.getTableName());
+
+        String validatedSchemaName = batchUpdateRecords.getSchemaName().trim().toLowerCase();
+        String validatedTableName = batchUpdateRecords.getTableName().trim().toLowerCase();
+
+        // Check if table has primary key
+        List<BaseColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
+
+        if (primaryKeyColumns.isEmpty()) {
+            throw new InvalidRecordDataException(validatedTableName, "Table has no primary key columns, use update by values");
+        }
+
+        // Phase 1: Validate ALL updates first before any database operations
+        List<ValidatedUpdateData> validatedUpdates = new ArrayList<>();
+
+        for (BatchUpdateRecordsDto.SingleUpdateRecordDto updateRecord : batchUpdateRecords.getUpdates()) {
+            // Verify the record exists
+            getRecord(validatedSchemaName, validatedTableName, updateRecord.getPrimaryKeyValues());
+
+            validateRecordData(validatedSchemaName, validatedTableName, updateRecord.getData(), null, true);
+
+            List<String> setClauses = new ArrayList<>();
+            List<Object> values = new ArrayList<>();
+
+            for (Map.Entry<String, Object> entry : updateRecord.getData().entrySet()) {
+                String columnName = SqlSecurityUtils.validateColumnName(entry.getKey());
+                setClauses.add(columnName + " = ?");
+                values.add(entry.getValue());
+            }
+
+            if (setClauses.isEmpty()) {
+                throw new InvalidRecordDataException(validatedTableName, "No data provided for update");
+            }
+
+            // Build WHERE clause for primary key
+            List<String> whereClauses = new ArrayList<>();
+            for (Map.Entry<String, Object> pkEntry : updateRecord.getPrimaryKeyValues().entrySet()) {
+                String columnName = pkEntry.getKey();
+                if (pkEntry.getValue() == null) {
+                    whereClauses.add(columnName + " IS NULL");
+                } else {
+                    whereClauses.add(columnName + " = ?");
+                    values.add(pkEntry.getValue());
+                }
+            }
+
+            String query = "UPDATE " + validatedSchemaName + "." + validatedTableName +
+                    " SET " + String.join(", ", setClauses) +
+                    " WHERE " + String.join(" AND ", whereClauses);
+
+            // Store validated data for later execution
+            validatedUpdates.add(new ValidatedUpdateData(query, values.toArray(), updateRecord.getPrimaryKeyValues()));
+        }
+
+        // Phase 2: Execute all updates after validation passes
+        List<RecordDto> updatedRecords = new ArrayList<>();
+
+        try {
+            for (ValidatedUpdateData validatedUpdate : validatedUpdates) {
+                int updatedRows = jdbcTemplate.update(validatedUpdate.query, validatedUpdate.values);
+
+                if (updatedRows == 0) {
+                    throw new RecordNotFoundException(validatedTableName, validatedUpdate.primaryKeyValues);
+                }
+
+                RecordDto updated = getRecord(validatedSchemaName, validatedTableName, validatedUpdate.primaryKeyValues);
+                updatedRecords.add(updated);
+            }
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to execute record updates in batch: " + e.getMessage(), e);
+        }
+
+        return updatedRecords;
+    }
+
+    @Override
     public long getRecordCount(String schemaName, String tableName, boolean checkTableExists) {
         String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
         String validatedTableName = SqlSecurityUtils.validateTableName(tableName);
@@ -612,6 +693,10 @@ public class MySqlRecordManager implements RecordService {
                         "Cannot insert null value into non-nullable column: " + columnName);
             }
 
+            if (value != null) {
+                validateValueDatatype(tableName, columnName, value, column);
+            }
+
             if (column.getIsUnique()) {
                 validateValueUniqueness(schemaName, tableName, columnName, value);
             }
@@ -630,8 +715,6 @@ public class MySqlRecordManager implements RecordService {
                         pkFkCol.getReferencedColumnName(),
                         value, columnName);
             }
-
-            validateValueDatatype(tableName, columnName, value, column);
         }
     }
 
@@ -839,6 +922,19 @@ public class MySqlRecordManager implements RecordService {
             this.values = values;
             this.originalData = originalData;
             this.columnNames = columnNames;
+        }
+    }
+
+    // Helper class to store validated update data
+    private static class ValidatedUpdateData {
+        final String query;
+        final Object[] values;
+        final Map<String, Object> primaryKeyValues;
+
+        ValidatedUpdateData(String query, Object[] values, Map<String, Object> primaryKeyValues) {
+            this.query = query;
+            this.values = values;
+            this.primaryKeyValues = primaryKeyValues;
         }
     }
 }

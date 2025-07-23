@@ -137,6 +137,18 @@ public class RecordController {
                 .build(), HttpStatus.CREATED);
     }
 
+    @PutMapping("/batch")
+    public ResponseEntity<ApiResponse<List<RecordDto>>> updateRecords(
+            @Valid @RequestBody BatchUpdateRecordsDto batchUpdateRecords
+    ) {
+        List<RecordDto> updatedRecords = recordService.updateRecords(batchUpdateRecords);
+        return ResponseEntity.ok(ApiResponse.<List<RecordDto>>builder()
+                .message(updatedRecords.size() + " records updated successfully")
+                .success(true)
+                .data(updatedRecords)
+                .build());
+    }
+
     @GetMapping("/{schemaName}/{tableName}/count")
     public ResponseEntity<ApiResponse<Long>> getRecordCount(
             @PathVariable String schemaName,

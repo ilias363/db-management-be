@@ -26,6 +26,8 @@ public interface RecordService {
 
     List<RecordDto> createRecords(BatchNewRecordsDto batchNewRecords);
 
+    List<RecordDto> updateRecords(BatchUpdateRecordsDto batchUpdateRecords);
+
     long getRecordCount(String schemaName, String tableName, boolean checkTableExists);
 
     void validateRecordData(String schemaName, String tableName, Map<String, Object> data,
