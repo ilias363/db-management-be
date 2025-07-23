@@ -149,6 +149,18 @@ public class RecordController {
                 .build());
     }
 
+    @DeleteMapping("/batch")
+    public ResponseEntity<ApiResponse<Integer>> deleteRecords(
+            @Valid @RequestBody BatchDeleteRecordsDto batchDeleteRecords
+    ) {
+        int deletedCount = recordService.deleteRecords(batchDeleteRecords);
+        return ResponseEntity.ok(ApiResponse.<Integer>builder()
+                .message(deletedCount + " records deleted successfully")
+                .success(true)
+                .data(deletedCount)
+                .build());
+    }
+
     @GetMapping("/{schemaName}/{tableName}/count")
     public ResponseEntity<ApiResponse<Long>> getRecordCount(
             @PathVariable String schemaName,

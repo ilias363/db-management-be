@@ -286,6 +286,32 @@ public class MySqlRecordManager implements RecordService {
             throw new InvalidRecordDataException(validatedTableName, "Primary key values cannot be null or empty");
         }
 
+        // Validate that all required primary key columns are provided
+        Set<String> providedPkColumns = primaryKeyValues.keySet().stream()
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+        Set<String> requiredPkColumns = primaryKeyColumns.stream()
+                .map(BaseColumnMetadataDto::getColumnName)
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+
+        // Check if all required primary key columns are provided
+        if (!providedPkColumns.containsAll(requiredPkColumns)) {
+            Set<String> missingColumns = new HashSet<>(requiredPkColumns);
+            missingColumns.removeAll(providedPkColumns);
+            throw new InvalidRecordDataException(validatedTableName,
+                    "Missing required primary key columns: " + String.join(", ", missingColumns));
+        }
+
+        // Check if any provided columns are not actually primary key columns
+        if (!requiredPkColumns.containsAll(providedPkColumns)) {
+            Set<String> invalidColumns = new HashSet<>(providedPkColumns);
+            invalidColumns.removeAll(requiredPkColumns);
+            throw new InvalidRecordDataException(validatedTableName,
+                    "Invalid primary key columns provided: " + String.join(", ", invalidColumns));
+        }
+
         List<String> whereClauses = new ArrayList<>();
         List<Object> values = new ArrayList<>();
 
@@ -641,6 +667,97 @@ public class MySqlRecordManager implements RecordService {
     }
 
     @Override
+    public int deleteRecords(BatchDeleteRecordsDto batchDeleteRecords) {
+        if (batchDeleteRecords == null || batchDeleteRecords.getPrimaryKeyValuesList() == null ||
+                batchDeleteRecords.getPrimaryKeyValuesList().isEmpty()) {
+            return 0;
+        }
+
+        validateTableExists(batchDeleteRecords.getSchemaName(), batchDeleteRecords.getTableName());
+
+        String validatedSchemaName = batchDeleteRecords.getSchemaName().trim().toLowerCase();
+        String validatedTableName = batchDeleteRecords.getTableName().trim().toLowerCase();
+
+        List<BaseColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
+
+        if (primaryKeyColumns.isEmpty()) {
+            throw new InvalidRecordDataException(validatedTableName, "Table has no primary key columns, use delete by values");
+        }
+
+        // Phase 1: Validate ALL deletions first before any database operations
+        List<ValidatedDeleteData> validatedDeletions = new ArrayList<>();
+
+        // Get required primary key columns for validation
+        Set<String> requiredPkColumns = primaryKeyColumns.stream()
+                .map(BaseColumnMetadataDto::getColumnName)
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+
+        for (Map<String, Object> primaryKeyValues : batchDeleteRecords.getPrimaryKeyValuesList()) {
+            if (primaryKeyValues == null || primaryKeyValues.isEmpty()) {
+                throw new InvalidRecordDataException(validatedTableName, "Primary key values cannot be null or empty");
+            }
+
+            // Validate that all required primary key columns are provided
+            Set<String> providedPkColumns = primaryKeyValues.keySet().stream()
+                    .map(String::trim)
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toSet());
+
+            // Check if all required primary key columns are provided
+            if (!providedPkColumns.containsAll(requiredPkColumns)) {
+                Set<String> missingColumns = new HashSet<>(requiredPkColumns);
+                missingColumns.removeAll(providedPkColumns);
+                throw new InvalidRecordDataException(validatedTableName,
+                        "Missing required primary key columns: " + String.join(", ", missingColumns));
+            }
+
+            // Check if any provided columns are not actually primary key columns
+            if (!requiredPkColumns.containsAll(providedPkColumns)) {
+                Set<String> invalidColumns = new HashSet<>(providedPkColumns);
+                invalidColumns.removeAll(requiredPkColumns);
+                throw new InvalidRecordDataException(validatedTableName,
+                        "Invalid primary key columns provided: " + String.join(", ", invalidColumns));
+            }
+
+            List<String> whereClauses = new ArrayList<>();
+            List<Object> values = new ArrayList<>();
+
+            for (Map.Entry<String, Object> pkEntry : primaryKeyValues.entrySet()) {
+                String columnName = SqlSecurityUtils.validateColumnName(pkEntry.getKey());
+                if (pkEntry.getValue() == null) {
+                    whereClauses.add(columnName + " IS NULL");
+                } else {
+                    whereClauses.add(columnName + " = ?");
+                    values.add(pkEntry.getValue());
+                }
+            }
+
+            String query = "DELETE FROM " + validatedSchemaName + "." + validatedTableName +
+                    " WHERE " + String.join(" AND ", whereClauses);
+
+            // Store validated data for later execution
+            validatedDeletions.add(new ValidatedDeleteData(query, values.toArray(), primaryKeyValues));
+        }
+
+        // Phase 2: Execute all deletions after validation passes
+        int deletedCount = 0;
+
+        try {
+            for (ValidatedDeleteData validatedDelete : validatedDeletions) {
+                int deletedRows = jdbcTemplate.update(validatedDelete.query, validatedDelete.values);
+                if (deletedRows > 0) {
+                    deletedCount++;
+                }
+            }
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to execute record deletions in batch: " + e.getMessage(), e);
+        }
+
+        return deletedCount;
+    }
+
+    @Override
     public long getRecordCount(String schemaName, String tableName, boolean checkTableExists) {
         String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
         String validatedTableName = SqlSecurityUtils.validateTableName(tableName);
@@ -910,7 +1027,6 @@ public class MySqlRecordManager implements RecordService {
         return direction;
     }
 
-    // Helper class to store validated record data
     private static class ValidatedRecordData {
         final String query;
         final Object[] values;
@@ -925,13 +1041,24 @@ public class MySqlRecordManager implements RecordService {
         }
     }
 
-    // Helper class to store validated update data
     private static class ValidatedUpdateData {
         final String query;
         final Object[] values;
         final Map<String, Object> primaryKeyValues;
 
         ValidatedUpdateData(String query, Object[] values, Map<String, Object> primaryKeyValues) {
+            this.query = query;
+            this.values = values;
+            this.primaryKeyValues = primaryKeyValues;
+        }
+    }
+
+    private static class ValidatedDeleteData {
+        final String query;
+        final Object[] values;
+        final Map<String, Object> primaryKeyValues;
+
+        ValidatedDeleteData(String query, Object[] values, Map<String, Object> primaryKeyValues) {
             this.query = query;
             this.values = values;
             this.primaryKeyValues = primaryKeyValues;
