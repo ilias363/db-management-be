@@ -286,15 +286,11 @@ public class MySqlRecordManager implements RecordService {
             throw new InvalidRecordDataException(validatedTableName, "Primary key values cannot be null or empty");
         }
 
-        // Verify the record exists
-        getRecord(validatedSchemaName, validatedTableName, primaryKeyValues);
-
         List<String> whereClauses = new ArrayList<>();
         List<Object> values = new ArrayList<>();
 
         for (Map.Entry<String, Object> pkEntry : primaryKeyValues.entrySet()) {
-            // Pk column name is already validated when checking for the existence of the record
-            String columnName = pkEntry.getKey();
+            String columnName = SqlSecurityUtils.validateColumnName(pkEntry.getKey());
             if (pkEntry.getValue() == null) {
                 whereClauses.add(columnName + " IS NULL");
             } else {
@@ -427,6 +423,47 @@ public class MySqlRecordManager implements RecordService {
 
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to update record by values: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public int deleteRecordByValues(DeleteRecordByValuesDto deleteDto) {
+        validateTableExists(deleteDto.getSchemaName(), deleteDto.getTableName());
+
+        // schema name and table name are validated during the table existence check
+        String validatedSchemaName = deleteDto.getSchemaName().trim().toLowerCase();
+        String validatedTableName = deleteDto.getTableName().trim().toLowerCase();
+
+        if (deleteDto.getIdentifyingValues() == null || deleteDto.getIdentifyingValues().isEmpty()) {
+            throw new InvalidRecordDataException(validatedTableName, "Identifying values cannot be null or empty");
+        }
+
+        List<String> whereClauses = new ArrayList<>();
+        List<Object> values = new ArrayList<>();
+
+        for (Map.Entry<String, Object> entry : deleteDto.getIdentifyingValues().entrySet()) {
+            String columnName = SqlSecurityUtils.validateColumnName(entry.getKey());
+            if (entry.getValue() == null) {
+                whereClauses.add(columnName + " IS NULL");
+            } else {
+                whereClauses.add(columnName + " = ?");
+                values.add(entry.getValue());
+            }
+        }
+
+        String query = "DELETE FROM " + validatedSchemaName + "." + validatedTableName +
+                " WHERE " + String.join(" AND ", whereClauses);
+
+        // Add LIMIT clause for safety unless explicitly allowing multiple deletions
+        if (!deleteDto.isAllowMultiple()) {
+            query += " LIMIT 1";
+        }
+
+        try {
+            return jdbcTemplate.update(query, values.toArray());
+
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to delete record by values: " + e.getMessage(), e);
         }
     }
 

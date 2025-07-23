@@ -112,6 +112,18 @@ public class RecordController {
                 .build());
     }
 
+    @DeleteMapping("/by-values")
+    public ResponseEntity<ApiResponse<Integer>> deleteRecordByValues(
+            @Valid @RequestBody DeleteRecordByValuesDto deleteDto
+    ) {
+        int deletedCount = recordService.deleteRecordByValues(deleteDto);
+        return ResponseEntity.ok(ApiResponse.<Integer>builder()
+                .message(deletedCount + " record(s) deleted successfully using identifying values")
+                .success(true)
+                .data(deletedCount)
+                .build());
+    }
+
     @GetMapping("/{schemaName}/{tableName}/count")
     public ResponseEntity<ApiResponse<Long>> getRecordCount(
             @PathVariable String schemaName,
