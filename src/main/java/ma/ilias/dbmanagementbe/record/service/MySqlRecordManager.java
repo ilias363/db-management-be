@@ -364,7 +364,7 @@ public class MySqlRecordManager implements RecordService {
     }
 
     @Override
-    public RecordDto updateRecordByValues(UpdateRecordByValuesDto updateDto) {
+    public int updateRecordByValues(UpdateRecordByValuesDto updateDto) {
         validateTableExists(updateDto.getSchemaName(), updateDto.getTableName());
 
         // schema name and table name are validated during the table existence check
@@ -419,7 +419,7 @@ public class MySqlRecordManager implements RecordService {
                         validatedTableName);
             }
 
-            return getRecordByValues(validatedSchemaName, validatedTableName, updateDto.getIdentifyingValues());
+            return updatedRows;
 
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to update record by values: " + e.getMessage(), e);

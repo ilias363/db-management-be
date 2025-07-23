@@ -101,14 +101,14 @@ public class RecordController {
     }
 
     @PutMapping("/by-values")
-    public ResponseEntity<ApiResponse<RecordDto>> updateRecordByValues(
+    public ResponseEntity<ApiResponse<Integer>> updateRecordByValues(
             @Valid @RequestBody UpdateRecordByValuesDto updateDto
     ) {
-        RecordDto updatedRecord = recordService.updateRecordByValues(updateDto);
-        return ResponseEntity.ok(ApiResponse.<RecordDto>builder()
-                .message("Record updated successfully using identifying values")
+        int updatedCount = recordService.updateRecordByValues(updateDto);
+        return ResponseEntity.ok(ApiResponse.<Integer>builder()
+                .message(updatedCount + " record(s) updated successfully using identifying values")
                 .success(true)
-                .data(updatedRecord)
+                .data(updatedCount)
                 .build());
     }
 
