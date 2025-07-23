@@ -263,14 +263,14 @@ public class MySqlRecordManager implements RecordService {
                         fkCol.getReferencedSchemaName(),
                         fkCol.getReferencedTableName(),
                         fkCol.getReferencedColumnName(),
-                        value);
+                        value, columnName);
             }
             if (column instanceof PrimaryKeyForeignKeyColumnMetadataDto pkFkCol) {
                 validateFKValueExists(
                         pkFkCol.getReferencedSchemaName(),
                         pkFkCol.getReferencedTableName(),
                         pkFkCol.getReferencedColumnName(),
-                        value);
+                        value, columnName);
             }
 
             validateValueDatatype(tableName, columnName, value, column);
@@ -381,37 +381,42 @@ public class MySqlRecordManager implements RecordService {
     }
 
     private void validateValueUniqueness(String schemaName, String tableName, String columnName, Object value) {
+        Integer count = null;
         try {
             String checkSql = String.format(
                     "SELECT COUNT(*) FROM %s.%s WHERE %s = ?",
                     schemaName, tableName, columnName);
 
-            Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, value);
-
-            if (count != null && count > 0) {
-                throw new InvalidRecordDataException(
-                        String.format("Column value '%s' already exists in column %s", value, columnName));
-            }
+            count = jdbcTemplate.queryForObject(checkSql, Integer.class, value);
         } catch (Exception e) {
-            throw new InvalidRecordDataException("Unable to validate column value uniqueness");
+            throw new InvalidRecordDataException("Unable to validate column value uniqueness for " + columnName +
+                    ": " + e.getMessage());
+        }
+
+        if (count != null && count > 0) {
+            throw new InvalidRecordDataException(
+                    String.format("Column value '%s' already exists in column %s", value, columnName));
         }
     }
 
-    private void validateFKValueExists(String schemaName, String tableName, String columnName, Object value) {
+    private void validateFKValueExists(String schemaName, String tableName, String columnName,
+                                       Object value, String columnToValidateFor) {
+        Integer count = null;
         try {
             String checkSql = String.format(
                     "SELECT COUNT(*) FROM %s.%s WHERE %s = ?",
                     schemaName, tableName, columnName);
 
-            Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, value);
-
-            if (count == null || count == 0) {
-                throw new InvalidRecordDataException(
-                        String.format("Column value '%s' does not exist in the referenced table '%s.%s' column '%s'",
-                                value, schemaName, tableName, columnName));
-            }
+            count = jdbcTemplate.queryForObject(checkSql, Integer.class, value);
         } catch (Exception e) {
-            throw new InvalidRecordDataException("Unable to validate column value in referenced table");
+            throw new InvalidRecordDataException("Unable to validate column '" + columnToValidateFor +
+                    "' value existence in referenced table : " + e.getMessage());
+        }
+
+        if (count == null || count == 0) {
+            throw new InvalidRecordDataException(
+                    String.format("Column value '%s' does not exist in the referenced table '%s.%s' column '%s'",
+                            value, schemaName, tableName, columnName));
         }
     }
 
