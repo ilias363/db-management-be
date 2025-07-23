@@ -865,6 +865,65 @@ public class MySqlRecordManager implements RecordService {
     }
 
     @Override
+    public int deleteRecordsByValues(BatchDeleteRecordsByValuesDto batchDeleteByValues) {
+        if (batchDeleteByValues == null || batchDeleteByValues.getDeletions() == null || batchDeleteByValues.getDeletions().isEmpty()) {
+            return 0;
+        }
+
+        validateTableExists(batchDeleteByValues.getSchemaName(), batchDeleteByValues.getTableName());
+
+        String validatedSchemaName = batchDeleteByValues.getSchemaName().trim().toLowerCase();
+        String validatedTableName = batchDeleteByValues.getTableName().trim().toLowerCase();
+
+        // Phase 1: Validate ALL deletions first before any database operations
+        List<ValidatedDeleteByValuesData> validatedDeletions = new ArrayList<>();
+
+        for (BatchDeleteRecordsByValuesDto.SingleDeleteRecordByValuesDto deleteRecord : batchDeleteByValues.getDeletions()) {
+            if (deleteRecord.getIdentifyingValues() == null || deleteRecord.getIdentifyingValues().isEmpty()) {
+                throw new InvalidRecordDataException(validatedTableName, "Identifying values cannot be null or empty");
+            }
+
+            List<String> whereClauses = new ArrayList<>();
+            List<Object> values = new ArrayList<>();
+
+            for (Map.Entry<String, Object> entry : deleteRecord.getIdentifyingValues().entrySet()) {
+                String columnName = SqlSecurityUtils.validateColumnName(entry.getKey());
+                if (entry.getValue() == null) {
+                    whereClauses.add(columnName + " IS NULL");
+                } else {
+                    whereClauses.add(columnName + " = ?");
+                    values.add(entry.getValue());
+                }
+            }
+
+            String query = "DELETE FROM " + validatedSchemaName + "." + validatedTableName +
+                    " WHERE " + String.join(" AND ", whereClauses);
+
+            // Add LIMIT clause for safety unless explicitly allowing multiple deletions
+            if (!deleteRecord.isAllowMultiple()) {
+                query += " LIMIT 1";
+            }
+
+            // Store validated data for later execution
+            validatedDeletions.add(new ValidatedDeleteByValuesData(query, values.toArray(), deleteRecord.getIdentifyingValues()));
+        }
+
+        // Phase 2: Execute all deletions after validation passes
+        int deletedCount = 0;
+
+        try {
+            for (ValidatedDeleteByValuesData validatedDelete : validatedDeletions) {
+                int deletedRows = jdbcTemplate.update(validatedDelete.query, validatedDelete.values);
+                deletedCount += deletedRows;
+            }
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to execute record deletions by values in batch: " + e.getMessage(), e);
+        }
+
+        return deletedCount;
+    }
+
+    @Override
     public long getRecordCount(String schemaName, String tableName, boolean checkTableExists) {
         String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
         String validatedTableName = SqlSecurityUtils.validateTableName(tableName);

@@ -34,6 +34,8 @@ public interface RecordService {
 
     List<RecordDto> updateRecordsByValues(BatchUpdateRecordsByValuesDto batchUpdateByValues);
 
+    int deleteRecordsByValues(BatchDeleteRecordsByValuesDto batchDeleteByValues);
+
     long getRecordCount(String schemaName, String tableName, boolean checkTableExists);
 
     void validateRecordData(String schemaName, String tableName, Map<String, Object> data,
