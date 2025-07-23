@@ -408,8 +408,12 @@ public class MySqlRecordManager implements RecordService {
 
         String query = "UPDATE " + validatedSchemaName + "." + validatedTableName +
                 " SET " + String.join(", ", setClauses) +
-                " WHERE " + String.join(" AND ", whereClauses) +
-                " LIMIT 1";
+                " WHERE " + String.join(" AND ", whereClauses);
+
+        // Add LIMIT clause for safety unless explicitly allowing multiple updates
+        if (!updateDto.isAllowMultiple()) {
+            query += " LIMIT 1";
+        }
 
         try {
             int updatedRows = jdbcTemplate.update(query, values.toArray());

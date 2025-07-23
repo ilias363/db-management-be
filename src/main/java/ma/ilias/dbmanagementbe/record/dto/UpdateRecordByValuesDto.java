@@ -25,4 +25,7 @@ public class UpdateRecordByValuesDto {
 
     @NotBlank(message = "Schema name cannot be blank")
     private String schemaName;
+
+    @Builder.Default
+    private boolean allowMultiple = false; // Safety flag to allow updating multiple matching records
 }
