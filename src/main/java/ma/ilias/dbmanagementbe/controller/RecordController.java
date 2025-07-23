@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -122,6 +123,18 @@ public class RecordController {
                 .success(true)
                 .data(deletedCount)
                 .build());
+    }
+
+    @PostMapping("/batch")
+    public ResponseEntity<ApiResponse<List<RecordDto>>> createRecords(
+            @Valid @RequestBody BatchNewRecordsDto batchNewRecords
+    ) {
+        List<RecordDto> createdRecords = recordService.createRecords(batchNewRecords);
+        return new ResponseEntity<>(ApiResponse.<List<RecordDto>>builder()
+                .message(createdRecords.size() + " records created successfully")
+                .success(true)
+                .data(createdRecords)
+                .build(), HttpStatus.CREATED);
     }
 
     @GetMapping("/{schemaName}/{tableName}/count")

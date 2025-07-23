@@ -468,6 +468,98 @@ public class MySqlRecordManager implements RecordService {
     }
 
     @Override
+    public List<RecordDto> createRecords(BatchNewRecordsDto batchNewRecords) {
+        if (batchNewRecords == null || batchNewRecords.getRecords() == null || batchNewRecords.getRecords().isEmpty()) {
+            throw new InvalidRecordDataException("No records provided for batch creation");
+        }
+
+        validateTableExists(batchNewRecords.getSchemaName(), batchNewRecords.getTableName());
+
+        String validatedSchemaName = batchNewRecords.getSchemaName().trim().toLowerCase();
+        String validatedTableName = batchNewRecords.getTableName().trim().toLowerCase();
+
+        List<BaseColumnMetadataDto> columns = metadataProviderService.getColumnsByTable(
+                validatedSchemaName, validatedTableName, false, false);
+
+        List<BaseColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
+
+        // Phase 1: Validate ALL records first before any database operations
+        List<ValidatedRecordData> validatedRecords = new ArrayList<>();
+
+        for (Map<String, Object> recordData : batchNewRecords.getRecords()) {
+            validateRecordData(validatedSchemaName, validatedTableName, recordData, columns, false);
+
+            // Prepare column names and values
+            List<String> columnNames = new ArrayList<>();
+            List<Object> values = new ArrayList<>();
+            List<String> placeholders = new ArrayList<>();
+
+            for (BaseColumnMetadataDto column : columns) {
+                String columnName = column.getColumnName();
+                if (recordData.containsKey(columnName)) {
+                    columnNames.add(columnName);
+                    values.add(recordData.get(columnName));
+                    placeholders.add("?");
+                } else if (!column.getIsNullable() && !column.getAutoIncrement()) {
+                    throw new InvalidRecordDataException(validatedTableName,
+                            "Missing required value for non-nullable column: " + columnName);
+                }
+            }
+
+            if (columnNames.isEmpty()) {
+                throw new InvalidRecordDataException(validatedTableName, "No valid column data provided");
+            }
+
+            String query = "INSERT INTO " + validatedSchemaName + "." + validatedTableName +
+                    " (" + String.join(", ", columnNames) + ") VALUES (" +
+                    String.join(", ", placeholders) + ")";
+
+            // Store validated data for later execution
+            validatedRecords.add(new ValidatedRecordData(query, values.toArray(), recordData, columnNames));
+        }
+
+        // Phase 2: Execute all insertions after validation passes
+        List<RecordDto> createdRecords = new ArrayList<>();
+
+        try {
+            for (ValidatedRecordData validatedRecord : validatedRecords) {
+                jdbcTemplate.update(validatedRecord.query, validatedRecord.values);
+
+                // Retrieve the created record
+                RecordDto createdRecord;
+                if (primaryKeyColumns.isEmpty()) {
+                    Map<String, Object> identifyingValues = new HashMap<>();
+                    for (String columnName : validatedRecord.columnNames) {
+                        identifyingValues.put(columnName, validatedRecord.originalData.get(columnName));
+                    }
+                    createdRecord = getRecordByValues(validatedSchemaName, validatedTableName, identifyingValues);
+                } else if (primaryKeyColumns.size() == 1 && primaryKeyColumns.get(0).getAutoIncrement()) {
+                    Long generatedId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+                    Map<String, Object> pkValues = new HashMap<>();
+                    pkValues.put(primaryKeyColumns.get(0).getColumnName(), generatedId);
+                    createdRecord = getRecord(validatedSchemaName, validatedTableName, pkValues);
+                } else {
+                    // Build primary key values from the inserted data
+                    Map<String, Object> pkValues = new HashMap<>();
+                    for (BaseColumnMetadataDto pkColumn : primaryKeyColumns) {
+                        String columnName = pkColumn.getColumnName();
+                        if (validatedRecord.originalData.containsKey(columnName)) {
+                            pkValues.put(columnName, validatedRecord.originalData.get(columnName));
+                        }
+                    }
+                    createdRecord = getRecord(validatedSchemaName, validatedTableName, pkValues);
+                }
+
+                createdRecords.add(createdRecord);
+            }
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to execute record creation in batch: " + e.getMessage(), e);
+        }
+
+        return createdRecords;
+    }
+
+    @Override
     public long getRecordCount(String schemaName, String tableName, boolean checkTableExists) {
         String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
         String validatedTableName = SqlSecurityUtils.validateTableName(tableName);
@@ -600,7 +692,7 @@ public class MySqlRecordManager implements RecordService {
                     if (!ValidationUtils.validateFloatValue(stringValue)) {
                         throw new InvalidRecordDataException(tableName, "Value for column " + columnName + " must be a number");
                     }
-                } else if (!(value instanceof Double)) {
+                } else if (!(value instanceof Number)) {
                     throw new InvalidRecordDataException(tableName, "Value for column " + columnName + " must be a number");
                 }
             }
@@ -733,5 +825,20 @@ public class MySqlRecordManager implements RecordService {
             throw new IllegalArgumentException("Sort direction must be either ASC or DESC");
         }
         return direction;
+    }
+
+    // Helper class to store validated record data
+    private static class ValidatedRecordData {
+        final String query;
+        final Object[] values;
+        final Map<String, Object> originalData;
+        final List<String> columnNames;
+
+        ValidatedRecordData(String query, Object[] values, Map<String, Object> originalData, List<String> columnNames) {
+            this.query = query;
+            this.values = values;
+            this.originalData = originalData;
+            this.columnNames = columnNames;
+        }
     }
 }
