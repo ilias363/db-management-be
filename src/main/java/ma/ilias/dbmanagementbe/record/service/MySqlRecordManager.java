@@ -778,6 +778,93 @@ public class MySqlRecordManager implements RecordService {
     }
 
     @Override
+    public List<RecordDto> updateRecordsByValues(BatchUpdateRecordsByValuesDto batchUpdateByValues) {
+        if (batchUpdateByValues == null || batchUpdateByValues.getUpdates() == null || batchUpdateByValues.getUpdates().isEmpty()) {
+            throw new InvalidRecordDataException("No records provided for batch update by values");
+        }
+
+        validateTableExists(batchUpdateByValues.getSchemaName(), batchUpdateByValues.getTableName());
+
+        String validatedSchemaName = batchUpdateByValues.getSchemaName().trim().toLowerCase();
+        String validatedTableName = batchUpdateByValues.getTableName().trim().toLowerCase();
+
+        // Phase 1: Validate ALL updates first before any database operations
+        List<ValidatedUpdateByValuesData> validatedUpdates = new ArrayList<>();
+
+        for (BatchUpdateRecordsByValuesDto.SingleUpdateRecordByValuesDto updateRecord : batchUpdateByValues.getUpdates()) {
+            // Verify the record(s) exist for tables with identifying values
+            List<RecordDto> existingRecords = getRecordsByValues(validatedSchemaName, validatedTableName,
+                    updateRecord.getIdentifyingValues(), !updateRecord.isAllowMultiple());
+
+            if (existingRecords.isEmpty()) {
+                throw new RecordNotFoundException("No records found matching the provided identifying values in table: " + validatedTableName);
+            }
+
+            validateRecordData(validatedSchemaName, validatedTableName, updateRecord.getNewData(), null, true);
+
+            List<String> setClauses = new ArrayList<>();
+            List<Object> values = new ArrayList<>();
+
+            for (Map.Entry<String, Object> entry : updateRecord.getNewData().entrySet()) {
+                String columnName = SqlSecurityUtils.validateColumnName(entry.getKey());
+                setClauses.add(columnName + " = ?");
+                values.add(entry.getValue());
+            }
+
+            if (setClauses.isEmpty()) {
+                throw new InvalidRecordDataException(validatedTableName, "No data provided for update");
+            }
+
+            // Build WHERE clause using identifying values
+            List<String> whereClauses = new ArrayList<>();
+            for (Map.Entry<String, Object> entry : updateRecord.getIdentifyingValues().entrySet()) {
+                // Column name is already validated when checking for the existence of the record
+                String columnName = entry.getKey();
+                if (entry.getValue() == null) {
+                    whereClauses.add(columnName + " IS NULL");
+                } else {
+                    whereClauses.add(columnName + " = ?");
+                    values.add(entry.getValue());
+                }
+            }
+
+            String query = "UPDATE " + validatedSchemaName + "." + validatedTableName +
+                    " SET " + String.join(", ", setClauses) +
+                    " WHERE " + String.join(" AND ", whereClauses);
+
+            // Add LIMIT clause for safety unless explicitly allowing multiple updates
+            if (!updateRecord.isAllowMultiple()) {
+                query += " LIMIT 1";
+            }
+
+            // Store validated data for later execution
+            validatedUpdates.add(new ValidatedUpdateByValuesData(query, values.toArray(), updateRecord.getIdentifyingValues(), updateRecord.isAllowMultiple()));
+        }
+
+        // Phase 2: Execute all updates after validation passes
+        List<RecordDto> updatedRecords = new ArrayList<>();
+
+        try {
+            for (ValidatedUpdateByValuesData validatedUpdate : validatedUpdates) {
+                int updatedRows = jdbcTemplate.update(validatedUpdate.query, validatedUpdate.values);
+
+                if (updatedRows == 0) {
+                    throw new RecordNotFoundException("No records found matching the provided identifying values in table: " +
+                            validatedTableName);
+                }
+
+                List<RecordDto> updated = getRecordsByValues(validatedSchemaName, validatedTableName,
+                        validatedUpdate.identifyingValues, !validatedUpdate.allowMultiple);
+                updatedRecords.addAll(updated);
+            }
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to execute record updates by values in batch: " + e.getMessage(), e);
+        }
+
+        return updatedRecords;
+    }
+
+    @Override
     public long getRecordCount(String schemaName, String tableName, boolean checkTableExists) {
         String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
         String validatedTableName = SqlSecurityUtils.validateTableName(tableName);
@@ -1055,5 +1142,12 @@ public class MySqlRecordManager implements RecordService {
     }
 
     private record ValidatedDeleteData(String query, Object[] values, Map<String, Object> primaryKeyValues) {
+    }
+
+    private record ValidatedUpdateByValuesData(String query, Object[] values, Map<String, Object> identifyingValues,
+                                               boolean allowMultiple) {
+    }
+
+    private record ValidatedDeleteByValuesData(String query, Object[] values, Map<String, Object> identifyingValues) {
     }
 }

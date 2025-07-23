@@ -176,6 +176,18 @@ public class RecordController {
                 .build());
     }
 
+    @PutMapping("/batch/by-values")
+    public ResponseEntity<ApiResponse<List<RecordDto>>> updateRecordsByValues(
+            @Valid @RequestBody BatchUpdateRecordsByValuesDto batchUpdateByValues
+    ) {
+        List<RecordDto> updatedRecords = recordService.updateRecordsByValues(batchUpdateByValues);
+        return ResponseEntity.ok(ApiResponse.<List<RecordDto>>builder()
+                .message(updatedRecords.size() + " records updated successfully using identifying values")
+                .success(true)
+                .data(updatedRecords)
+                .build());
+    }
+
     @GetMapping("/{schemaName}/{tableName}/count")
     public ResponseEntity<ApiResponse<Long>> getRecordCount(
             @PathVariable String schemaName,
