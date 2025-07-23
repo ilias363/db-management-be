@@ -231,14 +231,7 @@ public class MySqlColumnManager implements ColumnService {
 
     @Override
     public Boolean isColumnPrimaryKey(String schemaName, String tableName, String columnName) {
-        String pkCheckSql = """
-                SELECT COUNT(*) FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
-                  AND CONSTRAINT_NAME = 'PRIMARY'
-                """;
-
-        Integer pkCount = jdbcTemplate.queryForObject(pkCheckSql, Integer.class, schemaName, tableName, columnName);
-        return pkCount != null && pkCount > 0;
+        return metadataProviderService.isColumnPrimaryKey(schemaName, tableName, columnName);
     }
 
     private List<String> getReferencingForeignKeyConstraints(String schemaName, String tableName, String columnName) {

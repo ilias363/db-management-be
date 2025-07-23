@@ -1,9 +1,7 @@
 package ma.ilias.dbmanagementbe.config;
 
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
-import ma.ilias.dbmanagementbe.exception.EntityNotFoundException;
-import ma.ilias.dbmanagementbe.exception.MetadataNotFoundException;
-import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
+import ma.ilias.dbmanagementbe.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -56,6 +54,22 @@ public class GlobalExceptionHandler {
                 .message(ex.getMessage())
                 .success(false)
                 .build(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(RecordNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRecordNotFoundException(RecordNotFoundException ex) {
+        return new ResponseEntity<>(ApiResponse.<Void>builder()
+                .message(ex.getMessage())
+                .success(false)
+                .build(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(InvalidRecordDataException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidRecordDataException(InvalidRecordDataException ex) {
+        return new ResponseEntity<>(ApiResponse.<Void>builder()
+                .message(ex.getMessage())
+                .success(false)
+                .build(), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)

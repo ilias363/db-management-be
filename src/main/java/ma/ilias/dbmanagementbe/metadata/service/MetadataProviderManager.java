@@ -28,11 +28,22 @@ import java.util.List;
 @Transactional
 public class MetadataProviderManager implements MetadataProviderService {
 
-    private JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate jdbcTemplate;
 
     public Boolean isSystemSchemaByName(String schemaName) {
         return List.of("mysql", "sys", "information_schema", "performance_schema")
                 .contains(schemaName.trim().toLowerCase());
+    }
+
+    public Boolean isColumnPrimaryKey(String schemaName, String tableName, String columnName) {
+        String pkCheckSql = """
+                SELECT COUNT(*) FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
+                  AND CONSTRAINT_NAME = 'PRIMARY'
+                """;
+
+        Integer pkCount = jdbcTemplate.queryForObject(pkCheckSql, Integer.class, schemaName, tableName, columnName);
+        return pkCount != null && pkCount > 0;
     }
 
     public Boolean schemaExists(String schemaName) {

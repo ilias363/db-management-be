@@ -10,6 +10,8 @@ import java.util.List;
 public interface MetadataProviderService {
     Boolean isSystemSchemaByName(String schemaName);
 
+    Boolean isColumnPrimaryKey(String schemaName, String tableName, String columnName);
+
     Boolean schemaExists(String schemaName);
 
     Boolean tableExists(String schemaName, String tableName);
