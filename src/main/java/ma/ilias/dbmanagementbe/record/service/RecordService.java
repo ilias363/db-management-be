@@ -20,7 +20,9 @@ public interface RecordService {
 
     RecordDto getRecordByValues(String schemaName, String tableName, Map<String, Object> identifyingValues);
 
-    int updateRecordByValues(UpdateRecordByValuesDto updateDto);
+    List<RecordDto> getRecordsByValues(String schemaName, String tableName, Map<String, Object> identifyingValues, boolean limitOne);
+
+    List<RecordDto> updateRecordByValues(UpdateRecordByValuesDto updateDto);
 
     int deleteRecordByValues(DeleteRecordByValuesDto deleteDto);
 

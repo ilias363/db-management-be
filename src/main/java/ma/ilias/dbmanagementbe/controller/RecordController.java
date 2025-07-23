@@ -101,15 +101,30 @@ public class RecordController {
                 .build());
     }
 
+    @GetMapping("/{schemaName}/{tableName}/records/by-values")
+    public ResponseEntity<ApiResponse<List<RecordDto>>> getRecordsByValues(
+            @PathVariable String schemaName,
+            @PathVariable String tableName,
+            @RequestParam Map<String, Object> identifyingValues,
+            @RequestParam(defaultValue = "false") boolean limitOne
+    ) {
+        List<RecordDto> records = recordService.getRecordsByValues(schemaName, tableName, identifyingValues, limitOne);
+        return ResponseEntity.ok(ApiResponse.<List<RecordDto>>builder()
+                .message(records.size() + " record(s) fetched successfully using identifying values")
+                .success(true)
+                .data(records)
+                .build());
+    }
+
     @PutMapping("/by-values")
-    public ResponseEntity<ApiResponse<Integer>> updateRecordByValues(
+    public ResponseEntity<ApiResponse<List<RecordDto>>> updateRecordByValues(
             @Valid @RequestBody UpdateRecordByValuesDto updateDto
     ) {
-        int updatedCount = recordService.updateRecordByValues(updateDto);
-        return ResponseEntity.ok(ApiResponse.<Integer>builder()
-                .message(updatedCount + " record(s) updated successfully using identifying values")
+        List<RecordDto> updatedRecords = recordService.updateRecordByValues(updateDto);
+        return ResponseEntity.ok(ApiResponse.<List<RecordDto>>builder()
+                .message(updatedRecords.size() + " record(s) updated successfully using identifying values")
                 .success(true)
-                .data(updatedCount)
+                .data(updatedRecords)
                 .build());
     }
 

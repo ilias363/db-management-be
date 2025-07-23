@@ -339,6 +339,15 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public RecordDto getRecordByValues(String schemaName, String tableName, Map<String, Object> identifyingValues) {
+        List<RecordDto> records = getRecordsByValues(schemaName, tableName, identifyingValues, true);
+        if (records.isEmpty()) {
+            throw new RecordNotFoundException("No record found matching the provided identifying values in table: " + tableName);
+        }
+        return records.get(0);
+    }
+
+    @Override
+    public List<RecordDto> getRecordsByValues(String schemaName, String tableName, Map<String, Object> identifyingValues, boolean limitOne) {
         validateTableExists(schemaName, tableName);
 
         // schema name and table name are validated during the table existence check
@@ -374,31 +383,41 @@ public class MySqlRecordManager implements RecordService {
         }
 
         String query = "SELECT * FROM " + validatedSchemaName + "." + validatedTableName +
-                " WHERE " + String.join(" AND ", whereClauses) + " LIMIT 1";
+                " WHERE " + String.join(" AND ", whereClauses);
+
+        if (limitOne) {
+            query += " LIMIT 1";
+        }
 
         try {
-            RecordDto record = jdbcTemplate.queryForObject(query, this::mapRowToRecord, values.toArray());
-            if (record == null) {
-                throw new RecordNotFoundException("No record found matching the provided identifying values in table: " + validatedTableName);
+            List<RecordDto> records = jdbcTemplate.query(query, this::mapRowToRecord, values.toArray());
+
+            for (RecordDto record : records) {
+                record.setSchemaName(validatedSchemaName);
+                record.setTableName(validatedTableName);
             }
-            record.setSchemaName(validatedSchemaName);
-            record.setTableName(validatedTableName);
-            return record;
+
+            return records;
         } catch (DataAccessException e) {
-            throw new RuntimeException("Failed to fetch record by values: " + e.getMessage(), e);
+            throw new RuntimeException("Failed to fetch records by values: " + e.getMessage(), e);
         }
     }
 
     @Override
-    public int updateRecordByValues(UpdateRecordByValuesDto updateDto) {
+    public List<RecordDto> updateRecordByValues(UpdateRecordByValuesDto updateDto) {
         validateTableExists(updateDto.getSchemaName(), updateDto.getTableName());
 
         // schema name and table name are validated during the table existence check
         String validatedSchemaName = updateDto.getSchemaName().trim().toLowerCase();
         String validatedTableName = updateDto.getTableName().trim().toLowerCase();
 
-        // Verify the record exists for tables with identifying values
-        getRecordByValues(validatedSchemaName, validatedTableName, updateDto.getIdentifyingValues());
+        // Verify the record(s) exist for tables with identifying values
+        List<RecordDto> existingRecords = getRecordsByValues(validatedSchemaName, validatedTableName,
+                updateDto.getIdentifyingValues(), !updateDto.isAllowMultiple());
+
+        if (existingRecords.isEmpty()) {
+            throw new RecordNotFoundException("No records found matching the provided identifying values in table: " + validatedTableName);
+        }
 
         validateRecordData(validatedSchemaName, validatedTableName, updateDto.getNewData(), null, true);
 
@@ -441,11 +460,12 @@ public class MySqlRecordManager implements RecordService {
             int updatedRows = jdbcTemplate.update(query, values.toArray());
 
             if (updatedRows == 0) {
-                throw new RecordNotFoundException("No record found matching the provided identifying values in table: " +
+                throw new RecordNotFoundException("No records found matching the provided identifying values in table: " +
                         validatedTableName);
             }
 
-            return updatedRows;
+            return getRecordsByValues(validatedSchemaName, validatedTableName,
+                    updateDto.getIdentifyingValues(), !updateDto.isAllowMultiple());
 
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to update record by values: " + e.getMessage(), e);
