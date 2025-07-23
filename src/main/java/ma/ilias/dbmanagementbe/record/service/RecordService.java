@@ -1,10 +1,7 @@
 package ma.ilias.dbmanagementbe.record.service;
 
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
-import ma.ilias.dbmanagementbe.record.dto.NewRecordDto;
-import ma.ilias.dbmanagementbe.record.dto.RecordDto;
-import ma.ilias.dbmanagementbe.record.dto.RecordPageDto;
-import ma.ilias.dbmanagementbe.record.dto.UpdateRecordDto;
+import ma.ilias.dbmanagementbe.record.dto.*;
 
 import java.util.List;
 import java.util.Map;
@@ -22,6 +19,8 @@ public interface RecordService {
     boolean deleteRecord(String schemaName, String tableName, Map<String, Object> primaryKeyValues);
 
     RecordDto getRecordByValues(String schemaName, String tableName, Map<String, Object> identifyingValues);
+
+    RecordDto updateRecordByValues(UpdateRecordByValuesDto updateDto);
 
     long getRecordCount(String schemaName, String tableName, boolean checkTableExists);
 

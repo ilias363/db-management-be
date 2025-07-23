@@ -10,10 +10,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.ForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.PrimaryKeyForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
-import ma.ilias.dbmanagementbe.record.dto.NewRecordDto;
-import ma.ilias.dbmanagementbe.record.dto.RecordDto;
-import ma.ilias.dbmanagementbe.record.dto.RecordPageDto;
-import ma.ilias.dbmanagementbe.record.dto.UpdateRecordDto;
+import ma.ilias.dbmanagementbe.record.dto.*;
 import ma.ilias.dbmanagementbe.util.SqlSecurityUtils;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import org.springframework.dao.DataAccessException;
@@ -243,8 +240,13 @@ public class MySqlRecordManager implements RecordService {
         List<String> whereClauses = new ArrayList<>();
         for (Map.Entry<String, Object> pkEntry : updateRecordDto.getPrimaryKeyValues().entrySet()) {
             // Pk column name is already validated when checking for the existence of the record
-            whereClauses.add(pkEntry.getKey() + " = ?");
-            values.add(pkEntry.getValue());
+            String columnName = pkEntry.getKey();
+            if (pkEntry.getValue() == null) {
+                whereClauses.add(columnName + " IS NULL");
+            } else {
+                whereClauses.add(columnName + " = ?");
+                values.add(pkEntry.getValue());
+            }
         }
 
         String query = "UPDATE " + validatedSchemaName + "." + validatedTableName +
@@ -292,8 +294,13 @@ public class MySqlRecordManager implements RecordService {
 
         for (Map.Entry<String, Object> pkEntry : primaryKeyValues.entrySet()) {
             // Pk column name is already validated when checking for the existence of the record
-            whereClauses.add(pkEntry.getKey() + " = ?");
-            values.add(pkEntry.getValue());
+            String columnName = pkEntry.getKey();
+            if (pkEntry.getValue() == null) {
+                whereClauses.add(columnName + " IS NULL");
+            } else {
+                whereClauses.add(columnName + " = ?");
+                values.add(pkEntry.getValue());
+            }
         }
 
         String query = "DELETE FROM " + validatedSchemaName + "." + validatedTableName +
@@ -357,6 +364,65 @@ public class MySqlRecordManager implements RecordService {
             return record;
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to fetch record by values: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public RecordDto updateRecordByValues(UpdateRecordByValuesDto updateDto) {
+        validateTableExists(updateDto.getSchemaName(), updateDto.getTableName());
+
+        // schema name and table name are validated during the table existence check
+        String validatedSchemaName = updateDto.getSchemaName().trim().toLowerCase();
+        String validatedTableName = updateDto.getTableName().trim().toLowerCase();
+
+        // Verify the record exists for tables with identifying values
+        getRecordByValues(validatedSchemaName, validatedTableName, updateDto.getIdentifyingValues());
+
+        validateRecordData(validatedSchemaName, validatedTableName, updateDto.getNewData(), null, true);
+
+        List<String> setClauses = new ArrayList<>();
+        List<Object> values = new ArrayList<>();
+
+        for (Map.Entry<String, Object> entry : updateDto.getNewData().entrySet()) {
+            String columnName = SqlSecurityUtils.validateColumnName(entry.getKey());
+            setClauses.add(columnName + " = ?");
+            values.add(entry.getValue());
+        }
+
+        if (setClauses.isEmpty()) {
+            throw new InvalidRecordDataException(validatedTableName, "No data provided for update");
+        }
+
+        // Build WHERE clause using identifying values
+        List<String> whereClauses = new ArrayList<>();
+        for (Map.Entry<String, Object> entry : updateDto.getIdentifyingValues().entrySet()) {
+            // Column name is already validated when checking for the existence of the record
+            String columnName = entry.getKey();
+            if (entry.getValue() == null) {
+                whereClauses.add(columnName + " IS NULL");
+            } else {
+                whereClauses.add(columnName + " = ?");
+                values.add(entry.getValue());
+            }
+        }
+
+        String query = "UPDATE " + validatedSchemaName + "." + validatedTableName +
+                " SET " + String.join(", ", setClauses) +
+                " WHERE " + String.join(" AND ", whereClauses) +
+                " LIMIT 1";
+
+        try {
+            int updatedRows = jdbcTemplate.update(query, values.toArray());
+
+            if (updatedRows == 0) {
+                throw new RecordNotFoundException("No record found matching the provided identifying values in table: " +
+                        validatedTableName);
+            }
+
+            return getRecordByValues(validatedSchemaName, validatedTableName, updateDto.getIdentifyingValues());
+
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to update record by values: " + e.getMessage(), e);
         }
     }
 

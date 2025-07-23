@@ -3,10 +3,7 @@ package ma.ilias.dbmanagementbe.controller;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
-import ma.ilias.dbmanagementbe.record.dto.NewRecordDto;
-import ma.ilias.dbmanagementbe.record.dto.RecordDto;
-import ma.ilias.dbmanagementbe.record.dto.RecordPageDto;
-import ma.ilias.dbmanagementbe.record.dto.UpdateRecordDto;
+import ma.ilias.dbmanagementbe.record.dto.*;
 import ma.ilias.dbmanagementbe.record.service.RecordService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -100,6 +97,18 @@ public class RecordController {
                 .message("Record fetched successfully using identifying values")
                 .success(true)
                 .data(record)
+                .build());
+    }
+
+    @PutMapping("/by-values")
+    public ResponseEntity<ApiResponse<RecordDto>> updateRecordByValues(
+            @Valid @RequestBody UpdateRecordByValuesDto updateDto
+    ) {
+        RecordDto updatedRecord = recordService.updateRecordByValues(updateDto);
+        return ResponseEntity.ok(ApiResponse.<RecordDto>builder()
+                .message("Record updated successfully using identifying values")
+                .success(true)
+                .data(updatedRecord)
                 .build());
     }
 
