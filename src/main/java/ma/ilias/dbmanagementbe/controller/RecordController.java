@@ -6,6 +6,7 @@ import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.record.dto.NewRecordDto;
 import ma.ilias.dbmanagementbe.record.dto.RecordDto;
 import ma.ilias.dbmanagementbe.record.dto.RecordPageDto;
+import ma.ilias.dbmanagementbe.record.dto.UpdateRecordDto;
 import ma.ilias.dbmanagementbe.record.service.RecordService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -61,6 +62,18 @@ public class RecordController {
                 .success(true)
                 .data(createdRecord)
                 .build(), HttpStatus.CREATED);
+    }
+
+    @PutMapping
+    public ResponseEntity<ApiResponse<RecordDto>> updateRecord(
+            @Valid @RequestBody UpdateRecordDto updateRecordDto
+    ) {
+        RecordDto updatedRecord = recordService.updateRecord(updateRecordDto);
+        return ResponseEntity.ok(ApiResponse.<RecordDto>builder()
+                .message("Record updated successfully")
+                .success(true)
+                .data(updatedRecord)
+                .build());
     }
 
     @GetMapping("/{schemaName}/{tableName}/count")

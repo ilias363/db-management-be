@@ -13,6 +13,7 @@ import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.record.dto.NewRecordDto;
 import ma.ilias.dbmanagementbe.record.dto.RecordDto;
 import ma.ilias.dbmanagementbe.record.dto.RecordPageDto;
+import ma.ilias.dbmanagementbe.record.dto.UpdateRecordDto;
 import ma.ilias.dbmanagementbe.util.SqlSecurityUtils;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import org.springframework.dao.DataAccessException;
@@ -202,6 +203,65 @@ public class MySqlRecordManager implements RecordService {
     }
 
     @Override
+    public RecordDto updateRecord(UpdateRecordDto updateRecordDto) {
+        validateTableExists(updateRecordDto.getSchemaName(), updateRecordDto.getTableName());
+
+        // schema name and table name are validated during the table existence check
+        String validatedSchemaName = updateRecordDto.getSchemaName().trim().toLowerCase();
+        String validatedTableName = updateRecordDto.getTableName().trim().toLowerCase();
+
+        // Check if table has primary key
+        List<BaseColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
+
+        if (primaryKeyColumns.isEmpty()) {
+            throw new InvalidRecordDataException(validatedTableName, "Table has no primary key columns, use update by values");
+        }
+
+        // Verify the record exists for tables with primary keys
+        RecordDto existingRecord = getRecord(validatedSchemaName, validatedTableName, updateRecordDto.getPrimaryKeyValues());
+
+        validateRecordData(validatedSchemaName, validatedTableName, updateRecordDto.getData(), null, true);
+
+        List<String> setClauses = new ArrayList<>();
+        List<Object> values = new ArrayList<>();
+
+        for (Map.Entry<String, Object> entry : updateRecordDto.getData().entrySet()) {
+            String columnName = SqlSecurityUtils.validateColumnName(entry.getKey());
+            setClauses.add(columnName + " = ?");
+            values.add(entry.getValue());
+        }
+
+        if (setClauses.isEmpty()) {
+            throw new InvalidRecordDataException(validatedTableName, "No data provided for update");
+        }
+
+        // Build WHERE clause for primary key
+        List<String> whereClauses = new ArrayList<>();
+        for (Map.Entry<String, Object> pkEntry : updateRecordDto.getPrimaryKeyValues().entrySet()) {
+            // Pk column name is already validated when checking for the existence of the record
+            whereClauses.add(pkEntry.getKey() + " = ?");
+            values.add(pkEntry.getValue());
+        }
+
+        String query = "UPDATE " + validatedSchemaName + "." + validatedTableName +
+                " SET " + String.join(", ", setClauses) +
+                " WHERE " + String.join(" AND ", whereClauses);
+
+        try {
+            int updatedRows = jdbcTemplate.update(query, values.toArray());
+
+            if (updatedRows == 0) {
+                throw new RecordNotFoundException(validatedTableName, updateRecordDto.getPrimaryKeyValues());
+            }
+
+            return getRecord(validatedSchemaName, validatedTableName, updateRecordDto.getPrimaryKeyValues());
+
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to update record: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public long getRecordCount(String schemaName, String tableName, boolean checkTableExists) {
         String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
         String validatedTableName = SqlSecurityUtils.validateTableName(tableName);
@@ -249,7 +309,7 @@ public class MySqlRecordManager implements RecordService {
             }
 
             // Validate null values
-            if (value == null && !column.getIsNullable()) {
+            if (value == null && !column.getIsNullable() && column.getColumnDefault() == null) {
                 throw new InvalidRecordDataException(tableName,
                         "Cannot insert null value into non-nullable column: " + columnName);
             }

@@ -4,6 +4,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.record.dto.NewRecordDto;
 import ma.ilias.dbmanagementbe.record.dto.RecordDto;
 import ma.ilias.dbmanagementbe.record.dto.RecordPageDto;
+import ma.ilias.dbmanagementbe.record.dto.UpdateRecordDto;
 
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,8 @@ public interface RecordService {
     RecordDto getRecord(String schemaName, String tableName, Map<String, Object> primaryKeyValues);
 
     RecordDto createRecord(NewRecordDto newRecordDto);
+
+    RecordDto updateRecord(UpdateRecordDto updateRecordDto);
 
     long getRecordCount(String schemaName, String tableName, boolean checkTableExists);
 
