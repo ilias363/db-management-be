@@ -76,6 +76,19 @@ public class RecordController {
                 .build());
     }
 
+    @DeleteMapping("/{schemaName}/{tableName}")
+    public ResponseEntity<ApiResponse<Void>> deleteRecord(
+            @PathVariable String schemaName,
+            @PathVariable String tableName,
+            @RequestParam Map<String, Object> primaryKeyValues
+    ) {
+        boolean deleted = recordService.deleteRecord(schemaName, tableName, primaryKeyValues);
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .message(deleted ? "Record deleted successfully" : "Record not found")
+                .success(deleted)
+                .build());
+    }
+
     @GetMapping("/{schemaName}/{tableName}/count")
     public ResponseEntity<ApiResponse<Long>> getRecordCount(
             @PathVariable String schemaName,

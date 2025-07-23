@@ -218,7 +218,7 @@ public class MySqlRecordManager implements RecordService {
         }
 
         // Verify the record exists for tables with primary keys
-        RecordDto existingRecord = getRecord(validatedSchemaName, validatedTableName, updateRecordDto.getPrimaryKeyValues());
+        getRecord(validatedSchemaName, validatedTableName, updateRecordDto.getPrimaryKeyValues());
 
         validateRecordData(validatedSchemaName, validatedTableName, updateRecordDto.getData(), null, true);
 
@@ -258,6 +258,49 @@ public class MySqlRecordManager implements RecordService {
 
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to update record: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public boolean deleteRecord(String schemaName, String tableName, Map<String, Object> primaryKeyValues) {
+        validateTableExists(schemaName, tableName);
+
+        // schema name and table name are validated during the table existence check
+        String validatedSchemaName = schemaName.trim().toLowerCase();
+        String validatedTableName = tableName.trim().toLowerCase();
+
+        // Check if table has primary key
+        List<BaseColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
+
+        if (primaryKeyColumns.isEmpty()) {
+            throw new InvalidRecordDataException(validatedTableName, "Table has no primary key columns, use delete by values");
+        }
+
+        if (primaryKeyValues == null || primaryKeyValues.isEmpty()) {
+            throw new InvalidRecordDataException(validatedTableName, "Primary key values cannot be null or empty");
+        }
+
+        // Verify the record exists
+        getRecord(validatedSchemaName, validatedTableName, primaryKeyValues);
+
+        List<String> whereClauses = new ArrayList<>();
+        List<Object> values = new ArrayList<>();
+
+        for (Map.Entry<String, Object> pkEntry : primaryKeyValues.entrySet()) {
+            // Pk column name is already validated when checking for the existence of the record
+            whereClauses.add(pkEntry.getKey() + " = ?");
+            values.add(pkEntry.getValue());
+        }
+
+        String query = "DELETE FROM " + validatedSchemaName + "." + validatedTableName +
+                " WHERE " + String.join(" AND ", whereClauses);
+
+        try {
+            int deletedRows = jdbcTemplate.update(query, values.toArray());
+            return deletedRows > 0;
+
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to delete record: " + e.getMessage(), e);
         }
     }
 
@@ -441,7 +484,7 @@ public class MySqlRecordManager implements RecordService {
     }
 
     private void validateValueUniqueness(String schemaName, String tableName, String columnName, Object value) {
-        Integer count = null;
+        Integer count;
         try {
             String checkSql = String.format(
                     "SELECT COUNT(*) FROM %s.%s WHERE %s = ?",
@@ -461,7 +504,7 @@ public class MySqlRecordManager implements RecordService {
 
     private void validateFKValueExists(String schemaName, String tableName, String columnName,
                                        Object value, String columnToValidateFor) {
-        Integer count = null;
+        Integer count;
         try {
             String checkSql = String.format(
                     "SELECT COUNT(*) FROM %s.%s WHERE %s = ?",

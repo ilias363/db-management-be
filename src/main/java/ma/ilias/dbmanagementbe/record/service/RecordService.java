@@ -19,6 +19,8 @@ public interface RecordService {
 
     RecordDto updateRecord(UpdateRecordDto updateRecordDto);
 
+    boolean deleteRecord(String schemaName, String tableName, Map<String, Object> primaryKeyValues);
+
     long getRecordCount(String schemaName, String tableName, boolean checkTableExists);
 
     void validateRecordData(String schemaName, String tableName, Map<String, Object> data,
