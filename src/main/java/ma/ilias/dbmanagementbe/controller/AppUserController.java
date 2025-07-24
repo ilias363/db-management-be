@@ -29,7 +29,7 @@ public class AppUserController {
             AppUserDto createdUser = appUserService.save(newAppUserDto);
 
             auditService.auditSuccessfulAction(ActionType.CREATE_USER,
-                    newAppUserDto.getUsername() + "(ID: " + newAppUserDto.getId() + ")");
+                    newAppUserDto.getUsername() + " (ID: " + newAppUserDto.getId() + ")");
 
             return new ResponseEntity<>(ApiResponse.<AppUserDto>builder()
                     .message("User created successfully")
@@ -92,7 +92,7 @@ public class AppUserController {
             AppUserDto updatedUser = appUserService.update(id, updateAppUserDto);
 
             auditService.auditSuccessfulAction(ActionType.UPDATE_USER,
-                    currentUser.getUsername() + "(ID: " + id + ")");
+                    currentUser.getUsername() + " (ID: " + id + ")");
 
             return ResponseEntity.ok(ApiResponse.<AppUserDto>builder()
                     .message("User updated successfully")
@@ -103,7 +103,7 @@ public class AppUserController {
             try {
                 AppUserDto currentUser = appUserService.findById(id);
                 auditService.auditFailedAction(ActionType.UPDATE_USER,
-                        currentUser.getUsername() + "(ID: " + id + ")",
+                        currentUser.getUsername() + " (ID: " + id + ")",
                         e.getMessage());
             } catch (Exception ignored) {
                 auditService.auditFailedAction(ActionType.UPDATE_USER, "Unknown user (ID: " + id + ")", e.getMessage());
@@ -132,7 +132,7 @@ public class AppUserController {
             AppUserDto user = appUserService.findById(id);
             appUserService.deactivateById(id);
 
-            auditService.auditSuccessfulAction(ActionType.DEACTIVATE_USER, user.getUsername() + "(ID: " + id + ")");
+            auditService.auditSuccessfulAction(ActionType.DEACTIVATE_USER, user.getUsername() + " (ID: " + id + ")");
 
             return ResponseEntity.ok(ApiResponse.<Void>builder()
                     .message("User deactivated successfully")
@@ -141,7 +141,7 @@ public class AppUserController {
         } catch (Exception e) {
             try {
                 AppUserDto user = appUserService.findById(id);
-                auditService.auditFailedAction(ActionType.DEACTIVATE_USER, user.getUsername() + "(ID: " + id + ")", e.getMessage());
+                auditService.auditFailedAction(ActionType.DEACTIVATE_USER, user.getUsername() + " (ID: " + id + ")", e.getMessage());
             } catch (Exception ignored) {
                 auditService.auditFailedAction(ActionType.DEACTIVATE_USER, "Unknown user (ID: " + id + ")", e.getMessage());
             }
@@ -155,7 +155,7 @@ public class AppUserController {
             AppUserDto user = appUserService.findById(id);
             appUserService.activateById(id);
 
-            auditService.auditSuccessfulAction(ActionType.ACTIVATE_USER, user.getUsername() + "(ID: " + id + ")");
+            auditService.auditSuccessfulAction(ActionType.ACTIVATE_USER, user.getUsername() + " (ID: " + id + ")");
 
             return ResponseEntity.ok(ApiResponse.<Void>builder()
                     .message("User activated successfully")
@@ -164,7 +164,7 @@ public class AppUserController {
         } catch (Exception e) {
             try {
                 AppUserDto user = appUserService.findById(id);
-                auditService.auditFailedAction(ActionType.ACTIVATE_USER, user.getUsername() + "(ID: " + id + ")", e.getMessage());
+                auditService.auditFailedAction(ActionType.ACTIVATE_USER, user.getUsername() + " (ID: " + id + ")", e.getMessage());
             } catch (Exception ignored) {
                 auditService.auditFailedAction(ActionType.ACTIVATE_USER, "Unknown user (ID: " + id + ")", e.getMessage());
             }

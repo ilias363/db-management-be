@@ -5,8 +5,10 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
+import ma.ilias.dbmanagementbe.dto.appuser.AppUserDto;
 import ma.ilias.dbmanagementbe.dto.auth.LoginRequestDto;
 import ma.ilias.dbmanagementbe.enums.ActionType;
+import ma.ilias.dbmanagementbe.service.AppUserService;
 import ma.ilias.dbmanagementbe.service.AuditService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +28,7 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final AuditService auditService;
+    private final AppUserService appUserService;
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<Void>> login(@Valid @RequestBody LoginRequestDto loginRequestDto,
@@ -47,14 +50,19 @@ public class AuthController {
             HttpSession newSession = request.getSession(true);
             newSession.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
 
-            auditService.auditSuccessfulAction(ActionType.LOGIN, loginRequestDto.getUsername());
+            AppUserDto user = appUserService.findByUsername(loginRequestDto.getUsername());
+
+            auditService.auditSuccessfulAction(ActionType.LOGIN, user.getUsername() + " (ID: " + user.getId() + ")");
 
             return ResponseEntity.ok(ApiResponse.<Void>builder()
                     .message("Login successful")
                     .success(true)
                     .build());
         } catch (BadCredentialsException ex) {
-            auditService.auditFailedAction(ActionType.LOGIN, loginRequestDto.getUsername(), "Invalid credentials");
+            AppUserDto user = appUserService.findByUsername(loginRequestDto.getUsername());
+            auditService.auditFailedAction(ActionType.LOGIN,
+                    user.getUsername() + " (ID: " + user.getId() + ")",
+                    "Invalid credentials");
 
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                     ApiResponse.<Void>builder()
@@ -63,7 +71,10 @@ public class AuthController {
                             .build()
             );
         } catch (Exception ex) {
-            auditService.auditFailedAction(ActionType.LOGIN, loginRequestDto.getUsername(), "Authentication failed: " + ex.getMessage());
+            AppUserDto user = appUserService.findByUsername(loginRequestDto.getUsername());
+            auditService.auditFailedAction(ActionType.LOGIN,
+                    user.getUsername() + " (ID: " + user.getId() + ")",
+                    "Authentication failed: " + ex.getMessage());
 
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                     ApiResponse.<Void>builder()
@@ -87,7 +98,13 @@ public class AuthController {
 
         SecurityContextHolder.clearContext();
 
-        auditService.auditSuccessfulAction(ActionType.LOGOUT, username);
+        if (!username.equals("unknown")) {
+            AppUserDto user = appUserService.findByUsername(username);
+            auditService.auditSuccessfulAction(ActionType.LOGOUT, username + " (ID: " + user.getId() + ")");
+        } else {
+            auditService.auditSuccessfulAction(ActionType.LOGOUT, username);
+        }
+
 
         return ResponseEntity.ok(ApiResponse.<Void>builder()
                 .message("Logout successful")

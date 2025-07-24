@@ -28,7 +28,7 @@ public class RoleController {
         try {
             RoleDto createdRole = roleService.save(newRoleDto);
 
-            auditService.auditSuccessfulAction(ActionType.CREATE_ROLE, newRoleDto.getName() + "(ID: " + createdRole.getId() + ")");
+            auditService.auditSuccessfulAction(ActionType.CREATE_ROLE, newRoleDto.getName() + " (ID: " + createdRole.getId() + ")");
 
             return new ResponseEntity<>(ApiResponse.<RoleDto>builder()
                     .message("Role created successfully")
@@ -70,7 +70,7 @@ public class RoleController {
             RoleDto currentRole = roleService.findById(id);
             RoleDto updatedRole = roleService.update(id, updateRoleDto);
 
-            auditService.auditSuccessfulAction(ActionType.UPDATE_ROLE, currentRole.getName() + "(ID: " + id + ")");
+            auditService.auditSuccessfulAction(ActionType.UPDATE_ROLE, currentRole.getName() + " (ID: " + id + ")");
 
             return ResponseEntity.ok(ApiResponse.<RoleDto>builder()
                     .message("Role updated successfully")
@@ -80,7 +80,7 @@ public class RoleController {
         } catch (Exception e) {
             try {
                 RoleDto currentRole = roleService.findById(id);
-                auditService.auditFailedAction(ActionType.UPDATE_ROLE, currentRole.getName() + "(ID: " + id + ")", e.getMessage());
+                auditService.auditFailedAction(ActionType.UPDATE_ROLE, currentRole.getName() + " (ID: " + id + ")", e.getMessage());
             } catch (Exception ignored) {
                 auditService.auditFailedAction(ActionType.UPDATE_ROLE, "Unknown role (ID: " + id + ")", e.getMessage());
             }
@@ -95,14 +95,14 @@ public class RoleController {
             boolean deleted = roleService.deleteById(id);
 
             if (deleted) {
-                auditService.auditSuccessfulAction(ActionType.DELETE_ROLE, role.getName() + "(ID: " + id + ")");
+                auditService.auditSuccessfulAction(ActionType.DELETE_ROLE, role.getName() + " (ID: " + id + ")");
 
                 return ResponseEntity.ok(ApiResponse.<Void>builder()
                         .message("Role deleted successfully")
                         .success(true)
                         .build());
             } else {
-                auditService.auditFailedAction(ActionType.DELETE_ROLE, role.getName() + "(ID: " + id + ")", "Role deletion failed");
+                auditService.auditFailedAction(ActionType.DELETE_ROLE, role.getName() + " (ID: " + id + ")", "Role deletion failed");
 
                 return ResponseEntity.ok(ApiResponse.<Void>builder()
                         .message("Role has not been deleted")
@@ -112,7 +112,7 @@ public class RoleController {
         } catch (Exception e) {
             try {
                 RoleDto role = roleService.findById(id);
-                auditService.auditFailedAction(ActionType.DELETE_ROLE, role.getName() + "(ID: " + id + ")", e.getMessage());
+                auditService.auditFailedAction(ActionType.DELETE_ROLE, role.getName() + " (ID: " + id + ")", e.getMessage());
             } catch (Exception ignored) {
                 auditService.auditFailedAction(ActionType.DELETE_ROLE, "Unknown role (ID: " + id + ")", e.getMessage());
             }

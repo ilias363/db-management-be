@@ -29,7 +29,7 @@ public class PermissionController {
             PermissionDto savedPermission = permissionService.save(newPermissionDto);
 
             auditService.auditSuccessfulAction(ActionType.CREATE_PERMISSION,
-                    savedPermission.getPermissionType() + "(ID: " + savedPermission.getId() + ")");
+                    savedPermission.getPermissionType() + " (ID: " + savedPermission.getId() + ")");
 
             return new ResponseEntity<>(new ApiResponse<>(
                     "Permission created successfully",
