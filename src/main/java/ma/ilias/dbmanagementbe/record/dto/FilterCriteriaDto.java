@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import ma.ilias.dbmanagementbe.validation.annotations.ValidFilterOperator;
 
 import java.util.List;
 
@@ -18,6 +19,7 @@ public class FilterCriteriaDto {
     private String columnName;
 
     @NotNull(message = "Operator is required")
+    @ValidFilterOperator
     private FilterOperator operator;
 
     private Object value;
