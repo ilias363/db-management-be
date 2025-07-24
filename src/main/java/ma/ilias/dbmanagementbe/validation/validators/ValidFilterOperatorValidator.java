@@ -2,7 +2,7 @@ package ma.ilias.dbmanagementbe.validation.validators;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import ma.ilias.dbmanagementbe.record.dto.FilterCriteriaDto;
+import ma.ilias.dbmanagementbe.enums.FilterOperator;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidFilterOperator;
 
@@ -14,6 +14,6 @@ public class ValidFilterOperatorValidator implements ConstraintValidator<ValidFi
             return true; // @NotNull will handle null checks
         }
 
-        return ValidationUtils.validateEnum(value, FilterCriteriaDto.FilterOperator.class);
+        return ValidationUtils.validateEnum(value, FilterOperator.class);
     }
 }

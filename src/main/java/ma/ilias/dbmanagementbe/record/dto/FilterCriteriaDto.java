@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import ma.ilias.dbmanagementbe.enums.FilterOperator;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidFilterOperator;
 
 import java.util.List;
@@ -20,7 +21,7 @@ public class FilterCriteriaDto {
 
     @NotNull(message = "Operator is required")
     @ValidFilterOperator
-    private FilterOperator operator;
+    private String operator;
 
     private Object value;
     private List<Object> values; // For IN, NOT_IN operators
@@ -33,31 +34,7 @@ public class FilterCriteriaDto {
     @Builder.Default
     private boolean caseSensitive = false;
 
-    public enum FilterOperator {
-        // Equality
-        EQUALS,
-        NOT_EQUALS,
-
-        // Null checks
-        IS_NULL,
-        IS_NOT_NULL,
-
-        // Numeric/Date comparisons
-        GREATER_THAN,
-        GREATER_THAN_OR_EQUAL,
-        LESS_THAN,
-        LESS_THAN_OR_EQUAL,
-        BETWEEN,
-
-        // String operations
-        LIKE,
-        NOT_LIKE,
-        STARTS_WITH,
-        ENDS_WITH,
-        CONTAINS,
-
-        // List operations
-        IN,
-        NOT_IN
+    public FilterOperator getOperator() {
+        return FilterOperator.valueOf(operator.toUpperCase());
     }
 }

@@ -1,5 +1,6 @@
 package ma.ilias.dbmanagementbe.record.utils;
 
+import ma.ilias.dbmanagementbe.enums.FilterOperator;
 import ma.ilias.dbmanagementbe.exception.InvalidFilterException;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.record.dto.FilterCriteriaDto;
@@ -33,7 +34,7 @@ public class FilterValidationUtils {
         }
 
         String dataType = columnMeta.getDataType().toUpperCase();
-        FilterCriteriaDto.FilterOperator operator = filter.getOperator();
+        FilterOperator operator = filter.getOperator();
 
         // Validate operator compatibility with data type
         validateOperatorCompatibility(operator, dataType);
@@ -77,7 +78,7 @@ public class FilterValidationUtils {
         }
     }
 
-    private static void validateOperatorCompatibility(FilterCriteriaDto.FilterOperator operator, String dataType) {
+    private static void validateOperatorCompatibility(FilterOperator operator, String dataType) {
         switch (operator) {
             case IS_NULL:
             case IS_NOT_NULL:
