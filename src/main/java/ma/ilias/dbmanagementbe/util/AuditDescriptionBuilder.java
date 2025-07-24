@@ -13,25 +13,40 @@ public class AuditDescriptionBuilder {
     static {
         DESCRIPTION_TEMPLATES.put(ActionType.LOGIN, "User {0} logged in");
         DESCRIPTION_TEMPLATES.put(ActionType.LOGOUT, "User {0} logged out");
+
         DESCRIPTION_TEMPLATES.put(ActionType.CREATE_SCHEMA, "Created schema ''{0}''");
         DESCRIPTION_TEMPLATES.put(ActionType.UPDATE_SCHEMA, "Updated schema ''{0}''");
         DESCRIPTION_TEMPLATES.put(ActionType.DELETE_SCHEMA, "Deleted schema ''{0}''");
+
         DESCRIPTION_TEMPLATES.put(ActionType.CREATE_TABLE, "Created table ''{1}'' in schema ''{0}''");
         DESCRIPTION_TEMPLATES.put(ActionType.UPDATE_TABLE, "Updated table ''{1}'' in schema ''{0}''");
         DESCRIPTION_TEMPLATES.put(ActionType.DELETE_TABLE, "Deleted table ''{1}'' from schema ''{0}''");
+
+        DESCRIPTION_TEMPLATES.put(ActionType.CREATE_COLUMN, "Created column ''{2}'' in table ''{0}.{1}''");
+        DESCRIPTION_TEMPLATES.put(ActionType.UPDATE_COLUMN, "Updated column ''{2}'' in table ''{0}.{1}''");
+        DESCRIPTION_TEMPLATES.put(ActionType.DELETE_COLUMN, "Deleted column ''{2}'' from table ''{0}.{1}''");
+
+        DESCRIPTION_TEMPLATES.put(ActionType.CREATE_INDEX, "Created index ''{2}'' on table ''{0}.{1}''");
+        DESCRIPTION_TEMPLATES.put(ActionType.DELETE_INDEX, "Deleted index ''{2}'' from table ''{0}.{1}''");
+
         DESCRIPTION_TEMPLATES.put(ActionType.CREATE_RECORD, "Created record {2} in table ''{0}.{1}''");
         DESCRIPTION_TEMPLATES.put(ActionType.UPDATE_RECORD, "Updated record {2} in table ''{0}.{1}''");
         DESCRIPTION_TEMPLATES.put(ActionType.DELETE_RECORD, "Deleted record {2} from table ''{0}.{1}''");
-        DESCRIPTION_TEMPLATES.put(ActionType.CREATE_INDEX, "Created index ''{2}'' on table ''{0}.{1}''");
-        DESCRIPTION_TEMPLATES.put(ActionType.DELETE_INDEX, "Deleted index ''{2}'' from table ''{0}.{1}''");
+
         DESCRIPTION_TEMPLATES.put(ActionType.CREATE_USER, "Created user ''{0}''");
         DESCRIPTION_TEMPLATES.put(ActionType.UPDATE_USER, "Updated user ''{0}''");
         DESCRIPTION_TEMPLATES.put(ActionType.DELETE_USER, "Deleted user ''{0}''");
+        
         DESCRIPTION_TEMPLATES.put(ActionType.ACTIVATE_USER, "Activated user ''{0}''");
         DESCRIPTION_TEMPLATES.put(ActionType.DEACTIVATE_USER, "Deactivated user ''{0}''");
+
         DESCRIPTION_TEMPLATES.put(ActionType.CREATE_ROLE, "Created role ''{0}''");
         DESCRIPTION_TEMPLATES.put(ActionType.UPDATE_ROLE, "Updated role ''{0}''");
         DESCRIPTION_TEMPLATES.put(ActionType.DELETE_ROLE, "Deleted role ''{0}''");
+
+        DESCRIPTION_TEMPLATES.put(ActionType.CREATE_PERMISSION, "Created permission ''{0}''");
+        DESCRIPTION_TEMPLATES.put(ActionType.UPDATE_PERMISSION, "Updated permission ''{0}''");
+        DESCRIPTION_TEMPLATES.put(ActionType.DELETE_PERMISSION, "Deleted permission ''{0}''");
     }
 
     public static String build(ActionType actionType, Object... params) {
