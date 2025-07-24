@@ -71,7 +71,15 @@ public class AuditLogManager implements AuditLogService {
 
         String finalActionDetails = actionDetails;
         if (actionDetails == null || actionDetails.isBlank()) {
-            finalActionDetails = AuditDescriptionBuilder.build(actionType, schemaName, tableName, objectName);
+            if (schemaName != null && tableName != null && objectName != null) {
+                finalActionDetails = AuditDescriptionBuilder.build(actionType, schemaName, tableName, objectName);
+            } else if (schemaName != null && tableName != null) {
+                finalActionDetails = AuditDescriptionBuilder.build(actionType, schemaName, tableName);
+            } else if (objectName != null) {
+                finalActionDetails = AuditDescriptionBuilder.build(actionType, objectName);
+            } else {
+                finalActionDetails = "";
+            }
         }
 
         AuditLog auditLog = AuditLog.builder()
