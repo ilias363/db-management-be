@@ -3,9 +3,11 @@ package ma.ilias.dbmanagementbe.controller;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
+import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.NewSchemaDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
+import ma.ilias.dbmanagementbe.service.AuditService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,15 +20,24 @@ import java.util.List;
 public class SchemaController {
 
     private final SchemaService schemaService;
+    private final AuditService auditService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<SchemaMetadataDto>> createSchema(@Valid @RequestBody NewSchemaDto newSchemaDto) {
-        SchemaMetadataDto createdSchema = schemaService.createSchema(newSchemaDto);
-        return new ResponseEntity<>(ApiResponse.<SchemaMetadataDto>builder()
-                .message("Schema created successfully")
-                .success(true)
-                .data(createdSchema)
-                .build(), HttpStatus.CREATED);
+        try {
+            SchemaMetadataDto createdSchema = schemaService.createSchema(newSchemaDto);
+
+            auditService.auditSuccessfulAction(ActionType.CREATE_SCHEMA, newSchemaDto.getSchemaName(), null);
+
+            return new ResponseEntity<>(ApiResponse.<SchemaMetadataDto>builder()
+                    .message("Schema created successfully")
+                    .success(true)
+                    .data(createdSchema)
+                    .build(), HttpStatus.CREATED);
+        } catch (Exception e) {
+            auditService.auditFailedAction(ActionType.CREATE_SCHEMA, newSchemaDto.getSchemaName(), null, e.getMessage());
+            throw e;
+        }
     }
 
     @GetMapping("/{schemaName}")
@@ -61,15 +72,27 @@ public class SchemaController {
 
     @DeleteMapping("/{schemaName}")
     public ResponseEntity<ApiResponse<Void>> deleteSchema(@PathVariable String schemaName) {
-        return schemaService.deleteSchema(schemaName) ?
-                ResponseEntity.ok(ApiResponse.<Void>builder()
+        try {
+            boolean deleted = schemaService.deleteSchema(schemaName);
+
+            if (deleted) {
+                auditService.auditSuccessfulAction(ActionType.DELETE_SCHEMA, schemaName, null);
+
+                return ResponseEntity.ok(ApiResponse.<Void>builder()
                         .message("Schema deleted successfully")
                         .success(true)
-                        .build())
-                :
-                ResponseEntity.ok(ApiResponse.<Void>builder()
+                        .build());
+            } else {
+                auditService.auditFailedAction(ActionType.DELETE_SCHEMA, schemaName, null, "Schema deletion failed");
+
+                return ResponseEntity.ok(ApiResponse.<Void>builder()
                         .message("Schema has not been deleted")
                         .success(false)
                         .build());
+            }
+        } catch (Exception e) {
+            auditService.auditFailedAction(ActionType.DELETE_SCHEMA, schemaName, null, e.getMessage());
+            throw e;
+        }
     }
 }

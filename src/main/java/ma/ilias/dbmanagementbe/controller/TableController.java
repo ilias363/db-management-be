@@ -4,10 +4,12 @@ import jakarta.validation.Valid;
 import jakarta.validation.groups.Default;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
+import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.metadata.dto.table.NewTableDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.UpdateTableDto;
 import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
+import ma.ilias.dbmanagementbe.service.AuditService;
 import ma.ilias.dbmanagementbe.validation.groups.NotStandaloneColumnCreation;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,7 @@ import java.util.List;
 public class TableController {
 
     private final TableService tableService;
+    private final AuditService auditService;
 
     @GetMapping("/{schemaName}/{tableName}")
     public ResponseEntity<ApiResponse<TableMetadataDto>> getTable(
@@ -49,12 +52,22 @@ public class TableController {
     @PostMapping
     public ResponseEntity<ApiResponse<TableMetadataDto>> createTable(
             @Validated({NotStandaloneColumnCreation.class, Default.class}) @RequestBody NewTableDto newTableDto) {
-        TableMetadataDto createdTable = tableService.createTable(newTableDto);
-        return new ResponseEntity<>(ApiResponse.<TableMetadataDto>builder()
-                .message("Table created successfully")
-                .success(true)
-                .data(createdTable)
-                .build(), HttpStatus.CREATED);
+        try {
+            TableMetadataDto createdTable = tableService.createTable(newTableDto);
+
+            auditService.auditSuccessfulAction(ActionType.CREATE_TABLE, newTableDto.getSchemaName(),
+                    newTableDto.getTableName(), null);
+
+            return new ResponseEntity<>(ApiResponse.<TableMetadataDto>builder()
+                    .message("Table created successfully")
+                    .success(true)
+                    .data(createdTable)
+                    .build(), HttpStatus.CREATED);
+        } catch (Exception e) {
+            auditService.auditFailedAction(ActionType.CREATE_TABLE, newTableDto.getSchemaName(),
+                    newTableDto.getTableName(), null, e.getMessage());
+            throw e;
+        }
     }
 
 
@@ -62,12 +75,22 @@ public class TableController {
     public ResponseEntity<ApiResponse<TableMetadataDto>> renameTable(
             @Valid @RequestBody UpdateTableDto updateTableDto
     ) {
-        TableMetadataDto updatedTable = tableService.renameTable(updateTableDto);
-        return ResponseEntity.ok(ApiResponse.<TableMetadataDto>builder()
-                .message("Table updated successfully")
-                .success(true)
-                .data(updatedTable)
-                .build());
+        try {
+            TableMetadataDto updatedTable = tableService.renameTable(updateTableDto);
+
+            auditService.auditSuccessfulAction(ActionType.UPDATE_TABLE, updateTableDto.getSchemaName(),
+                    updateTableDto.getTableName(), null);
+
+            return ResponseEntity.ok(ApiResponse.<TableMetadataDto>builder()
+                    .message("Table updated successfully")
+                    .success(true)
+                    .data(updatedTable)
+                    .build());
+        } catch (Exception e) {
+            auditService.auditFailedAction(ActionType.UPDATE_TABLE, updateTableDto.getSchemaName(),
+                    updateTableDto.getTableName(), null, e.getMessage());
+            throw e;
+        }
     }
 
     @DeleteMapping("/{schemaName}/{tableName}")
@@ -76,15 +99,27 @@ public class TableController {
             @PathVariable String tableName,
             @RequestParam(defaultValue = "false") boolean force
     ) {
-        return tableService.deleteTable(schemaName, tableName, force) ?
-                ResponseEntity.ok(ApiResponse.<Void>builder()
+        try {
+            boolean deleted = tableService.deleteTable(schemaName, tableName, force);
+
+            if (deleted) {
+                auditService.auditSuccessfulAction(ActionType.DELETE_TABLE, schemaName, tableName);
+
+                return ResponseEntity.ok(ApiResponse.<Void>builder()
                         .message("Table deleted successfully")
                         .success(true)
-                        .build())
-                :
-                ResponseEntity.ok(ApiResponse.<Void>builder()
+                        .build());
+            } else {
+                auditService.auditFailedAction(ActionType.DELETE_TABLE, schemaName, tableName, "Table deletion failed");
+
+                return ResponseEntity.ok(ApiResponse.<Void>builder()
                         .message("Table has not been deleted")
                         .success(false)
                         .build());
+            }
+        } catch (Exception e) {
+            auditService.auditFailedAction(ActionType.DELETE_TABLE, schemaName, tableName, e.getMessage());
+            throw e;
+        }
     }
 }
