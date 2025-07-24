@@ -6,7 +6,9 @@ import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.dto.appuser.AppUserDto;
 import ma.ilias.dbmanagementbe.dto.appuser.NewAppUserDto;
 import ma.ilias.dbmanagementbe.dto.appuser.UpdateAppUserDto;
+import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.service.AppUserService;
+import ma.ilias.dbmanagementbe.service.AuditService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,15 +21,25 @@ import java.util.List;
 public class AppUserController {
 
     private final AppUserService appUserService;
+    private final AuditService auditService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<AppUserDto>> createUser(@Valid @RequestBody NewAppUserDto newAppUserDto) {
-        AppUserDto createdUser = appUserService.save(newAppUserDto);
-        return new ResponseEntity<>(ApiResponse.<AppUserDto>builder()
-                .message("User created successfully")
-                .success(true)
-                .data(createdUser)
-                .build(), HttpStatus.CREATED);
+        try {
+            AppUserDto createdUser = appUserService.save(newAppUserDto);
+
+            auditService.auditSuccessfulAction(ActionType.CREATE_USER,
+                    newAppUserDto.getUsername() + "(ID: " + newAppUserDto.getId() + ")");
+
+            return new ResponseEntity<>(ApiResponse.<AppUserDto>builder()
+                    .message("User created successfully")
+                    .success(true)
+                    .data(createdUser)
+                    .build(), HttpStatus.CREATED);
+        } catch (Exception e) {
+            auditService.auditFailedAction(ActionType.CREATE_USER, newAppUserDto.getUsername(), e.getMessage());
+            throw e;
+        }
     }
 
     @GetMapping("/{id}")
@@ -75,12 +87,29 @@ public class AppUserController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateAppUserDto updateAppUserDto
     ) {
-        AppUserDto updatedUser = appUserService.update(id, updateAppUserDto);
-        return ResponseEntity.ok(ApiResponse.<AppUserDto>builder()
-                .message("User updated successfully")
-                .success(true)
-                .data(updatedUser)
-                .build());
+        try {
+            AppUserDto currentUser = appUserService.findById(id);
+            AppUserDto updatedUser = appUserService.update(id, updateAppUserDto);
+
+            auditService.auditSuccessfulAction(ActionType.UPDATE_USER,
+                    currentUser.getUsername() + "(ID: " + id + ")");
+
+            return ResponseEntity.ok(ApiResponse.<AppUserDto>builder()
+                    .message("User updated successfully")
+                    .success(true)
+                    .data(updatedUser)
+                    .build());
+        } catch (Exception e) {
+            try {
+                AppUserDto currentUser = appUserService.findById(id);
+                auditService.auditFailedAction(ActionType.UPDATE_USER,
+                        currentUser.getUsername() + "(ID: " + id + ")",
+                        e.getMessage());
+            } catch (Exception ignored) {
+                auditService.auditFailedAction(ActionType.UPDATE_USER, "Unknown user (ID: " + id + ")", e.getMessage());
+            }
+            throw e;
+        }
     }
 
 //    @DeleteMapping("/{id}")
@@ -99,19 +128,47 @@ public class AppUserController {
 
     @PutMapping("/{id}/deactivate")
     public ResponseEntity<ApiResponse<Void>> deactivateUser(@PathVariable Long id) {
-        appUserService.deactivateById(id);
-        return ResponseEntity.ok(ApiResponse.<Void>builder()
-                .message("User deactivated successfully")
-                .success(true)
-                .build());
+        try {
+            AppUserDto user = appUserService.findById(id);
+            appUserService.deactivateById(id);
+
+            auditService.auditSuccessfulAction(ActionType.DEACTIVATE_USER, user.getUsername() + "(ID: " + id + ")");
+
+            return ResponseEntity.ok(ApiResponse.<Void>builder()
+                    .message("User deactivated successfully")
+                    .success(true)
+                    .build());
+        } catch (Exception e) {
+            try {
+                AppUserDto user = appUserService.findById(id);
+                auditService.auditFailedAction(ActionType.DEACTIVATE_USER, user.getUsername() + "(ID: " + id + ")", e.getMessage());
+            } catch (Exception ignored) {
+                auditService.auditFailedAction(ActionType.DEACTIVATE_USER, "Unknown user (ID: " + id + ")", e.getMessage());
+            }
+            throw e;
+        }
     }
 
     @PutMapping("/{id}/activate")
     public ResponseEntity<ApiResponse<Void>> activateUser(@PathVariable Long id) {
-        appUserService.activateById(id);
-        return ResponseEntity.ok(ApiResponse.<Void>builder()
-                .message("User activated successfully")
-                .success(true)
-                .build());
+        try {
+            AppUserDto user = appUserService.findById(id);
+            appUserService.activateById(id);
+
+            auditService.auditSuccessfulAction(ActionType.ACTIVATE_USER, user.getUsername() + "(ID: " + id + ")");
+
+            return ResponseEntity.ok(ApiResponse.<Void>builder()
+                    .message("User activated successfully")
+                    .success(true)
+                    .build());
+        } catch (Exception e) {
+            try {
+                AppUserDto user = appUserService.findById(id);
+                auditService.auditFailedAction(ActionType.ACTIVATE_USER, user.getUsername() + "(ID: " + id + ")", e.getMessage());
+            } catch (Exception ignored) {
+                auditService.auditFailedAction(ActionType.ACTIVATE_USER, "Unknown user (ID: " + id + ")", e.getMessage());
+            }
+            throw e;
+        }
     }
 }
