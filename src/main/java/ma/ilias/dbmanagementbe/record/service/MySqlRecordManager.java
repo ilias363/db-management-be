@@ -11,6 +11,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.ForeignKeyColumnMe
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.PrimaryKeyForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.record.dto.*;
+import ma.ilias.dbmanagementbe.record.utils.SearchQueryBuilder;
 import ma.ilias.dbmanagementbe.util.SqlSecurityUtils;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import org.springframework.dao.DataAccessException;
@@ -1191,6 +1192,110 @@ public class MySqlRecordManager implements RecordService {
             throw new IllegalArgumentException("Sort direction must be either ASC or DESC");
         }
         return direction;
+    }
+
+    @Override
+    public AdvancedSearchResponseDto advancedSearch(AdvancedSearchRequestDto searchRequest) {
+        validateTableExists(searchRequest.getSchemaName(), searchRequest.getTableName());
+
+        String validatedSchemaName = searchRequest.getSchemaName().trim().toLowerCase();
+        String validatedTableName = searchRequest.getTableName().trim().toLowerCase();
+
+        List<BaseColumnMetadataDto> tableColumns = metadataProviderService.getColumnsByTable(
+                validatedSchemaName, validatedTableName, false, false);
+        Map<String, BaseColumnMetadataDto> columnMap = tableColumns.stream()
+                .collect(Collectors.toMap(BaseColumnMetadataDto::getColumnName, col -> col));
+
+        // Build the query components
+        SearchQueryBuilder queryBuilder = new SearchQueryBuilder(validatedSchemaName, validatedTableName);
+
+        // Apply filters
+        if (searchRequest.getFilters() != null && !searchRequest.getFilters().isEmpty()) {
+            // Validate filters
+            List<String> errors = SearchQueryBuilder.getValidationErrors(
+                    searchRequest.getFilters(),
+                    columnMap);
+
+            if (!errors.isEmpty()) {
+                throw new InvalidRecordDataException(
+                        validatedTableName,
+                        "Invalid filter criteria:\n\n" + String.join("\n", errors));
+            }
+
+            for (FilterCriteriaDto filter : searchRequest.getFilters()) {
+                queryBuilder.addFilter(filter, columnMap.get(filter.getColumnName().trim()), false);
+            }
+        }
+
+        // Apply global search
+        if (searchRequest.getGlobalSearch() != null && !searchRequest.getGlobalSearch().isBlank()) {
+            queryBuilder.addGlobalSearch(searchRequest.getGlobalSearch(), getTextColumns(tableColumns));
+        }
+
+        // Apply sorting
+        if (searchRequest.getSorts() != null && !searchRequest.getSorts().isEmpty()) {
+            for (SortCriteriaDto sort : searchRequest.getSorts()) {
+                validateColumnExists(validatedSchemaName, validatedTableName, sort.getColumnName());
+                queryBuilder.addSort(sort);
+            }
+        }
+
+        // Apply distinct
+        queryBuilder.setDistinct(searchRequest.isDistinct());
+
+        // Build and execute count query (for total filtered records)
+        String countQuery = queryBuilder.buildCountQuery();
+        Long filteredRecords = jdbcTemplate.queryForObject(countQuery, Long.class,
+                queryBuilder.getParameters().toArray());
+
+        if (filteredRecords == null) {
+            filteredRecords = 0L;
+        }
+
+        // Apply pagination
+        queryBuilder.addPagination(searchRequest.getPage(), searchRequest.getSize());
+
+        // Build and execute main query
+        String mainQuery = queryBuilder.buildSelectQuery();
+        List<RecordDto> records = jdbcTemplate.query(mainQuery, this::mapRowToRecord,
+                queryBuilder.getParameters().toArray());
+
+        // Get total records in table (unfiltered)
+        long totalRecords = getRecordCount(validatedSchemaName, validatedTableName, false);
+
+        // Calculate pagination info
+        int totalPages = (int) Math.ceil((double) filteredRecords / searchRequest.getSize());
+
+        return AdvancedSearchResponseDto.builder()
+                .records(records)
+                .totalRecords(totalRecords)
+                .filteredRecords(filteredRecords)
+                .currentPage(searchRequest.getPage())
+                .pageSize(searchRequest.getSize())
+                .totalPages(totalPages)
+                .tableName(validatedTableName)
+                .schemaName(validatedSchemaName)
+                .hasFilters(searchRequest.getFilters() != null && !searchRequest.getFilters().isEmpty())
+                .hasGlobalSearch(searchRequest.getGlobalSearch() != null && !searchRequest.getGlobalSearch().isBlank())
+                .hasSort(searchRequest.getSorts() != null && !searchRequest.getSorts().isEmpty())
+                .isDistinct(searchRequest.isDistinct())
+                .appliedFilters(searchRequest.getFilters())
+                .appliedSorts(searchRequest.getSorts())
+                .appliedGlobalSearch(searchRequest.getGlobalSearch())
+                .build();
+    }
+
+    private List<String> getTextColumns(List<BaseColumnMetadataDto> columns) {
+        return columns.stream()
+                .filter(col -> isTextColumn(col.getDataType()))
+                .map(BaseColumnMetadataDto::getColumnName)
+                .collect(Collectors.toList());
+    }
+
+    private boolean isTextColumn(String dataType) {
+        String type = dataType.toLowerCase();
+        return type.contains("char") || type.contains("text") || type.contains("varchar")
+                || type.contains("longtext") || type.contains("mediumtext") || type.contains("tinytext");
     }
 
     private record ValidatedRecordData(String query, Object[] values, Map<String, Object> originalData,

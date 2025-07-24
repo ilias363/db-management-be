@@ -40,4 +40,6 @@ public interface RecordService {
 
     void validateRecordData(String schemaName, String tableName, Map<String, Object> data,
                             List<BaseColumnMetadataDto> columns, boolean isUpdate);
+
+    AdvancedSearchResponseDto advancedSearch(AdvancedSearchRequestDto searchRequest);
 }

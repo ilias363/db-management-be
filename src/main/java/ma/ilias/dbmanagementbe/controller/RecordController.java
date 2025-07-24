@@ -200,6 +200,18 @@ public class RecordController {
                 .build());
     }
 
+    @PostMapping("/advanced-search")
+    public ResponseEntity<ApiResponse<AdvancedSearchResponseDto>> advancedSearch(
+            @Valid @RequestBody AdvancedSearchRequestDto searchRequest
+    ) {
+        AdvancedSearchResponseDto searchResponse = recordService.advancedSearch(searchRequest);
+        return ResponseEntity.ok(ApiResponse.<AdvancedSearchResponseDto>builder()
+                .message("Advanced search completed successfully")
+                .success(true)
+                .data(searchResponse)
+                .build());
+    }
+
     @GetMapping("/{schemaName}/{tableName}/count")
     public ResponseEntity<ApiResponse<Long>> getRecordCount(
             @PathVariable String schemaName,
