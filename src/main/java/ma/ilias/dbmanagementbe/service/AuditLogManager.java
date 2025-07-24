@@ -1,13 +1,18 @@
 package ma.ilias.dbmanagementbe.service;
 
 import lombok.AllArgsConstructor;
+import ma.ilias.dbmanagementbe.dao.entities.AppUser;
 import ma.ilias.dbmanagementbe.dao.entities.AuditLog;
 import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.AuditLogRepository;
 import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogDto;
+import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.exception.AuditLogNotFoundException;
 import ma.ilias.dbmanagementbe.exception.UserNotFoundException;
 import ma.ilias.dbmanagementbe.mapper.AuditLogMapper;
+import ma.ilias.dbmanagementbe.util.AuditDescriptionBuilder;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,5 +59,47 @@ public class AuditLogManager implements AuditLogService {
         }
         auditLogRepository.deleteById(id);
         return !auditLogRepository.existsById(id);
+    }
+
+    @Override
+    public AuditLogDto createAuditLog(ActionType actionType, String schemaName, String tableName,
+                                      String objectName, String actionDetails, Boolean successful, String errorMessage) {
+        AppUser currentUser = getCurrentUser();
+        if (currentUser == null) {
+            throw new RuntimeException("No authenticated user found for audit logging");
+        }
+
+        String finalActionDetails = actionDetails;
+        if (actionDetails == null || actionDetails.isBlank()) {
+            finalActionDetails = AuditDescriptionBuilder.build(actionType, schemaName, tableName, objectName);
+        }
+
+        AuditLog auditLog = AuditLog.builder()
+                .user(currentUser)
+                .actionType(actionType)
+                .schemaName(schemaName)
+                .tableName(tableName)
+                .objectName(objectName)
+                .actionDetails(finalActionDetails)
+                .successful(successful)
+                .errorMessage(errorMessage)
+                .build();
+
+        AuditLog savedAuditLog = auditLogRepository.save(auditLog);
+        return auditLogMapper.toDto(savedAuditLog);
+    }
+
+    private AppUser getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated() &&
+                !"anonymousUser".equals(authentication.getPrincipal())) {
+
+            if (authentication.getPrincipal() instanceof AppUser) {
+                return (AppUser) authentication.getPrincipal();
+            } else if (authentication.getName() != null) {
+                return appUserRepository.findByUsername(authentication.getName()).orElse(null);
+            }
+        }
+        return null;
     }
 }
