@@ -15,7 +15,6 @@ public class AuditDescriptionBuilder {
         DESCRIPTION_TEMPLATES.put(ActionType.LOGOUT, "User {0} logged out");
 
         DESCRIPTION_TEMPLATES.put(ActionType.CREATE_SCHEMA, "Created schema ''{0}''");
-        DESCRIPTION_TEMPLATES.put(ActionType.UPDATE_SCHEMA, "Updated schema ''{0}''");
         DESCRIPTION_TEMPLATES.put(ActionType.DELETE_SCHEMA, "Deleted schema ''{0}''");
 
         DESCRIPTION_TEMPLATES.put(ActionType.CREATE_TABLE, "Created table ''{1}'' in schema ''{0}''");
@@ -29,14 +28,18 @@ public class AuditDescriptionBuilder {
         DESCRIPTION_TEMPLATES.put(ActionType.CREATE_INDEX, "Created index ''{2}'' on table ''{0}.{1}''");
         DESCRIPTION_TEMPLATES.put(ActionType.DELETE_INDEX, "Deleted index ''{2}'' from table ''{0}.{1}''");
 
-        DESCRIPTION_TEMPLATES.put(ActionType.CREATE_RECORD, "Created record {2} in table ''{0}.{1}''");
-        DESCRIPTION_TEMPLATES.put(ActionType.UPDATE_RECORD, "Updated record {2} in table ''{0}.{1}''");
-        DESCRIPTION_TEMPLATES.put(ActionType.DELETE_RECORD, "Deleted record {2} from table ''{0}.{1}''");
+        DESCRIPTION_TEMPLATES.put(ActionType.CREATE_RECORD, "Created record in table ''{0}.{1}''");
+        DESCRIPTION_TEMPLATES.put(ActionType.UPDATE_RECORD, "Updated record in table ''{0}.{1}''");
+        DESCRIPTION_TEMPLATES.put(ActionType.DELETE_RECORD, "Deleted record from table ''{0}.{1}''");
+
+        DESCRIPTION_TEMPLATES.put(ActionType.CREATE_MULTIPLE_RECORDS, "Created multiple records in table ''{0}.{1}''");
+        DESCRIPTION_TEMPLATES.put(ActionType.UPDATE_MULTIPLE_RECORDS, "Updated multiple records in table ''{0}.{1}''");
+        DESCRIPTION_TEMPLATES.put(ActionType.DELETE_MULTIPLE_RECORDS, "Deleted multiple records from table ''{0}.{1}''");
 
         DESCRIPTION_TEMPLATES.put(ActionType.CREATE_USER, "Created user ''{0}''");
         DESCRIPTION_TEMPLATES.put(ActionType.UPDATE_USER, "Updated user ''{0}''");
         DESCRIPTION_TEMPLATES.put(ActionType.DELETE_USER, "Deleted user ''{0}''");
-        
+
         DESCRIPTION_TEMPLATES.put(ActionType.ACTIVATE_USER, "Activated user ''{0}''");
         DESCRIPTION_TEMPLATES.put(ActionType.DEACTIVATE_USER, "Deactivated user ''{0}''");
 

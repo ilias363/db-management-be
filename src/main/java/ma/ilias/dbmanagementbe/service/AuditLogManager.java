@@ -78,7 +78,7 @@ public class AuditLogManager implements AuditLogService {
             } else if (objectName != null) {
                 finalActionDetails = AuditDescriptionBuilder.build(actionType, objectName);
             } else {
-                finalActionDetails = "";
+                finalActionDetails = AuditDescriptionBuilder.build(actionType, schemaName);
             }
         }
 
