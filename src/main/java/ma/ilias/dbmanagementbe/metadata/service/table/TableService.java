@@ -9,6 +9,9 @@ import java.util.List;
 public interface TableService {
     Boolean tableExists(String schemaName, String tableName);
 
+    TableMetadataDto getTable(String schemaName, String tableName, boolean includeSchema, boolean includeColumns,
+                              boolean includeIndexes, boolean checkTableExists, boolean checkAuthorization);
+
     TableMetadataDto getTable(String schemaName, String tableName, boolean includeSchema,
                               boolean includeColumns, boolean includeIndexes, boolean checkTableExists);
 

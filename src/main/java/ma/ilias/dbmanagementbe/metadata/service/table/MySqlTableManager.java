@@ -2,6 +2,7 @@ package ma.ilias.dbmanagementbe.metadata.service.table;
 
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.enums.ColumnType;
+import ma.ilias.dbmanagementbe.enums.PermissionType;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
 import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
@@ -12,6 +13,8 @@ import ma.ilias.dbmanagementbe.metadata.dto.table.NewTableDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.UpdateTableDto;
 import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
+import ma.ilias.dbmanagementbe.service.DatabaseAuthorizationService;
+import ma.ilias.dbmanagementbe.util.AuthorizationUtils;
 import ma.ilias.dbmanagementbe.util.SqlSecurityUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -28,6 +31,7 @@ public class MySqlTableManager implements TableService {
 
     private final JdbcTemplate jdbcTemplate;
     private final MetadataProviderService metadataProviderService;
+    private final DatabaseAuthorizationService databaseAuthorizationService;
 
     @Override
     public Boolean tableExists(String schemaName, String tableName) {
@@ -37,17 +41,34 @@ public class MySqlTableManager implements TableService {
     @Override
     public TableMetadataDto getTable(String schemaName, String tableName, boolean includeSchema,
                                      boolean includeColumns, boolean includeIndexes, boolean checkTableExists) {
+        return getTable(schemaName, tableName, includeSchema, includeColumns, checkTableExists, checkTableExists, false);
+    }
+
+    @Override
+    public TableMetadataDto getTable(String schemaName, String tableName, boolean includeSchema, boolean includeColumns,
+                                     boolean includeIndexes, boolean checkTableExists, boolean checkAuthorization) {
+        if (checkAuthorization) databaseAuthorizationService.checkReadPermission(schemaName, tableName);
         return metadataProviderService.getTable(schemaName, tableName, includeSchema, includeColumns, includeIndexes, checkTableExists);
     }
 
     @Override
     public List<TableMetadataDto> getTablesBySchema(String schemaName, boolean includeSchema, boolean includeColumns,
                                                     boolean includeIndexes, boolean checkSchemaExists) {
-        return metadataProviderService.getTablesBySchema(schemaName, includeSchema, includeColumns, includeIndexes, checkSchemaExists);
+        List<TableMetadataDto> allTables = metadataProviderService.getTablesBySchema(schemaName, includeSchema, includeColumns, includeIndexes, checkSchemaExists);
+
+        // Filter tables based on read permissions
+        return allTables.stream()
+                .filter(table -> AuthorizationUtils.hasPermission(
+                        PermissionType.READ,
+                        schemaName != null ? schemaName.trim().toLowerCase() : null,
+                        table.getTableName() != null ? table.getTableName().trim().toLowerCase() : null))
+                .toList();
     }
 
     @Override
     public TableMetadataDto createTable(NewTableDto newTable) {
+        databaseAuthorizationService.checkCreatePermission(newTable.getSchemaName(), newTable.getTableName());
+
         String validatedSchemaName = SqlSecurityUtils.validateSchemaName(newTable.getSchemaName());
         String validatedTableName = SqlSecurityUtils.validateTableName(newTable.getTableName());
 
@@ -107,7 +128,7 @@ public class MySqlTableManager implements TableService {
                     .filter(col -> col.getColumnType() == ColumnType.PRIMARY_KEY
                             || col.getColumnType() == ColumnType.PRIMARY_KEY_FOREIGN_KEY)
                     .map(col -> SqlSecurityUtils.validateColumnName(col.getColumnName()))
-                    .collect(Collectors.toList());
+                    .toList();
 
             if (!primaryKeyColumns.isEmpty()) {
                 createTableSql.append(", PRIMARY KEY (")
@@ -156,6 +177,8 @@ public class MySqlTableManager implements TableService {
 
     @Override
     public TableMetadataDto renameTable(UpdateTableDto updateTableDto) {
+        databaseAuthorizationService.checkWritePermission(updateTableDto.getSchemaName(), updateTableDto.getTableName());
+
         String validatedSchemaName = SqlSecurityUtils.validateSchemaName(updateTableDto.getSchemaName());
 
         if (!updateTableDto.getTableName().equalsIgnoreCase(updateTableDto.getUpdatedTableName())) {
@@ -171,6 +194,8 @@ public class MySqlTableManager implements TableService {
 
     @Override
     public Boolean deleteTable(String schemaName, String tableName, boolean force) {
+        databaseAuthorizationService.checkDeletePermission(schemaName, tableName);
+
         String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
         String validatedTableName = SqlSecurityUtils.validateTableName(tableName);
 
