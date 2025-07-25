@@ -13,6 +13,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.update.*;
 import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnDataTypeDefinition;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
+import ma.ilias.dbmanagementbe.service.DatabaseAuthorizationService;
 import ma.ilias.dbmanagementbe.util.SqlSecurityUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ public class MySqlColumnManager implements ColumnService {
 
     private final JdbcTemplate jdbcTemplate;
     private final MetadataProviderService metadataProviderService;
+    private final DatabaseAuthorizationService databaseAuthorizationService;
 
     @Override
     public Boolean columnExists(String schemaName, String tableName, String columnName) {
@@ -38,17 +40,27 @@ public class MySqlColumnManager implements ColumnService {
     @Override
     public BaseColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
                                            boolean includeTable, boolean checkColumnExists) {
+        return getColumn(schemaName, tableName, columnName, includeTable, checkColumnExists, false);
+    }
+
+    @Override
+    public BaseColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
+                                           boolean includeTable, boolean checkColumnExists, boolean checkAuthorization) {
+        if (checkAuthorization) databaseAuthorizationService.checkReadPermission(schemaName, tableName);
         return metadataProviderService.getColumn(schemaName, tableName, columnName, includeTable, checkColumnExists);
     }
 
     @Override
     public List<BaseColumnMetadataDto> getColumnsByTable(String schemaName, String tableName,
                                                          boolean includeTable, boolean checkTableExists) {
+        databaseAuthorizationService.checkReadPermission(schemaName, tableName);
         return metadataProviderService.getColumnsByTable(schemaName, tableName, includeTable, checkTableExists);
     }
 
     @Override
     public BaseColumnMetadataDto createColumn(BaseNewColumnDto newColumnDto) {
+        databaseAuthorizationService.checkCreatePermission(newColumnDto.getSchemaName(), newColumnDto.getTableName());
+
         if (newColumnDto instanceof NewPrimaryKeyForeignKeyColumnDto) {
             throw new UnauthorizedActionException("Use createPrimaryKeyColumn or createForeignKeyColumn instead.");
         }
@@ -152,6 +164,8 @@ public class MySqlColumnManager implements ColumnService {
 
     @Override
     public Boolean deleteColumn(String schemaName, String tableName, String columnName, boolean force) {
+        databaseAuthorizationService.checkDeletePermission(schemaName, tableName);
+
         String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
         String validatedTableName = SqlSecurityUtils.validateTableName(tableName);
         String validatedColumnName = SqlSecurityUtils.validateColumnName(columnName);
@@ -182,7 +196,6 @@ public class MySqlColumnManager implements ColumnService {
             throw new UnauthorizedActionException("Cannot delete primary key column. Use force=true to proceed.");
         }
 
-        // Check if the column is part of a foreign key constraint
         String fkCheckSql = """
                 SELECT CONSTRAINT_NAME
                 FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
@@ -265,7 +278,6 @@ public class MySqlColumnManager implements ColumnService {
         String columnName = pkDto.getColumnName();
         String dataType = pkDto.getDataType().toUpperCase();
 
-        // Check if table has data
         String countSql = String.format("SELECT COUNT(*) FROM %s.%s", schemaName, tableName);
         Integer rowCount = jdbcTemplate.queryForObject(countSql, Integer.class);
 
@@ -373,6 +385,8 @@ public class MySqlColumnManager implements ColumnService {
 
     @Override
     public BaseColumnMetadataDto renameColumn(RenameColumnDto renameColumnDto) {
+        databaseAuthorizationService.checkWritePermission(renameColumnDto.getSchemaName(), renameColumnDto.getTableName());
+
         String sql = "ALTER TABLE " + renameColumnDto.getSchemaName() + "." + renameColumnDto.getTableName() +
                 " RENAME COLUMN " + renameColumnDto.getColumnName() + " TO " + renameColumnDto.getNewColumnName();
 
@@ -387,6 +401,8 @@ public class MySqlColumnManager implements ColumnService {
 
     @Override
     public BaseColumnMetadataDto updateColumnDataType(UpdateColumnDataTypeDto updateColDataTypeDto) {
+        databaseAuthorizationService.checkWritePermission(updateColDataTypeDto.getSchemaName(), updateColDataTypeDto.getTableName());
+
         String sql = "ALTER TABLE " + updateColDataTypeDto.getSchemaName() + "." + updateColDataTypeDto.getTableName() +
                 " MODIFY COLUMN " + updateColDataTypeDto.getColumnName() + " " + buildColumnDefinition(updateColDataTypeDto);
 
@@ -401,6 +417,8 @@ public class MySqlColumnManager implements ColumnService {
 
     @Override
     public BaseColumnMetadataDto updateColumnAutoIncrement(UpdateColumnAutoIncrementDto updateColAutoIncrementDto) {
+        databaseAuthorizationService.checkWritePermission(updateColAutoIncrementDto.getSchemaName(), updateColAutoIncrementDto.getTableName());
+
         BaseColumnMetadataDto currentColumn = getColumn(
                 updateColAutoIncrementDto.getSchemaName(),
                 updateColAutoIncrementDto.getTableName(),
@@ -427,6 +445,8 @@ public class MySqlColumnManager implements ColumnService {
 
     @Override
     public BaseColumnMetadataDto updateColumnNullable(UpdateColumnNullableDto updateColNullableDto, boolean populate) {
+        databaseAuthorizationService.checkWritePermission(updateColNullableDto.getSchemaName(), updateColNullableDto.getTableName());
+
         BaseColumnMetadataDto currentColumn = getColumn(
                 updateColNullableDto.getSchemaName(),
                 updateColNullableDto.getTableName(),
@@ -510,6 +530,8 @@ public class MySqlColumnManager implements ColumnService {
 
     @Override
     public BaseColumnMetadataDto updateColumnUnique(UpdateColumnUniqueDto updateColUniqueDto) {
+        databaseAuthorizationService.checkWritePermission(updateColUniqueDto.getSchemaName(), updateColUniqueDto.getTableName());
+
         String uniqueColConstraintsSql = """
                 SELECT c.CONSTRAINT_NAME
                 FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE c
@@ -580,6 +602,8 @@ public class MySqlColumnManager implements ColumnService {
 
     @Override
     public BaseColumnMetadataDto updateColumnDefault(UpdateColumnDefaultDto updateColDefaultDto) {
+        databaseAuthorizationService.checkWritePermission(updateColDefaultDto.getSchemaName(), updateColDefaultDto.getTableName());
+
         BaseColumnMetadataDto currentColumn = getColumn(
                 updateColDefaultDto.getSchemaName(),
                 updateColDefaultDto.getTableName(),
@@ -619,6 +643,8 @@ public class MySqlColumnManager implements ColumnService {
 
     @Override
     public List<BaseColumnMetadataDto> updateColumnPrimaryKey(UpdateColumnPrimaryKeyDto updateColPKDto, boolean force) {
+        databaseAuthorizationService.checkWritePermission(updateColPKDto.getSchemaName(), updateColPKDto.getTableName());
+
         boolean isCurrentlyPrimaryKey = updateColPKDto.getColumnNames().stream().anyMatch(
                 colName -> isColumnPrimaryKey(updateColPKDto.getSchemaName(), updateColPKDto.getTableName(), colName));
 
@@ -710,6 +736,8 @@ public class MySqlColumnManager implements ColumnService {
 
     @Override
     public BaseColumnMetadataDto updateColumnForeignKey(UpdateColumnForeignKeyDto updateColFKDto) {
+        databaseAuthorizationService.checkWritePermission(updateColFKDto.getSchemaName(), updateColFKDto.getTableName());
+
         if (updateColFKDto.getIsForeignKey()) {
             validateForeignKeyValuesExist(updateColFKDto);
 
@@ -820,7 +848,7 @@ public class MySqlColumnManager implements ColumnService {
         return !duplicates.isEmpty();
     }
 
-    public String buildColumnDefinition(IColumnDataTypeDefinition colDto) {
+    private String buildColumnDefinition(IColumnDataTypeDefinition colDto) {
         StringBuilder sb = new StringBuilder(colDto.getDataType());
         if (colDto.getCharacterMaxLength() != null) {
             sb.append("(").append(colDto.getCharacterMaxLength()).append(")");

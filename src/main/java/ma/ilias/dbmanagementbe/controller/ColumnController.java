@@ -34,7 +34,9 @@ public class ColumnController {
             @PathVariable String tableName,
             @PathVariable String columnName
     ) {
-        BaseColumnMetadataDto column = columnService.getColumn(schemaName, tableName, columnName, true, true);
+        BaseColumnMetadataDto column = columnService.getColumn(
+                schemaName, tableName, columnName,
+                true, true, true);
         return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
                 .message("Column fetched successfully")
                 .success(true)

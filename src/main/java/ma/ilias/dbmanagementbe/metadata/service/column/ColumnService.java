@@ -10,6 +10,9 @@ public interface ColumnService {
     Boolean columnExists(String schemaName, String tableName, String columnName);
 
     BaseColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
+                                    boolean includeTable, boolean checkColumnExists, boolean checkAuthorization);
+
+    BaseColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
                                     boolean includeTable, boolean checkColumnExists);
 
     List<BaseColumnMetadataDto> getColumnsByTable(String schemaName, String tableName,
