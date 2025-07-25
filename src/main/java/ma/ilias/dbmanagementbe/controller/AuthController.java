@@ -125,4 +125,17 @@ public class AuthController {
                         .build()
         );
     }
+
+    @GetMapping("/current-user")
+    public ResponseEntity<ApiResponse<AppUserDto>> getCurrentUser() {
+        AppUserDto appUser = appUserService.getCurrentUserInfo();
+
+        return ResponseEntity.ok(
+                ApiResponse.<AppUserDto>builder()
+                        .message(appUser != null ? "Successful" : "Failed")
+                        .success(appUser != null)
+                        .data(appUser)
+                        .build()
+        );
+    }
 }
