@@ -8,8 +8,10 @@ import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.dto.appuser.AppUserDto;
 import ma.ilias.dbmanagementbe.dto.auth.LoginRequestDto;
 import ma.ilias.dbmanagementbe.enums.ActionType;
+import ma.ilias.dbmanagementbe.enums.PermissionType;
 import ma.ilias.dbmanagementbe.service.AppUserService;
 import ma.ilias.dbmanagementbe.service.AuditService;
+import ma.ilias.dbmanagementbe.util.AuthorizationUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,6 +21,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @AllArgsConstructor
@@ -137,5 +140,70 @@ public class AuthController {
                         .data(appUser)
                         .build()
         );
+    }
+
+    @GetMapping("current-user/permissions")
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> getCurrentUserPermissions() {
+        Map<String, Boolean> permissions = new HashMap<>();
+
+        permissions.put("isAdmin", AuthorizationUtils.isAdmin());
+        permissions.put("isViewer", AuthorizationUtils.isViewer());
+        permissions.put("hasUserManagementAccess", AuthorizationUtils.hasUserManagementAccess());
+        permissions.put("hasDbAccess", AuthorizationUtils.hasDbAccess());
+        permissions.put("hasDbReadAccess", AuthorizationUtils.hasDbReadAccess());
+        permissions.put("hasDbWriteAccess", AuthorizationUtils.hasDbWriteAccess());
+
+        return ResponseEntity.ok(ApiResponse.<Map<String, Boolean>>builder()
+                .message("User permissions retrieved successfully")
+                .success(true)
+                .data(permissions)
+                .build());
+    }
+
+    @GetMapping("current-user/detailed-permissions")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getDetailedPermissions(
+            @RequestParam(required = false) String schemaName,
+            @RequestParam(required = false) String tableName) {
+
+        Map<String, Object> result = new HashMap<>();
+
+        AppUserDto currentUser = appUserService.getCurrentUserInfo();
+        result.put("currentUser", currentUser);
+
+        Map<String, Boolean> rolePermissions = new HashMap<>();
+        rolePermissions.put("isSystemAdmin", AuthorizationUtils.isSystemAdmin());
+        rolePermissions.put("isDatabaseAdmin", AuthorizationUtils.isAdmin());
+        rolePermissions.put("isDatabaseViewer", AuthorizationUtils.isViewer());
+        rolePermissions.put("hasUserManagementAccess", AuthorizationUtils.hasUserManagementAccess());
+        result.put("rolePermissions", rolePermissions);
+
+        Map<String, Boolean> dbPermissions = new HashMap<>();
+        dbPermissions.put("hasDbAccess", AuthorizationUtils.hasDbAccess());
+        dbPermissions.put("hasDbReadAccess", AuthorizationUtils.hasDbReadAccess());
+        dbPermissions.put("hasDbWriteAccess", AuthorizationUtils.hasDbWriteAccess());
+        result.put("databasePermissions", dbPermissions);
+
+        // Granular permissions (if schema/table specified)
+        if (schemaName != null) {
+            Map<String, Boolean> granularPermissions = new HashMap<>();
+            granularPermissions.put("canRead", AuthorizationUtils.hasPermission(
+                    PermissionType.READ, schemaName, tableName));
+            granularPermissions.put("canWrite", AuthorizationUtils.hasPermission(
+                    PermissionType.WRITE, schemaName, tableName));
+            granularPermissions.put("canCreate", AuthorizationUtils.hasPermission(
+                    PermissionType.CREATE, schemaName, tableName));
+            granularPermissions.put("canDelete", AuthorizationUtils.hasPermission(
+                    PermissionType.DELETE, schemaName, tableName));
+
+            result.put("granularPermissions", granularPermissions);
+            result.put("targetSchema", schemaName);
+            result.put("targetTable", tableName);
+        }
+
+        return ResponseEntity.ok(ApiResponse.<Map<String, Object>>builder()
+                .message("Detailed permissions retrieved successfully")
+                .success(true)
+                .data(result)
+                .build());
     }
 }
