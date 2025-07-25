@@ -14,6 +14,6 @@ public interface AuditLogService {
 
     Boolean deleteById(Long id);
 
-    AuditLogDto createAuditLog(ActionType actionType, String schemaName, String tableName, 
-                              String objectName, String actionDetails, Boolean successful, String errorMessage);
+    void createAuditLog(ActionType actionType, String schemaName, String tableName,
+                        String objectName, String actionDetails, Boolean successful, String errorMessage);
 }

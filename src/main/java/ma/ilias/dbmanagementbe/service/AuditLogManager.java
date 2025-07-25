@@ -80,8 +80,8 @@ public class AuditLogManager implements AuditLogService {
     }
 
     @Override
-    public AuditLogDto createAuditLog(ActionType actionType, String schemaName, String tableName,
-                                      String objectName, String actionDetails, Boolean successful, String errorMessage) {
+    public void createAuditLog(ActionType actionType, String schemaName, String tableName,
+                               String objectName, String actionDetails, Boolean successful, String errorMessage) {
         AppUser currentUser = getCurrentUser();
         if (currentUser == null) {
             throw new RuntimeException("No authenticated user found for audit logging");
@@ -112,7 +112,7 @@ public class AuditLogManager implements AuditLogService {
                 .build();
 
         AuditLog savedAuditLog = auditLogRepository.save(auditLog);
-        return auditLogMapper.toDto(savedAuditLog);
+//        return auditLogMapper.toDto(savedAuditLog);
     }
 
     private AppUser getCurrentUser() {
