@@ -118,4 +118,20 @@ public class AppUserManager implements AppUserService {
         user.setActive(true);
         appUserRepository.save(user);
     }
+    
+    @Override
+    public AppUserDto getCurrentUserInfo() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated() &&
+                !"anonymousUser".equals(authentication.getPrincipal())) {
+
+            if (authentication.getPrincipal() instanceof AppUser) {
+                return appUserMapper.toDto((AppUser) authentication.getPrincipal());
+            } else if (authentication.getName() != null) {
+                return appUserMapper.toDto(
+                        appUserRepository.findByUsername(authentication.getName()).orElse(null));
+            }
+        }
+        return null;
+    }
 }

@@ -8,12 +8,21 @@ import java.util.List;
 
 public interface AppUserService {
     AppUserDto save(NewAppUserDto newAppUserDto);
+
     AppUserDto findById(Long id);
+
     AppUserDto findByUsername(String username);
+
     List<AppUserDto> findAll();
+
     List<AppUserDto> findAllActive();
+
     AppUserDto update(Long id, UpdateAppUserDto appUserDto);
-//    Boolean deleteById(Long id);
+
+    //    Boolean deleteById(Long id);
     void deactivateById(Long id);
+
     void activateById(Long id);
+
+    AppUserDto getCurrentUserInfo();
 }
