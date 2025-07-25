@@ -6,14 +6,14 @@ import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
 import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnReference;
-import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
+import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ExistingColumn;
 
 @AllArgsConstructor
 public class ExistingColumnValidator implements ConstraintValidator<ExistingColumn, IColumnReference> {
 
-    private ColumnService columnService;
+    private MetadataProviderService metadataProviderService;
 
     @Override
     public boolean isValid(IColumnReference colDto, ConstraintValidatorContext context) {
@@ -26,7 +26,7 @@ public class ExistingColumnValidator implements ConstraintValidator<ExistingColu
         }
 
         try {
-            if (!columnService.columnExists(colDto.getSchemaName(), colDto.getTableName(), colDto.getColumnName())) {
+            if (!metadataProviderService.columnExists(colDto.getSchemaName(), colDto.getTableName(), colDto.getColumnName())) {
                 ValidationUtils.addConstraintViolation(context,
                         "Column does not exist in the specified table",
                         "columnName");

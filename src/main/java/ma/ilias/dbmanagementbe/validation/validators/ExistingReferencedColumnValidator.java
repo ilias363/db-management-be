@@ -2,19 +2,19 @@ package ma.ilias.dbmanagementbe.validation.validators;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
 import ma.ilias.dbmanagementbe.metadata.dto.common.IReferencedColumnReference;
-import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
+import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ExistingReferencedColumn;
-import org.springframework.beans.factory.annotation.Autowired;
 
+@AllArgsConstructor
 public class ExistingReferencedColumnValidator
         implements ConstraintValidator<ExistingReferencedColumn, IReferencedColumnReference> {
 
-    @Autowired
-    private ColumnService columnService;
+    private MetadataProviderService metadataProviderService;
 
     @Override
     public boolean isValid(IReferencedColumnReference dto, ConstraintValidatorContext context) {
@@ -27,14 +27,14 @@ public class ExistingReferencedColumnValidator
         }
 
         try {
-            if (!columnService.columnExists(
+            if (!metadataProviderService.columnExists(
                     dto.getReferencedSchemaName(),
                     dto.getReferencedTableName(),
                     dto.getReferencedColumnName())) {
                 return false;
             }
 
-            if (!columnService.isColumnPrimaryKey(
+            if (!metadataProviderService.isColumnPrimaryKey(
                     dto.getReferencedSchemaName(),
                     dto.getReferencedTableName(),
                     dto.getReferencedColumnName())) {

@@ -5,7 +5,7 @@ import jakarta.validation.ConstraintValidatorContext;
 import lombok.RequiredArgsConstructor;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewForeignKeyColumnDto;
-import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
+import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.MatchingForeignKeyType;
 
@@ -13,7 +13,7 @@ import ma.ilias.dbmanagementbe.validation.annotations.MatchingForeignKeyType;
 public class MatchingForeignKeyTypeValidator
         implements ConstraintValidator<MatchingForeignKeyType, BaseNewForeignKeyColumnDto> {
 
-    private final ColumnService columnService;
+    private final MetadataProviderService metadataProviderService;
 
     @Override
     public boolean isValid(BaseNewForeignKeyColumnDto dto, ConstraintValidatorContext context) {
@@ -30,7 +30,7 @@ public class MatchingForeignKeyTypeValidator
         context.disableDefaultConstraintViolation();
 
         try {
-            BaseColumnMetadataDto referencedColumn = columnService.getColumn(
+            BaseColumnMetadataDto referencedColumn = metadataProviderService.getColumn(
                     dto.getReferencedSchemaName(),
                     dto.getReferencedTableName(),
                     dto.getReferencedColumnName(),

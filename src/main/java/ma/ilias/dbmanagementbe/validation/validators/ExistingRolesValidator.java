@@ -2,16 +2,16 @@ package ma.ilias.dbmanagementbe.validation.validators;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dao.repositories.RoleRepository;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ExistingRoles;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Collection;
 
+@AllArgsConstructor
 public class ExistingRolesValidator implements ConstraintValidator<ExistingRoles, Collection<?>> {
 
-    @Autowired
     private RoleRepository roleRepository;
 
     @Override

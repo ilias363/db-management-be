@@ -2,15 +2,15 @@ package ma.ilias.dbmanagementbe.validation.validators;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.dto.appuser.AppUserDtoBase;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.UniqueUsername;
-import org.springframework.beans.factory.annotation.Autowired;
 
+@AllArgsConstructor
 public class UniqueUsernameValidator implements ConstraintValidator<UniqueUsername, AppUserDtoBase> {
 
-    @Autowired
     private AppUserRepository appUserRepository;
 
     @Override

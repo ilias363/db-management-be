@@ -6,14 +6,14 @@ import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnPrimaryKeyDto;
-import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
+import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ExistingColumns;
 
 @AllArgsConstructor
 public class ExistingColumnsValidator implements ConstraintValidator<ExistingColumns, UpdateColumnPrimaryKeyDto> {
 
-    private ColumnService columnService;
+    private MetadataProviderService metadataProviderService;
 
     @Override
     public boolean isValid(UpdateColumnPrimaryKeyDto colDto, ConstraintValidatorContext context) {
@@ -26,7 +26,7 @@ public class ExistingColumnsValidator implements ConstraintValidator<ExistingCol
 
         try {
             if (colDto.getColumnNames().stream().anyMatch(
-                    colName -> !columnService.columnExists(colDto.getSchemaName(), colDto.getTableName(), colName))) {
+                    colName -> !metadataProviderService.columnExists(colDto.getSchemaName(), colDto.getTableName(), colName))) {
                 ValidationUtils.addConstraintViolation(context,
                         "One or more columns does not exist in the specified table",
                         "columnNames");

@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import ma.ilias.dbmanagementbe.enums.ColumnType;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnPrimaryKeyDto;
-import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
+import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidPrimaryKeyChange;
 
@@ -17,7 +17,7 @@ import java.util.Set;
 public class ValidPrimaryKeyChangeValidator
         implements ConstraintValidator<ValidPrimaryKeyChange, UpdateColumnPrimaryKeyDto> {
 
-    private final ColumnService columnService;
+    private final MetadataProviderService metadataProviderService;
 
     @Override
     public boolean isValid(UpdateColumnPrimaryKeyDto dto, ConstraintValidatorContext context) {
@@ -27,7 +27,7 @@ public class ValidPrimaryKeyChangeValidator
 
         try {
             List<BaseColumnMetadataDto> currentColumns = dto.getColumnNames().stream()
-                    .map(colName -> columnService.getColumn(
+                    .map(colName -> metadataProviderService.getColumn(
                             dto.getSchemaName(), dto.getTableName(), colName,
                             false, false))
                     .toList();

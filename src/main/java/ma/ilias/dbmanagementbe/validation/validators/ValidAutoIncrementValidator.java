@@ -7,14 +7,14 @@ import ma.ilias.dbmanagementbe.enums.ColumnType;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnAutoIncrementDto;
 import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnReference;
-import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
+import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidAutoIncrement;
 
 @AllArgsConstructor
 public class ValidAutoIncrementValidator implements ConstraintValidator<ValidAutoIncrement, IColumnReference> {
 
-    private ColumnService columnService;
+    private MetadataProviderService metadataProviderService;
 
     @Override
     public boolean isValid(IColumnReference dto, ConstraintValidatorContext context) {
@@ -32,7 +32,7 @@ public class ValidAutoIncrementValidator implements ConstraintValidator<ValidAut
             autoIncrement = updateDto.getAutoIncrement();
             if (autoIncrement != null && autoIncrement) {
                 try {
-                    var currentColumn = columnService.getColumn(
+                    var currentColumn = metadataProviderService.getColumn(
                             updateDto.getSchemaName(),
                             updateDto.getTableName(),
                             updateDto.getColumnName(),

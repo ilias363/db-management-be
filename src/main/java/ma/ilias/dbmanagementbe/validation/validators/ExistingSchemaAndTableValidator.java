@@ -2,22 +2,18 @@ package ma.ilias.dbmanagementbe.validation.validators;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.permission.NewPermissionDto;
 import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
-import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
-import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
+import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ExistingSchemaAndTable;
-import org.springframework.beans.factory.annotation.Autowired;
 
+@AllArgsConstructor
 public class ExistingSchemaAndTableValidator implements ConstraintValidator<ExistingSchemaAndTable, NewPermissionDto> {
 
-    @Autowired
-    private SchemaService schemaService;
-
-    @Autowired
-    private TableService tableService;
+    private MetadataProviderService metadataProviderService;
 
     @Override
     public boolean isValid(NewPermissionDto dto, ConstraintValidatorContext context) {
@@ -34,12 +30,12 @@ public class ExistingSchemaAndTableValidator implements ConstraintValidator<Exis
                 return false;
             }
 
-            if (hasSchema && !schemaService.schemaExists(dto.getSchemaName())) {
+            if (hasSchema && !metadataProviderService.schemaExists(dto.getSchemaName())) {
                 ValidationUtils.addConstraintViolation(context, "Schema does not exist", "schemaName");
                 return false;
             }
 
-            if (hasTable && !tableService.tableExists(dto.getSchemaName(), dto.getTableName())) {
+            if (hasTable && !metadataProviderService.tableExists(dto.getSchemaName(), dto.getTableName())) {
                 ValidationUtils.addConstraintViolation(context, "Table does not exist", "tableName");
                 return false;
             }

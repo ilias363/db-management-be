@@ -5,14 +5,14 @@ import jakarta.validation.ConstraintValidatorContext;
 import lombok.RequiredArgsConstructor;
 import ma.ilias.dbmanagementbe.enums.ColumnType;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnUniqueDto;
-import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
+import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidUniqueChange;
 
 @RequiredArgsConstructor
 public class ValidUniqueChangeValidator implements ConstraintValidator<ValidUniqueChange, UpdateColumnUniqueDto> {
 
-    private final ColumnService columnService;
+    private final MetadataProviderService metadataProviderService;
 
     @Override
     public boolean isValid(UpdateColumnUniqueDto dto, ConstraintValidatorContext context) {
@@ -21,7 +21,7 @@ public class ValidUniqueChangeValidator implements ConstraintValidator<ValidUniq
         }
 
         try {
-            var currentColumn = columnService.getColumn(
+            var currentColumn = metadataProviderService.getColumn(
                     dto.getSchemaName(),
                     dto.getTableName(),
                     dto.getColumnName(),

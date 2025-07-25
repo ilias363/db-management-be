@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import ma.ilias.dbmanagementbe.enums.ColumnType;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnForeignKeyDto;
-import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
+import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidForeignKeyChange;
 
@@ -16,7 +16,7 @@ import java.util.Set;
 public class ValidForeignKeyChangeValidator
         implements ConstraintValidator<ValidForeignKeyChange, UpdateColumnForeignKeyDto> {
 
-    private final ColumnService columnService;
+    private final MetadataProviderService metadataProviderService;
 
     @Override
     public boolean isValid(UpdateColumnForeignKeyDto dto, ConstraintValidatorContext context) {
@@ -27,7 +27,7 @@ public class ValidForeignKeyChangeValidator
         context.disableDefaultConstraintViolation();
 
         try {
-            var currentColumn = columnService.getColumn(
+            var currentColumn = metadataProviderService.getColumn(
                     dto.getSchemaName(),
                     dto.getTableName(),
                     dto.getColumnName(),
@@ -71,7 +71,7 @@ public class ValidForeignKeyChangeValidator
         }
 
         try {
-            var referencedColumn = columnService.getColumn(
+            var referencedColumn = metadataProviderService.getColumn(
                     dto.getReferencedSchemaName(),
                     dto.getReferencedTableName(),
                     dto.getReferencedColumnName(),

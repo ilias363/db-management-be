@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import ma.ilias.dbmanagementbe.enums.ColumnType;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnDefaultDto;
-import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
+import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidColumnDefaultUpdate;
 
@@ -17,7 +17,7 @@ import java.util.Set;
 public class ValidColumnDefaultUpdateValidator
         implements ConstraintValidator<ValidColumnDefaultUpdate, UpdateColumnDefaultDto> {
 
-    private final ColumnService columnService;
+    private final MetadataProviderService metadataProviderService;
 
     @Override
     public boolean isValid(UpdateColumnDefaultDto dto, ConstraintValidatorContext context) {
@@ -28,7 +28,7 @@ public class ValidColumnDefaultUpdateValidator
         BaseColumnMetadataDto currentColumn;
 
         try {
-            currentColumn = columnService.getColumn(
+            currentColumn = metadataProviderService.getColumn(
                     dto.getSchemaName(), dto.getTableName(), dto.getColumnName(),
                     false, false);
             if (currentColumn == null) {

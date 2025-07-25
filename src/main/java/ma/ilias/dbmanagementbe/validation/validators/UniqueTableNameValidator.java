@@ -2,19 +2,19 @@ package ma.ilias.dbmanagementbe.validation.validators;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
 import ma.ilias.dbmanagementbe.metadata.dto.common.ITableReference;
 import ma.ilias.dbmanagementbe.metadata.dto.table.NewTableDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.UpdateTableDto;
-import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
+import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.UniqueTableName;
-import org.springframework.beans.factory.annotation.Autowired;
 
+@AllArgsConstructor
 public class UniqueTableNameValidator implements ConstraintValidator<UniqueTableName, ITableReference> {
 
-    @Autowired
-    private TableService tableService;
+    private MetadataProviderService metadataProviderService;
 
     @Override
     public boolean isValid(ITableReference dto, ConstraintValidatorContext context) {
@@ -28,7 +28,7 @@ public class UniqueTableNameValidator implements ConstraintValidator<UniqueTable
                 if (newDto.getTableName() == null) {
                     return true;
                 }
-                return !tableService.tableExists(newDto.getSchemaName(), newDto.getTableName());
+                return !metadataProviderService.tableExists(newDto.getSchemaName(), newDto.getTableName());
             }
 
             // For UpdateTableDto
@@ -36,7 +36,7 @@ public class UniqueTableNameValidator implements ConstraintValidator<UniqueTable
                 if (updateDto.getUpdatedTableName() == null) {
                     return true;
                 }
-                return !tableService.tableExists(updateDto.getSchemaName(), updateDto.getUpdatedTableName());
+                return !metadataProviderService.tableExists(updateDto.getSchemaName(), updateDto.getUpdatedTableName());
             }
             return true;
         } catch (SchemaNotFoundException ex) {

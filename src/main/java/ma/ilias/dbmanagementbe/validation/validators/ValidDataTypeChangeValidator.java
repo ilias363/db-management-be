@@ -5,14 +5,14 @@ import jakarta.validation.ConstraintValidatorContext;
 import lombok.RequiredArgsConstructor;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnDataTypeDto;
-import ma.ilias.dbmanagementbe.metadata.service.column.ColumnService;
+import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidDataTypeChange;
 
 @RequiredArgsConstructor
 public class ValidDataTypeChangeValidator implements ConstraintValidator<ValidDataTypeChange, UpdateColumnDataTypeDto> {
 
-    private final ColumnService columnService;
+    private final MetadataProviderService metadataProviderService;
 
     @Override
     public boolean isValid(UpdateColumnDataTypeDto value, ConstraintValidatorContext context) {
@@ -21,7 +21,7 @@ public class ValidDataTypeChangeValidator implements ConstraintValidator<ValidDa
         }
 
         try {
-            BaseColumnMetadataDto currentColumn = columnService.getColumn(
+            BaseColumnMetadataDto currentColumn = metadataProviderService.getColumn(
                     value.getSchemaName(),
                     value.getTableName(),
                     value.getColumnName(),

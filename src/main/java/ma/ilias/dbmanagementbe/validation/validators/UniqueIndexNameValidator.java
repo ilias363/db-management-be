@@ -6,14 +6,14 @@ import lombok.RequiredArgsConstructor;
 import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
 import ma.ilias.dbmanagementbe.metadata.dto.index.NewIndexDto;
-import ma.ilias.dbmanagementbe.metadata.service.index.IndexService;
+import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.UniqueIndexName;
 
 @RequiredArgsConstructor
 public class UniqueIndexNameValidator implements ConstraintValidator<UniqueIndexName, NewIndexDto> {
 
-    private final IndexService indexService;
+    private final MetadataProviderService metadataProviderService;
 
     @Override
     public boolean isValid(NewIndexDto dto, ConstraintValidatorContext context) {
@@ -26,7 +26,7 @@ public class UniqueIndexNameValidator implements ConstraintValidator<UniqueIndex
         }
 
         try {
-            return !indexService.indexExists(dto.getSchemaName(), dto.getTableName(), dto.getIndexName());
+            return !metadataProviderService.indexExists(dto.getSchemaName(), dto.getTableName(), dto.getIndexName());
         } catch (TableNotFoundException ex) {
             ValidationUtils.addConstraintViolation(context,
                     "Table does not exist",
