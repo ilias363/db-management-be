@@ -57,10 +57,10 @@ public class AuditLogManager implements AuditLogService {
         Page<AuditLog> auditLogPage = auditLogRepository.findAll(pageable);
 
         return AuditLogPageDto.builder()
-                .audits(auditLogPage.getContent().stream()
+                .items(auditLogPage.getContent().stream()
                         .map(auditLogMapper::toDto)
                         .toList())
-                .totalAudits(auditLogPage.getTotalElements())
+                .totalItems(auditLogPage.getTotalElements())
                 .currentPage(page)
                 .pageSize(size)
                 .totalPages(auditLogPage.getTotalPages())
@@ -83,10 +83,10 @@ public class AuditLogManager implements AuditLogService {
         Page<AuditLog> auditLogPage = auditLogRepository.findByUser_Id(userId, pageable);
 
         return AuditLogPageDto.builder()
-                .audits(auditLogPage.getContent().stream()
+                .items(auditLogPage.getContent().stream()
                         .map(auditLogMapper::toDto)
                         .toList())
-                .totalAudits(auditLogPage.getTotalElements())
+                .totalItems(auditLogPage.getTotalElements())
                 .currentPage(page)
                 .pageSize(size)
                 .totalPages(auditLogPage.getTotalPages())

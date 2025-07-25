@@ -66,8 +66,8 @@ public class MySqlRecordManager implements RecordService {
             int totalPages = (int) Math.ceil((double) totalRecords / size);
 
             return RecordPageDto.builder()
-                    .records(records)
-                    .totalRecords(totalRecords)
+                    .items(records)
+                    .totalItems(totalRecords)
                     .currentPage(page)
                     .pageSize(size)
                     .totalPages(totalPages)

@@ -1,22 +1,10 @@
 package ma.ilias.dbmanagementbe.dto.auditlog;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
+import ma.ilias.dbmanagementbe.dto.PageDto;
 
-import java.util.Collections;
-import java.util.List;
-
+@SuperBuilder
 @NoArgsConstructor
-@AllArgsConstructor
-@Data
-@Builder
-public class AuditLogPageDto {
-    @Builder.Default
-    private List<AuditLogDto> audits = Collections.emptyList();
-    private long totalAudits;
-    private int currentPage;
-    private int pageSize;
-    private int totalPages;
+public class AuditLogPageDto extends PageDto<AuditLogDto> {
 }
