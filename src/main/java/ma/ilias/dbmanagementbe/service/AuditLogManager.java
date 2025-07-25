@@ -8,9 +8,11 @@ import ma.ilias.dbmanagementbe.dao.repositories.AuditLogRepository;
 import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogDto;
 import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.exception.AuditLogNotFoundException;
+import ma.ilias.dbmanagementbe.exception.InsufficientPermissionException;
 import ma.ilias.dbmanagementbe.exception.UserNotFoundException;
 import ma.ilias.dbmanagementbe.mapper.AuditLogMapper;
 import ma.ilias.dbmanagementbe.util.AuditDescriptionBuilder;
+import ma.ilias.dbmanagementbe.util.AuthorizationUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,10 @@ public class AuditLogManager implements AuditLogService {
 
     @Override
     public AuditLogDto findById(Long id) {
+        if (!AuthorizationUtils.hasUserManagementAccess()) {
+            throw new InsufficientPermissionException("Only administrators can view audit logs");
+        }
+
         AuditLog auditLog = auditLogRepository.findById(id)
                 .orElseThrow(() -> new AuditLogNotFoundException("AuditLog not found with ID: " + id));
         return auditLogMapper.toDto(auditLog);
@@ -37,6 +43,10 @@ public class AuditLogManager implements AuditLogService {
 
     @Override
     public List<AuditLogDto> findAll() {
+        if (!AuthorizationUtils.hasUserManagementAccess()) {
+            throw new InsufficientPermissionException("Only administrators can view audit logs");
+        }
+
         return auditLogRepository.findAll().stream()
                 .map(auditLogMapper::toDto)
                 .collect(Collectors.toList());
@@ -44,6 +54,10 @@ public class AuditLogManager implements AuditLogService {
 
     @Override
     public List<AuditLogDto> findByUserId(Long userId) {
+        if (!AuthorizationUtils.hasUserManagementAccess()) {
+            throw new InsufficientPermissionException("Only administrators can view audit logs");
+        }
+
         if (!appUserRepository.existsById(userId)) {
             throw new UserNotFoundException("User not found with ID: " + userId);
         }
@@ -54,6 +68,10 @@ public class AuditLogManager implements AuditLogService {
 
     @Override
     public Boolean deleteById(Long id) {
+        if (!AuthorizationUtils.hasUserManagementAccess()) {
+            throw new InsufficientPermissionException("Only administrators can delete audit logs");
+        }
+
         if (!auditLogRepository.existsById(id)) {
             throw new AuditLogNotFoundException("AuditLog not found with ID: " + id);
         }
