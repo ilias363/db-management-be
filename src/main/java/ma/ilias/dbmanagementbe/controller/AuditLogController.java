@@ -1,5 +1,8 @@
 package ma.ilias.dbmanagementbe.controller;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogDto;
@@ -17,10 +20,11 @@ public class AuditLogController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<AuditLogPageDto>> getAllAuditLogsPaginated(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
             @RequestParam(required = false) String sortBy,
-            @RequestParam(defaultValue = "DESC") String sortDirection
+            @RequestParam(defaultValue = "DESC") @Pattern(regexp = "^(ASC|DESC)$",
+                    message = "Sort direction must be either ASC or DESC") String sortDirection
     ) {
         AuditLogPageDto auditLogPage = auditLogService.findAllPaginated(page, size, sortBy, sortDirection);
         return ResponseEntity.ok(ApiResponse.<AuditLogPageDto>builder()
@@ -43,10 +47,11 @@ public class AuditLogController {
     @GetMapping("/user/{userId}")
     public ResponseEntity<ApiResponse<AuditLogPageDto>> getAuditLogsByUserIdPaginated(
             @PathVariable Long userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
             @RequestParam(required = false) String sortBy,
-            @RequestParam(defaultValue = "DESC") String sortDirection
+            @RequestParam(defaultValue = "DESC") @Pattern(regexp = "^(ASC|DESC)$",
+                    message = "Sort direction must be either ASC or DESC") String sortDirection
     ) {
         AuditLogPageDto auditLogPage = auditLogService.findByUserIdPaginated(userId, page, size, sortBy, sortDirection);
         return ResponseEntity.ok(ApiResponse.<AuditLogPageDto>builder()

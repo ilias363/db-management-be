@@ -23,6 +23,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @AllArgsConstructor
 @Transactional
@@ -154,7 +156,12 @@ public class AuditLogManager implements AuditLogService {
     }
 
     private Sort createSort(String sortBy, String sortDirection) {
-        if (sortBy == null || sortBy.isBlank()) {
+        final List<String> validFields = List.of(
+                "id", "user", "actionType", "schemaName", "tableName",
+                "objectName", "actionDetails", "successful", "errorMessage", "auditTimestamp"
+        );
+
+        if (sortBy == null || sortBy.isBlank() || !validFields.contains(sortBy)) {
             sortBy = "auditTimestamp";
         }
 

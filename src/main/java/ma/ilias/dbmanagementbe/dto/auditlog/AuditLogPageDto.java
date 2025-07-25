@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Collections;
 import java.util.List;
 
 @NoArgsConstructor
@@ -12,7 +13,8 @@ import java.util.List;
 @Data
 @Builder
 public class AuditLogPageDto {
-    private List<AuditLogDto> audits;
+    @Builder.Default
+    private List<AuditLogDto> audits = Collections.emptyList();
     private long totalAudits;
     private int currentPage;
     private int pageSize;

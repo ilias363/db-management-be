@@ -49,8 +49,7 @@ public class MySqlRecordManager implements RecordService {
         if (sortBy != null && !sortBy.isBlank()) {
             validateColumnExists(schemaName, tableName, sortBy);
             String validatedSortBy = SqlSecurityUtils.validateColumnName(sortBy);
-            String validatedSortDirection = validateSortDirection(sortDirection);
-            queryBuilder.append(" ORDER BY ").append(validatedSortBy).append(" ").append(validatedSortDirection);
+            queryBuilder.append(" ORDER BY ").append(validatedSortBy).append(" ").append(sortDirection);
         }
 
         // Add pagination
@@ -1181,17 +1180,6 @@ public class MySqlRecordManager implements RecordService {
                     tableName.toLowerCase(),
                     columnName.toLowerCase());
         }
-    }
-
-    private String validateSortDirection(String sortDirection) {
-        if (sortDirection == null || sortDirection.isBlank()) {
-            return "ASC";
-        }
-        String direction = sortDirection.trim().toUpperCase();
-        if (!"ASC".equals(direction) && !"DESC".equals(direction)) {
-            throw new IllegalArgumentException("Sort direction must be either ASC or DESC");
-        }
-        return direction;
     }
 
     @Override
