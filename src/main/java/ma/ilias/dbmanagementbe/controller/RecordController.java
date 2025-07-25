@@ -49,7 +49,7 @@ public class RecordController {
             @PathVariable String tableName,
             @RequestParam Map<String, Object> primaryKeyValues
     ) {
-        RecordDto record = recordService.getRecord(schemaName, tableName, primaryKeyValues);
+        RecordDto record = recordService.getRecord(schemaName, tableName, primaryKeyValues, true);
         return ResponseEntity.ok(ApiResponse.<RecordDto>builder()
                 .message("Record fetched successfully")
                 .success(true)
@@ -134,7 +134,7 @@ public class RecordController {
             @PathVariable String tableName,
             @RequestParam Map<String, Object> identifyingValues
     ) {
-        RecordDto record = recordService.getRecordByValues(schemaName, tableName, identifyingValues);
+        RecordDto record = recordService.getRecordByValues(schemaName, tableName, identifyingValues, true);
         return ResponseEntity.ok(ApiResponse.<RecordDto>builder()
                 .message("Record fetched successfully using identifying values")
                 .success(true)
@@ -149,7 +149,8 @@ public class RecordController {
             @RequestParam Map<String, Object> identifyingValues,
             @RequestParam(defaultValue = "false") boolean limitOne
     ) {
-        List<RecordDto> records = recordService.getRecordsByValues(schemaName, tableName, identifyingValues, limitOne);
+        List<RecordDto> records = recordService.getRecordsByValues(schemaName, tableName, identifyingValues,
+                limitOne, true);
         return ResponseEntity.ok(ApiResponse.<List<RecordDto>>builder()
                 .message(records.size() + " record(s) fetched successfully using identifying values")
                 .success(true)
@@ -363,7 +364,7 @@ public class RecordController {
             @PathVariable String schemaName,
             @PathVariable String tableName
     ) {
-        long count = recordService.getRecordCount(schemaName, tableName, true);
+        long count = recordService.getRecordCount(schemaName, tableName, true, true);
         return ResponseEntity.ok(ApiResponse.<Long>builder()
                 .message("Record count fetched successfully")
                 .success(true)

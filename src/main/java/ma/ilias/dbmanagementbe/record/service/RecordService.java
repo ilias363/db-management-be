@@ -12,6 +12,9 @@ public interface RecordService {
 
     RecordDto getRecord(String schemaName, String tableName, Map<String, Object> primaryKeyValues);
 
+    RecordDto getRecord(String schemaName, String tableName, Map<String, Object> primaryKeyValues,
+                        boolean checkAuthorization);
+
     RecordDto createRecord(NewRecordDto newRecordDto);
 
     RecordDto updateRecord(UpdateRecordDto updateRecordDto);
@@ -20,7 +23,14 @@ public interface RecordService {
 
     RecordDto getRecordByValues(String schemaName, String tableName, Map<String, Object> identifyingValues);
 
-    List<RecordDto> getRecordsByValues(String schemaName, String tableName, Map<String, Object> identifyingValues, boolean limitOne);
+    RecordDto getRecordByValues(String schemaName, String tableName, Map<String, Object> identifyingValues,
+                                boolean checkAuthorization);
+
+    List<RecordDto> getRecordsByValues(String schemaName, String tableName, Map<String, Object> identifyingValues,
+                                       boolean limitOne);
+
+    List<RecordDto> getRecordsByValues(String schemaName, String tableName, Map<String, Object> identifyingValues,
+                                       boolean limitOne, boolean checkAuthorization);
 
     List<RecordDto> updateRecordByValues(UpdateRecordByValuesDto updateDto);
 
@@ -37,6 +47,8 @@ public interface RecordService {
     int deleteRecordsByValues(BatchDeleteRecordsByValuesDto batchDeleteByValues);
 
     long getRecordCount(String schemaName, String tableName, boolean checkTableExists);
+
+    long getRecordCount(String schemaName, String tableName, boolean checkTableExists, boolean checkAuthorization);
 
     void validateRecordData(String schemaName, String tableName, Map<String, Object> data,
                             List<BaseColumnMetadataDto> columns, boolean isUpdate);

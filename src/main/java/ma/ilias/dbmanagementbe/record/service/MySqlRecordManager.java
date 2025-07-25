@@ -12,6 +12,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.PrimaryK
 import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.record.dto.*;
 import ma.ilias.dbmanagementbe.record.utils.SearchQueryBuilder;
+import ma.ilias.dbmanagementbe.service.DatabaseAuthorizationService;
 import ma.ilias.dbmanagementbe.util.SqlSecurityUtils;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import org.springframework.dao.DataAccessException;
@@ -31,10 +32,13 @@ public class MySqlRecordManager implements RecordService {
 
     private final JdbcTemplate jdbcTemplate;
     private final MetadataProviderService metadataProviderService;
+    private final DatabaseAuthorizationService databaseAuthorizationService;
 
     @Override
     public RecordPageDto getRecords(String schemaName, String tableName, int page, int size,
                                     String sortBy, String sortDirection) {
+        databaseAuthorizationService.checkReadPermission(schemaName, tableName);
+
         validateTableExists(schemaName, tableName);
 
         // schema name and table name are validated during the table existence check
@@ -82,6 +86,14 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public RecordDto getRecord(String schemaName, String tableName, Map<String, Object> primaryKeyValues) {
+        return getRecord(schemaName, tableName, primaryKeyValues, false);
+    }
+
+    @Override
+    public RecordDto getRecord(String schemaName, String tableName, Map<String, Object> primaryKeyValues,
+                               boolean checkAuthorization) {
+        if (checkAuthorization) databaseAuthorizationService.checkReadPermission(schemaName, tableName);
+
         validateTableExists(schemaName, tableName);
 
         // schema name and table name are validated during the table existence check
@@ -130,6 +142,8 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public RecordDto createRecord(NewRecordDto newRecordDto) {
+        databaseAuthorizationService.checkCreatePermission(newRecordDto.getSchemaName(), newRecordDto.getTableName());
+
         validateTableExists(newRecordDto.getSchemaName(), newRecordDto.getTableName());
 
         // schema name and table name are validated during the table existence check
@@ -205,13 +219,14 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public RecordDto updateRecord(UpdateRecordDto updateRecordDto) {
+        databaseAuthorizationService.checkWritePermission(updateRecordDto.getSchemaName(), updateRecordDto.getTableName());
+
         validateTableExists(updateRecordDto.getSchemaName(), updateRecordDto.getTableName());
 
         // schema name and table name are validated during the table existence check
         String validatedSchemaName = updateRecordDto.getSchemaName().trim().toLowerCase();
         String validatedTableName = updateRecordDto.getTableName().trim().toLowerCase();
 
-        // Check if table has primary key
         List<BaseColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
 
         if (primaryKeyColumns.isEmpty()) {
@@ -269,13 +284,14 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public boolean deleteRecord(String schemaName, String tableName, Map<String, Object> primaryKeyValues) {
+        databaseAuthorizationService.checkDeletePermission(schemaName, tableName);
+
         validateTableExists(schemaName, tableName);
 
         // schema name and table name are validated during the table existence check
         String validatedSchemaName = schemaName.trim().toLowerCase();
         String validatedTableName = tableName.trim().toLowerCase();
 
-        // Check if table has primary key
         List<BaseColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
 
         if (primaryKeyColumns.isEmpty()) {
@@ -296,7 +312,6 @@ public class MySqlRecordManager implements RecordService {
                 .map(String::toLowerCase)
                 .collect(Collectors.toSet());
 
-        // Check if all required primary key columns are provided
         if (!providedPkColumns.containsAll(requiredPkColumns)) {
             Set<String> missingColumns = new HashSet<>(requiredPkColumns);
             missingColumns.removeAll(providedPkColumns);
@@ -304,7 +319,6 @@ public class MySqlRecordManager implements RecordService {
                     "Missing required primary key columns: " + String.join(", ", missingColumns));
         }
 
-        // Check if any provided columns are not actually primary key columns
         if (!requiredPkColumns.containsAll(providedPkColumns)) {
             Set<String> invalidColumns = new HashSet<>(providedPkColumns);
             invalidColumns.removeAll(requiredPkColumns);
@@ -339,6 +353,14 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public RecordDto getRecordByValues(String schemaName, String tableName, Map<String, Object> identifyingValues) {
+        return getRecordByValues(schemaName, tableName, identifyingValues, false);
+    }
+
+    @Override
+    public RecordDto getRecordByValues(String schemaName, String tableName, Map<String, Object> identifyingValues,
+                                       boolean checkAuthorization) {
+        if (checkAuthorization) databaseAuthorizationService.checkReadPermission(schemaName, tableName);
+
         List<RecordDto> records = getRecordsByValues(schemaName, tableName, identifyingValues, true);
         if (records.isEmpty()) {
             throw new RecordNotFoundException("No record found matching the provided identifying values in table: " + tableName);
@@ -347,7 +369,16 @@ public class MySqlRecordManager implements RecordService {
     }
 
     @Override
-    public List<RecordDto> getRecordsByValues(String schemaName, String tableName, Map<String, Object> identifyingValues, boolean limitOne) {
+    public List<RecordDto> getRecordsByValues(String schemaName, String tableName, Map<String, Object> identifyingValues,
+                                              boolean limitOne) {
+        return getRecordsByValues(schemaName, tableName, identifyingValues, limitOne, false);
+    }
+
+    @Override
+    public List<RecordDto> getRecordsByValues(String schemaName, String tableName, Map<String, Object> identifyingValues,
+                                              boolean limitOne, boolean checkAuthorization) {
+        if (checkAuthorization) databaseAuthorizationService.checkReadPermission(schemaName, tableName);
+
         validateTableExists(schemaName, tableName);
 
         // schema name and table name are validated during the table existence check
@@ -405,6 +436,8 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public List<RecordDto> updateRecordByValues(UpdateRecordByValuesDto updateDto) {
+        databaseAuthorizationService.checkWritePermission(updateDto.getSchemaName(), updateDto.getTableName());
+
         validateTableExists(updateDto.getSchemaName(), updateDto.getTableName());
 
         // schema name and table name are validated during the table existence check
@@ -474,6 +507,8 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public int deleteRecordByValues(DeleteRecordByValuesDto deleteDto) {
+        databaseAuthorizationService.checkDeletePermission(deleteDto.getSchemaName(), deleteDto.getTableName());
+
         validateTableExists(deleteDto.getSchemaName(), deleteDto.getTableName());
 
         // schema name and table name are validated during the table existence check
@@ -515,6 +550,8 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public List<RecordDto> createRecords(BatchNewRecordsDto batchNewRecords) {
+        databaseAuthorizationService.checkCreatePermission(batchNewRecords.getSchemaName(), batchNewRecords.getTableName());
+
         if (batchNewRecords == null || batchNewRecords.getRecords() == null || batchNewRecords.getRecords().isEmpty()) {
             throw new InvalidRecordDataException("No records provided for batch creation");
         }
@@ -607,6 +644,8 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public List<RecordDto> updateRecords(BatchUpdateRecordsDto batchUpdateRecords) {
+        databaseAuthorizationService.checkWritePermission(batchUpdateRecords.getSchemaName(), batchUpdateRecords.getTableName());
+
         if (batchUpdateRecords == null || batchUpdateRecords.getUpdates() == null || batchUpdateRecords.getUpdates().isEmpty()) {
             throw new InvalidRecordDataException("No records provided for batch update");
         }
@@ -616,7 +655,6 @@ public class MySqlRecordManager implements RecordService {
         String validatedSchemaName = batchUpdateRecords.getSchemaName().trim().toLowerCase();
         String validatedTableName = batchUpdateRecords.getTableName().trim().toLowerCase();
 
-        // Check if table has primary key
         List<BaseColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
 
         if (primaryKeyColumns.isEmpty()) {
@@ -688,6 +726,8 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public int deleteRecords(BatchDeleteRecordsDto batchDeleteRecords) {
+        databaseAuthorizationService.checkDeletePermission(batchDeleteRecords.getSchemaName(), batchDeleteRecords.getTableName());
+
         if (batchDeleteRecords == null || batchDeleteRecords.getPrimaryKeyValuesList() == null ||
                 batchDeleteRecords.getPrimaryKeyValuesList().isEmpty()) {
             return 0;
@@ -724,7 +764,6 @@ public class MySqlRecordManager implements RecordService {
                     .map(String::toLowerCase)
                     .collect(Collectors.toSet());
 
-            // Check if all required primary key columns are provided
             if (!providedPkColumns.containsAll(requiredPkColumns)) {
                 Set<String> missingColumns = new HashSet<>(requiredPkColumns);
                 missingColumns.removeAll(providedPkColumns);
@@ -732,7 +771,6 @@ public class MySqlRecordManager implements RecordService {
                         "Missing required primary key columns: " + String.join(", ", missingColumns));
             }
 
-            // Check if any provided columns are not actually primary key columns
             if (!requiredPkColumns.containsAll(providedPkColumns)) {
                 Set<String> invalidColumns = new HashSet<>(providedPkColumns);
                 invalidColumns.removeAll(requiredPkColumns);
@@ -779,6 +817,8 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public List<RecordDto> updateRecordsByValues(BatchUpdateRecordsByValuesDto batchUpdateByValues) {
+        databaseAuthorizationService.checkWritePermission(batchUpdateByValues.getSchemaName(), batchUpdateByValues.getTableName());
+
         if (batchUpdateByValues == null || batchUpdateByValues.getUpdates() == null || batchUpdateByValues.getUpdates().isEmpty()) {
             throw new InvalidRecordDataException("No records provided for batch update by values");
         }
@@ -866,6 +906,8 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public int deleteRecordsByValues(BatchDeleteRecordsByValuesDto batchDeleteByValues) {
+        databaseAuthorizationService.checkDeletePermission(batchDeleteByValues.getSchemaName(), batchDeleteByValues.getTableName());
+
         if (batchDeleteByValues == null || batchDeleteByValues.getDeletions() == null || batchDeleteByValues.getDeletions().isEmpty()) {
             return 0;
         }
@@ -925,6 +967,13 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public long getRecordCount(String schemaName, String tableName, boolean checkTableExists) {
+        return getRecordCount(schemaName, tableName, checkTableExists, false);
+    }
+
+    @Override
+    public long getRecordCount(String schemaName, String tableName, boolean checkTableExists, boolean checkAuthorization) {
+        if (checkAuthorization) databaseAuthorizationService.checkReadPermission(schemaName, tableName);
+
         String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
         String validatedTableName = SqlSecurityUtils.validateTableName(tableName);
 
@@ -1184,6 +1233,8 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public AdvancedSearchResponseDto advancedSearch(AdvancedSearchRequestDto searchRequest) {
+        databaseAuthorizationService.checkReadPermission(searchRequest.getSchemaName(), searchRequest.getTableName());
+
         validateTableExists(searchRequest.getSchemaName(), searchRequest.getTableName());
 
         String validatedSchemaName = searchRequest.getSchemaName().trim().toLowerCase();
