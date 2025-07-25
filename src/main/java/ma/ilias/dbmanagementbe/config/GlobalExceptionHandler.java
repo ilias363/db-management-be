@@ -72,6 +72,14 @@ public class GlobalExceptionHandler {
                 .build(), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(InsufficientPermissionException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInsufficientPermissionException(InsufficientPermissionException ex) {
+        return new ResponseEntity<>(ApiResponse.<Void>builder()
+                .message(ex.getMessage())
+                .success(false)
+                .build(), HttpStatus.FORBIDDEN);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
         return new ResponseEntity<>(ApiResponse.<Void>builder()
