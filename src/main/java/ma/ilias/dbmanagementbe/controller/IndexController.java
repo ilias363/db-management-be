@@ -27,7 +27,8 @@ public class IndexController {
             @PathVariable String schemaName,
             @PathVariable String tableName,
             @PathVariable String indexName) {
-        IndexMetadataDto index = indexService.getIndex(schemaName, tableName, indexName, true, true);
+        IndexMetadataDto index = indexService.getIndex(schemaName, tableName, indexName,
+                true, true, true);
         return ResponseEntity.ok(ApiResponse.<IndexMetadataDto>builder()
                 .message("Index fetched successfully")
                 .success(true)

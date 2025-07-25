@@ -9,10 +9,13 @@ public interface IndexService {
     Boolean indexExists(String schemaName, String tableName, String indexName);
 
     IndexMetadataDto getIndex(String schemaName, String tableName, String indexName,
-            boolean includeTable, boolean checkIndexExists);
+                              boolean includeTable, boolean checkIndexExists, boolean checkAuthorization);
+
+    IndexMetadataDto getIndex(String schemaName, String tableName, String indexName,
+                              boolean includeTable, boolean checkIndexExists);
 
     List<IndexMetadataDto> getIndexesByTable(String schemaName, String tableName,
-            boolean includeTable, boolean checkTableExists);
+                                             boolean includeTable, boolean checkTableExists);
 
     IndexMetadataDto createIndex(NewIndexDto newIndexDto);
 

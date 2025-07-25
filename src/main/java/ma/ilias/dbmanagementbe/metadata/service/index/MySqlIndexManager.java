@@ -6,6 +6,7 @@ import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
 import ma.ilias.dbmanagementbe.metadata.dto.index.IndexMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.index.NewIndexDto;
 import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
+import ma.ilias.dbmanagementbe.service.DatabaseAuthorizationService;
 import ma.ilias.dbmanagementbe.util.SqlSecurityUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ public class MySqlIndexManager implements IndexService {
 
     private final JdbcTemplate jdbcTemplate;
     private final MetadataProviderService metadataProviderService;
+    private final DatabaseAuthorizationService databaseAuthorizationService;
 
     @Override
     public Boolean indexExists(String schemaName, String tableName, String indexName) {
@@ -31,6 +33,16 @@ public class MySqlIndexManager implements IndexService {
     public IndexMetadataDto getIndex(
             String schemaName, String tableName, String indexName,
             boolean includeTable, boolean checkIndexExists) {
+        return getIndex(schemaName, tableName, indexName, includeTable, checkIndexExists, false);
+    }
+
+    @Override
+    public IndexMetadataDto getIndex(
+            String schemaName, String tableName, String indexName,
+            boolean includeTable, boolean checkIndexExists, boolean checkAuthorization) {
+        if (checkAuthorization) {
+            databaseAuthorizationService.checkReadPermission(schemaName, tableName);
+        }
         return metadataProviderService.getIndex(schemaName, tableName, indexName, includeTable, checkIndexExists);
     }
 
@@ -38,11 +50,14 @@ public class MySqlIndexManager implements IndexService {
     public List<IndexMetadataDto> getIndexesByTable(
             String schemaName, String tableName,
             boolean includeTable, boolean checkTableExists) {
+        databaseAuthorizationService.checkReadPermission(schemaName, tableName);
         return metadataProviderService.getIndexesByTable(schemaName, tableName, includeTable, checkTableExists);
     }
 
     @Override
     public IndexMetadataDto createIndex(NewIndexDto newIndexDto) {
+        databaseAuthorizationService.checkCreatePermission(newIndexDto.getSchemaName(), newIndexDto.getTableName());
+
         StringBuilder createIndexSql = new StringBuilder("CREATE ");
 
         if (Boolean.TRUE.equals(newIndexDto.getIsUnique())) {
@@ -79,6 +94,8 @@ public class MySqlIndexManager implements IndexService {
 
     @Override
     public Boolean deleteIndex(String schemaName, String tableName, String indexName) {
+        databaseAuthorizationService.checkDeletePermission(schemaName, tableName);
+
         if (!indexExists(schemaName, tableName, indexName)) {
             throw new IndexNotFoundException(schemaName, tableName, indexName);
         }

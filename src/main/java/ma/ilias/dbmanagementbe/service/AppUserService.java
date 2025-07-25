@@ -11,7 +11,7 @@ public interface AppUserService {
 
     AppUserDto findById(Long id);
 
-    AppUserDto findByUsername(String username, boolean restrict);
+    AppUserDto findByUsername(String username, boolean checkAuthorization);
 
     List<AppUserDto> findAll();
 
