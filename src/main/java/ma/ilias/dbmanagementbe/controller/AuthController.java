@@ -53,7 +53,7 @@ public class AuthController {
             HttpSession newSession = request.getSession(true);
             newSession.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
 
-            AppUserDto user = appUserService.findByUsername(loginRequestDto.getUsername());
+            AppUserDto user = appUserService.findByUsername(loginRequestDto.getUsername(), false);
 
             auditService.auditSuccessfulAction(ActionType.LOGIN, user.getUsername() + " (ID: " + user.getId() + ")");
 
@@ -62,7 +62,7 @@ public class AuthController {
                     .success(true)
                     .build());
         } catch (BadCredentialsException ex) {
-            AppUserDto user = appUserService.findByUsername(loginRequestDto.getUsername());
+            AppUserDto user = appUserService.findByUsername(loginRequestDto.getUsername(), false);
             auditService.auditFailedAction(ActionType.LOGIN,
                     user.getUsername() + " (ID: " + user.getId() + ")",
                     "Invalid credentials");
@@ -74,7 +74,7 @@ public class AuthController {
                             .build()
             );
         } catch (Exception ex) {
-            AppUserDto user = appUserService.findByUsername(loginRequestDto.getUsername());
+            AppUserDto user = appUserService.findByUsername(loginRequestDto.getUsername(), false);
             auditService.auditFailedAction(ActionType.LOGIN,
                     user.getUsername() + " (ID: " + user.getId() + ")",
                     "Authentication failed: " + ex.getMessage());
@@ -102,7 +102,7 @@ public class AuthController {
         SecurityContextHolder.clearContext();
 
         if (!username.equals("unknown")) {
-            AppUserDto user = appUserService.findByUsername(username);
+            AppUserDto user = appUserService.findByUsername(username, false);
             auditService.auditSuccessfulAction(ActionType.LOGOUT, username + " (ID: " + user.getId() + ")");
         } else {
             auditService.auditSuccessfulAction(ActionType.LOGOUT, username);

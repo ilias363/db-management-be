@@ -54,7 +54,7 @@ public class AppUserController {
 
     @GetMapping("/username/{username}")
     public ResponseEntity<ApiResponse<AppUserDto>> getUserByUsername(@PathVariable String username) {
-        AppUserDto appUserDto = appUserService.findByUsername(username);
+        AppUserDto appUserDto = appUserService.findByUsername(username, true);
         return ResponseEntity.ok(ApiResponse.<AppUserDto>builder()
                 .message("User fetched successfully")
                 .success(true)

@@ -11,7 +11,7 @@ public interface AppUserService {
 
     AppUserDto findById(Long id);
 
-    AppUserDto findByUsername(String username);
+    AppUserDto findByUsername(String username, boolean restrict);
 
     List<AppUserDto> findAll();
 

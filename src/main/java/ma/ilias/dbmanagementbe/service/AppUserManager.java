@@ -61,8 +61,8 @@ public class AppUserManager implements AppUserService {
     }
 
     @Override
-    public AppUserDto findByUsername(String username) {
-        if (!AuthorizationUtils.hasUserManagementAccess()) {
+    public AppUserDto findByUsername(String username, boolean restrict) {
+        if (restrict && !AuthorizationUtils.hasUserManagementAccess()) {
             throw new InsufficientPermissionException("Only administrators can view user details");
         }
 
