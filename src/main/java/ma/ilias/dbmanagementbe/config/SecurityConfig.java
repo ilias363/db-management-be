@@ -1,7 +1,9 @@
 package ma.ilias.dbmanagementbe.config;
 
+import ma.ilias.dbmanagementbe.util.AuthorizationUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -18,6 +20,7 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+
     public SecurityConfig(CustomAuthenticationEntryPoint customAuthenticationEntryPoint) {
         this.customAuthenticationEntryPoint = customAuthenticationEntryPoint;
     }
@@ -28,11 +31,45 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests((requests) -> requests
-//                        .requestMatchers("/api/auth/login", "/api/auth/isloggedin").permitAll()
-//                        .requestMatchers("/api/users/**").hasRole("ADMIN")
-//                        .requestMatchers("/api/permissions/**").hasAnyRole("VIEWER", "ADMIN")
-//                        .requestMatchers("/api/**").authenticated()
-                        .anyRequest().permitAll()
+                        // Public endpoints
+                        .requestMatchers("/api/auth/login", "/api/auth/isloggedin").permitAll()
+
+                        // System admin only endpoints - User/Role/Permission/Audit-logs management
+                        .requestMatchers("/api/users/**").access((authentication, context) ->
+                                AuthorizationUtils.createUserManagementDecision())
+                        .requestMatchers("/api/roles/**").access((authentication, context) ->
+                                AuthorizationUtils.createUserManagementDecision())
+                        .requestMatchers("/api/permissions/**").access((authentication, context) ->
+                                AuthorizationUtils.createUserManagementDecision())
+                        .requestMatchers("/api/audit-logs/**").access((authentication, context) ->
+                                AuthorizationUtils.createUserManagementDecision())
+
+                        // Database read operations - ADMIN, VIEWER, or any custom role with DB read access
+                        .requestMatchers(HttpMethod.GET, "/api/schemas/**").access((authentication, context) ->
+                                AuthorizationUtils.createDbReadDecision())
+                        .requestMatchers(HttpMethod.GET, "/api/tables/**").access((authentication, context) ->
+                                AuthorizationUtils.createDbReadDecision())
+                        .requestMatchers(HttpMethod.GET, "/api/columns/**").access((authentication, context) ->
+                                AuthorizationUtils.createDbReadDecision())
+                        .requestMatchers(HttpMethod.GET, "/api/indexes/**").access((authentication, context) ->
+                                AuthorizationUtils.createDbReadDecision())
+                        .requestMatchers(HttpMethod.GET, "/api/records/**").access((authentication, context) ->
+                                AuthorizationUtils.createDbReadDecision())
+
+                        // Database write operations - ADMIN or any custom role with DB write access
+                        .requestMatchers("/api/schemas/**").access((authentication, context) ->
+                                AuthorizationUtils.createDbWriteDecision())
+                        .requestMatchers("/api/tables/**").access((authentication, context) ->
+                                AuthorizationUtils.createDbWriteDecision())
+                        .requestMatchers("/api/columns/**").access((authentication, context) ->
+                                AuthorizationUtils.createDbWriteDecision())
+                        .requestMatchers("/api/indexes/**").access((authentication, context) ->
+                                AuthorizationUtils.createDbWriteDecision())
+                        .requestMatchers("/api/records/**").access((authentication, context) ->
+                                AuthorizationUtils.createDbWriteDecision())
+
+                        // All other requests require authentication
+                        .anyRequest().authenticated()
                 )
                 .formLogin(Customizer.withDefaults())
                 .httpBasic(Customizer.withDefaults())
