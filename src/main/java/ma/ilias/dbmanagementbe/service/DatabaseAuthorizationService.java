@@ -73,22 +73,4 @@ public class DatabaseAuthorizationService {
             );
         }
     }
-
-    /**
-     * Check if the current user has any database access
-     */
-    public void checkDatabaseAccess() {
-        if (!AuthorizationUtils.hasDbAccess()) {
-            throw new InsufficientPermissionException("Access denied: No database access permissions");
-        }
-    }
-
-    /**
-     * Check if the current user has general write access to database
-     */
-    public void checkDatabaseWriteAccess() {
-        if (!AuthorizationUtils.hasDbWriteAccess()) {
-            throw new InsufficientPermissionException("Access denied: No database write permissions");
-        }
-    }
 }

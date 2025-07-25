@@ -12,6 +12,9 @@ public interface SchemaService {
 
     List<SchemaMetadataDto> getAllSchemas(Boolean includeSystemSchema);
 
+    SchemaMetadataDto getSchemaByName(String schemaName, boolean includeTables, boolean checkSchemaExists,
+                                      boolean checkAuthorization);
+
     SchemaMetadataDto getSchemaByName(String schemaName, boolean includeTables, boolean checkSchemaExists);
 
     SchemaMetadataDto createSchema(NewSchemaDto nweSchema);

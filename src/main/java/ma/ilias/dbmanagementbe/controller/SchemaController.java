@@ -42,7 +42,7 @@ public class SchemaController {
 
     @GetMapping("/{schemaName}")
     public ResponseEntity<ApiResponse<SchemaMetadataDto>> getSchemaByName(@PathVariable String schemaName) {
-        SchemaMetadataDto schema = schemaService.getSchemaByName(schemaName, true, true);
+        SchemaMetadataDto schema = schemaService.getSchemaByName(schemaName, true, true, true);
         return ResponseEntity.ok(ApiResponse.<SchemaMetadataDto>builder()
                 .message("Schema fetched successfully")
                 .success(true)
