@@ -1,16 +1,15 @@
 package ma.ilias.dbmanagementbe.service;
 
 import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogDto;
+import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogPageDto;
 import ma.ilias.dbmanagementbe.enums.ActionType;
-
-import java.util.List;
 
 public interface AuditLogService {
     AuditLogDto findById(Long id);
 
-    List<AuditLogDto> findAll();
+    AuditLogPageDto findAllPaginated(int page, int size, String sortBy, String sortDirection);
 
-    List<AuditLogDto> findByUserId(Long userId);
+    AuditLogPageDto findByUserIdPaginated(Long userId, int page, int size, String sortBy, String sortDirection);
 
     Boolean deleteById(Long id);
 

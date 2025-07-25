@@ -6,6 +6,7 @@ import ma.ilias.dbmanagementbe.dao.entities.AuditLog;
 import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.AuditLogRepository;
 import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogDto;
+import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogPageDto;
 import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.exception.AuditLogNotFoundException;
 import ma.ilias.dbmanagementbe.exception.InsufficientPermissionException;
@@ -13,13 +14,14 @@ import ma.ilias.dbmanagementbe.exception.UserNotFoundException;
 import ma.ilias.dbmanagementbe.mapper.AuditLogMapper;
 import ma.ilias.dbmanagementbe.util.AuditDescriptionBuilder;
 import ma.ilias.dbmanagementbe.util.AuthorizationUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -42,18 +44,29 @@ public class AuditLogManager implements AuditLogService {
     }
 
     @Override
-    public List<AuditLogDto> findAll() {
+    public AuditLogPageDto findAllPaginated(int page, int size, String sortBy, String sortDirection) {
         if (!AuthorizationUtils.hasUserManagementAccess()) {
             throw new InsufficientPermissionException("Only administrators can view audit logs");
         }
 
-        return auditLogRepository.findAll().stream()
-                .map(auditLogMapper::toDto)
-                .collect(Collectors.toList());
+        Sort sort = createSort(sortBy, sortDirection);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<AuditLog> auditLogPage = auditLogRepository.findAll(pageable);
+
+        return AuditLogPageDto.builder()
+                .audits(auditLogPage.getContent().stream()
+                        .map(auditLogMapper::toDto)
+                        .toList())
+                .totalAudits(auditLogPage.getTotalElements())
+                .currentPage(page)
+                .pageSize(size)
+                .totalPages(auditLogPage.getTotalPages())
+                .build();
     }
 
     @Override
-    public List<AuditLogDto> findByUserId(Long userId) {
+    public AuditLogPageDto findByUserIdPaginated(Long userId, int page, int size, String sortBy, String sortDirection) {
         if (!AuthorizationUtils.hasUserManagementAccess()) {
             throw new InsufficientPermissionException("Only administrators can view audit logs");
         }
@@ -61,9 +74,21 @@ public class AuditLogManager implements AuditLogService {
         if (!appUserRepository.existsById(userId)) {
             throw new UserNotFoundException("User not found with ID: " + userId);
         }
-        return auditLogRepository.findByUser_Id(userId).stream()
-                .map(auditLogMapper::toDto)
-                .collect(Collectors.toList());
+
+        Sort sort = createSort(sortBy, sortDirection);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<AuditLog> auditLogPage = auditLogRepository.findByUser_Id(userId, pageable);
+
+        return AuditLogPageDto.builder()
+                .audits(auditLogPage.getContent().stream()
+                        .map(auditLogMapper::toDto)
+                        .toList())
+                .totalAudits(auditLogPage.getTotalElements())
+                .currentPage(page)
+                .pageSize(size)
+                .totalPages(auditLogPage.getTotalPages())
+                .build();
     }
 
     @Override
@@ -111,8 +136,7 @@ public class AuditLogManager implements AuditLogService {
                 .errorMessage(errorMessage)
                 .build();
 
-        AuditLog savedAuditLog = auditLogRepository.save(auditLog);
-//        return auditLogMapper.toDto(savedAuditLog);
+        auditLogRepository.save(auditLog);
     }
 
     private AppUser getCurrentUser() {
@@ -127,5 +151,18 @@ public class AuditLogManager implements AuditLogService {
             }
         }
         return null;
+    }
+
+    private Sort createSort(String sortBy, String sortDirection) {
+        if (sortBy == null || sortBy.isBlank()) {
+            sortBy = "auditTimestamp";
+        }
+
+        Sort.Direction direction = Sort.Direction.DESC;
+        if ("ASC".equalsIgnoreCase(sortDirection)) {
+            direction = Sort.Direction.ASC;
+        }
+
+        return Sort.by(direction, sortBy);
     }
 }

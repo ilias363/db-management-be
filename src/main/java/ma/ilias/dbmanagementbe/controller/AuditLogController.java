@@ -3,11 +3,10 @@ package ma.ilias.dbmanagementbe.controller;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogDto;
+import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogPageDto;
 import ma.ilias.dbmanagementbe.service.AuditLogService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/audit-logs")
@@ -17,12 +16,17 @@ public class AuditLogController {
     private final AuditLogService auditLogService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<AuditLogDto>>> getAllAuditLogs() {
-        List<AuditLogDto> auditLogs = auditLogService.findAll();
-        return ResponseEntity.ok(ApiResponse.<List<AuditLogDto>>builder()
+    public ResponseEntity<ApiResponse<AuditLogPageDto>> getAllAuditLogsPaginated(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDirection
+    ) {
+        AuditLogPageDto auditLogPage = auditLogService.findAllPaginated(page, size, sortBy, sortDirection);
+        return ResponseEntity.ok(ApiResponse.<AuditLogPageDto>builder()
                 .message("Audit logs fetched successfully")
                 .success(true)
-                .data(auditLogs)
+                .data(auditLogPage)
                 .build());
     }
 
@@ -37,12 +41,18 @@ public class AuditLogController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<ApiResponse<List<AuditLogDto>>> getAuditLogsByUserId(@PathVariable Long userId) {
-        List<AuditLogDto> auditLogs = auditLogService.findByUserId(userId);
-        return ResponseEntity.ok(ApiResponse.<List<AuditLogDto>>builder()
+    public ResponseEntity<ApiResponse<AuditLogPageDto>> getAuditLogsByUserIdPaginated(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDirection
+    ) {
+        AuditLogPageDto auditLogPage = auditLogService.findByUserIdPaginated(userId, page, size, sortBy, sortDirection);
+        return ResponseEntity.ok(ApiResponse.<AuditLogPageDto>builder()
                 .message("Audit logs for user fetched successfully")
                 .success(true)
-                .data(auditLogs)
+                .data(auditLogPage)
                 .build());
     }
 
