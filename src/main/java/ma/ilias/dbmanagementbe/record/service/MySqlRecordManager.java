@@ -633,7 +633,9 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public List<RecordDto> createRecords(BatchNewRecordsDto batchNewRecords) {
-        databaseAuthorizationService.checkCreatePermission(batchNewRecords.getSchemaName(), batchNewRecords.getTableName());
+        if (batchNewRecords != null) {
+            databaseAuthorizationService.checkCreatePermission(batchNewRecords.getSchemaName(), batchNewRecords.getTableName());
+        }
 
         if (batchNewRecords == null || batchNewRecords.getRecords() == null || batchNewRecords.getRecords().isEmpty()) {
             throw new InvalidRecordDataException("No records provided for batch creation");
@@ -727,7 +729,9 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public List<RecordDto> updateRecords(BatchUpdateRecordsDto batchUpdateRecords) {
-        databaseAuthorizationService.checkWritePermission(batchUpdateRecords.getSchemaName(), batchUpdateRecords.getTableName());
+        if (batchUpdateRecords != null) {
+            databaseAuthorizationService.checkWritePermission(batchUpdateRecords.getSchemaName(), batchUpdateRecords.getTableName());
+        }
 
         if (batchUpdateRecords == null || batchUpdateRecords.getUpdates() == null || batchUpdateRecords.getUpdates().isEmpty()) {
             throw new InvalidRecordDataException("No records provided for batch update");
@@ -809,7 +813,9 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public int deleteRecords(BatchDeleteRecordsDto batchDeleteRecords) {
-        databaseAuthorizationService.checkDeletePermission(batchDeleteRecords.getSchemaName(), batchDeleteRecords.getTableName());
+        if (batchDeleteRecords != null) {
+            databaseAuthorizationService.checkDeletePermission(batchDeleteRecords.getSchemaName(), batchDeleteRecords.getTableName());
+        }
 
         if (batchDeleteRecords == null || batchDeleteRecords.getPrimaryKeyValuesList() == null ||
                 batchDeleteRecords.getPrimaryKeyValuesList().isEmpty()) {
@@ -900,7 +906,9 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public List<RecordDto> updateRecordsByValues(BatchUpdateRecordsByValuesDto batchUpdateByValues) {
-        databaseAuthorizationService.checkWritePermission(batchUpdateByValues.getSchemaName(), batchUpdateByValues.getTableName());
+        if (batchUpdateByValues != null) {
+            databaseAuthorizationService.checkWritePermission(batchUpdateByValues.getSchemaName(), batchUpdateByValues.getTableName());
+        }
 
         if (batchUpdateByValues == null || batchUpdateByValues.getUpdates() == null || batchUpdateByValues.getUpdates().isEmpty()) {
             throw new InvalidRecordDataException("No records provided for batch update by values");
@@ -989,7 +997,9 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public int deleteRecordsByValues(BatchDeleteRecordsByValuesDto batchDeleteByValues) {
-        databaseAuthorizationService.checkDeletePermission(batchDeleteByValues.getSchemaName(), batchDeleteByValues.getTableName());
+        if (batchDeleteByValues != null) {
+            databaseAuthorizationService.checkDeletePermission(batchDeleteByValues.getSchemaName(), batchDeleteByValues.getTableName());
+        }
 
         if (batchDeleteByValues == null || batchDeleteByValues.getDeletions() == null || batchDeleteByValues.getDeletions().isEmpty()) {
             return 0;
