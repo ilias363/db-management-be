@@ -103,19 +103,20 @@ public class RecordController {
         }
     }
 
-    @DeleteMapping("/{schemaName}/{tableName}")
+    @DeleteMapping
     public ResponseEntity<ApiResponse<Void>> deleteRecord(
-            @PathVariable String schemaName,
-            @PathVariable String tableName,
-            @RequestParam Map<String, Object> primaryKeyValues
+            @Valid @RequestBody DeleteRecordDto deleteRecordDto
     ) {
         try {
-            boolean deleted = recordService.deleteRecord(schemaName, tableName, primaryKeyValues);
+            boolean deleted = recordService.deleteRecord(deleteRecordDto);
 
             if (deleted) {
-                auditService.auditSuccessfulAction(ActionType.DELETE_RECORD, schemaName, tableName);
+                auditService.auditSuccessfulAction(ActionType.DELETE_RECORD,
+                        deleteRecordDto.getSchemaName(), deleteRecordDto.getTableName());
             } else {
-                auditService.auditFailedAction(ActionType.DELETE_RECORD, schemaName, tableName, "Record not found");
+                auditService.auditFailedAction(ActionType.DELETE_RECORD,
+                        deleteRecordDto.getSchemaName(), deleteRecordDto.getTableName(),
+                        "Record not found");
             }
 
             return ResponseEntity.ok(ApiResponse.<Void>builder()
@@ -123,7 +124,9 @@ public class RecordController {
                     .success(deleted)
                     .build());
         } catch (Exception e) {
-            auditService.auditFailedAction(ActionType.DELETE_RECORD, schemaName, tableName, e.getMessage());
+            auditService.auditFailedAction(ActionType.DELETE_RECORD,
+                    deleteRecordDto.getSchemaName(), deleteRecordDto.getTableName(),
+                    e.getMessage());
             throw e;
         }
     }

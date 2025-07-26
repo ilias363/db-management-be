@@ -19,7 +19,7 @@ public interface RecordService {
 
     RecordDto updateRecord(UpdateRecordDto updateRecordDto);
 
-    boolean deleteRecord(String schemaName, String tableName, Map<String, Object> primaryKeyValues);
+    boolean deleteRecord(DeleteRecordDto deleteRecordDto);
 
     RecordDto getRecordByValues(String schemaName, String tableName, Map<String, Object> identifyingValues);
 

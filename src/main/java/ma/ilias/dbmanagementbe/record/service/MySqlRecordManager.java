@@ -283,14 +283,14 @@ public class MySqlRecordManager implements RecordService {
     }
 
     @Override
-    public boolean deleteRecord(String schemaName, String tableName, Map<String, Object> primaryKeyValues) {
-        databaseAuthorizationService.checkDeletePermission(schemaName, tableName);
+    public boolean deleteRecord(DeleteRecordDto deleteRecordDto) {
+        databaseAuthorizationService.checkDeletePermission(deleteRecordDto.getSchemaName(), deleteRecordDto.getTableName());
 
-        validateTableExists(schemaName, tableName);
+        validateTableExists(deleteRecordDto.getSchemaName(), deleteRecordDto.getTableName());
 
         // schema name and table name are validated during the table existence check
-        String validatedSchemaName = schemaName.trim().toLowerCase();
-        String validatedTableName = tableName.trim().toLowerCase();
+        String validatedSchemaName = deleteRecordDto.getSchemaName().trim().toLowerCase();
+        String validatedTableName = deleteRecordDto.getTableName().trim().toLowerCase();
 
         List<BaseColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
 
@@ -298,12 +298,12 @@ public class MySqlRecordManager implements RecordService {
             throw new InvalidRecordDataException(validatedTableName, "Table has no primary key columns, use delete by values");
         }
 
-        if (primaryKeyValues == null || primaryKeyValues.isEmpty()) {
+        if (deleteRecordDto.getPrimaryKeyValues() == null || deleteRecordDto.getPrimaryKeyValues().isEmpty()) {
             throw new InvalidRecordDataException(validatedTableName, "Primary key values cannot be null or empty");
         }
 
         // Validate that all required primary key columns are provided
-        Set<String> providedPkColumns = primaryKeyValues.keySet().stream()
+        Set<String> providedPkColumns = deleteRecordDto.getPrimaryKeyValues().keySet().stream()
                 .map(String::trim)
                 .map(String::toLowerCase)
                 .collect(Collectors.toSet());
@@ -329,7 +329,7 @@ public class MySqlRecordManager implements RecordService {
         List<String> whereClauses = new ArrayList<>();
         List<Object> values = new ArrayList<>();
 
-        for (Map.Entry<String, Object> pkEntry : primaryKeyValues.entrySet()) {
+        for (Map.Entry<String, Object> pkEntry : deleteRecordDto.getPrimaryKeyValues().entrySet()) {
             String columnName = SqlSecurityUtils.validateColumnName(pkEntry.getKey());
             if (pkEntry.getValue() == null) {
                 whereClauses.add(columnName + " IS NULL");
