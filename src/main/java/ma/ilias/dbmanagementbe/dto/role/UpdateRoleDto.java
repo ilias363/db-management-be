@@ -1,5 +1,6 @@
 package ma.ilias.dbmanagementbe.dto.role;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -7,7 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ma.ilias.dbmanagementbe.validation.annotations.ExistingPermissions;
+import ma.ilias.dbmanagementbe.dto.permission.PermissionDetailDto;
 import ma.ilias.dbmanagementbe.validation.annotations.UniqueRoleName;
 
 import java.util.HashSet;
@@ -28,7 +29,7 @@ public class UpdateRoleDto implements RoleDtoBase {
     private String description;
 
     @NotEmpty(message = "At least one permission is required")
-    @ExistingPermissions
+    @Valid
     @Builder.Default
-    private Set<Long> permissions = new HashSet<>();
+    private Set<PermissionDetailDto> permissions = new HashSet<>();
 }

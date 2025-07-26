@@ -2,7 +2,7 @@ package ma.ilias.dbmanagementbe.dto.role;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
-import ma.ilias.dbmanagementbe.dto.permission.PermissionDto;
+import ma.ilias.dbmanagementbe.dto.permission.PermissionDetailDto;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -19,5 +19,5 @@ public class RoleDto implements RoleDtoBase {
     @ToString.Exclude
     @JsonIgnoreProperties("role")
     @Builder.Default
-    private Set<PermissionDto> permissions = new HashSet<>();
+    private Set<PermissionDetailDto> permissions = new HashSet<>();
 }

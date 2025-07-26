@@ -3,7 +3,7 @@ package ma.ilias.dbmanagementbe.validation.validators;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import lombok.AllArgsConstructor;
-import ma.ilias.dbmanagementbe.dto.permission.NewPermissionDto;
+import ma.ilias.dbmanagementbe.dto.permission.PermissionDetailDto;
 import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
 import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
 import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
@@ -11,12 +11,12 @@ import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.ExistingSchemaAndTable;
 
 @AllArgsConstructor
-public class ExistingSchemaAndTableValidator implements ConstraintValidator<ExistingSchemaAndTable, NewPermissionDto> {
+public class ExistingSchemaAndTableValidator implements ConstraintValidator<ExistingSchemaAndTable, PermissionDetailDto> {
 
     private MetadataProviderService metadataProviderService;
 
     @Override
-    public boolean isValid(NewPermissionDto dto, ConstraintValidatorContext context) {
+    public boolean isValid(PermissionDetailDto dto, ConstraintValidatorContext context) {
         if (dto == null) {
             return true;
         }

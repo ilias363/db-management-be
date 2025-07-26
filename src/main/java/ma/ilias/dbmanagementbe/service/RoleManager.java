@@ -1,6 +1,7 @@
 package ma.ilias.dbmanagementbe.service;
 
 import lombok.AllArgsConstructor;
+import ma.ilias.dbmanagementbe.dao.entities.Permission;
 import ma.ilias.dbmanagementbe.dao.entities.Role;
 import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.PermissionRepository;
@@ -8,9 +9,9 @@ import ma.ilias.dbmanagementbe.dao.repositories.RoleRepository;
 import ma.ilias.dbmanagementbe.dto.role.NewRoleDto;
 import ma.ilias.dbmanagementbe.dto.role.RoleDto;
 import ma.ilias.dbmanagementbe.dto.role.UpdateRoleDto;
+import ma.ilias.dbmanagementbe.enums.PermissionType;
 import ma.ilias.dbmanagementbe.enums.SystemRole;
 import ma.ilias.dbmanagementbe.exception.InsufficientPermissionException;
-import ma.ilias.dbmanagementbe.exception.PermissionNotFoundException;
 import ma.ilias.dbmanagementbe.exception.RoleNotFoundException;
 import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
 import ma.ilias.dbmanagementbe.mapper.RoleMapper;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,12 +49,20 @@ public class RoleManager implements RoleService {
         role.setName(newRoleDto.getName());
         role.setDescription(newRoleDto.getDescription());
         role.setIsSystemRole(false);
-        role.setPermissions(
-                newRoleDto.getPermissions().stream()
-                        .map(permissionId -> permissionRepository.findById(permissionId)
-                                .orElseThrow(() -> new PermissionNotFoundException("Permission not found with ID: " + permissionId)))
-                        .collect(Collectors.toSet())
-        );
+
+        // Create permissions and associate them with the role
+        Set<Permission> permissions = newRoleDto.getPermissions().stream()
+                .map(permissionDetail -> {
+                    Permission permission = new Permission();
+                    permission.setSchemaName(permissionDetail.getSchemaName());
+                    permission.setTableName(permissionDetail.getTableName());
+                    permission.setPermissionType(PermissionType.valueOf(permissionDetail.getPermissionType()));
+                    permission.setRole(role);  // Set the role relationship
+                    return permission;
+                })
+                .collect(Collectors.toSet());
+
+        role.setPermissions(permissions);
 
         return roleMapper.toDto(roleRepository.save(role));
     }
@@ -105,12 +115,24 @@ public class RoleManager implements RoleService {
 
         existingRole.setName(updateRoleDto.getName());
         existingRole.setDescription(updateRoleDto.getDescription());
-        existingRole.setPermissions(
-                updateRoleDto.getPermissions().stream()
-                        .map(permissionId -> permissionRepository.findById(permissionId)
-                                .orElseThrow(() -> new PermissionNotFoundException("Permission not found with ID: " + permissionId)))
-                        .collect(Collectors.toSet())
-        );
+
+        // Clear existing permissions (orphan removal will delete them)
+        existingRole.getPermissions().clear();
+
+        // Create new permissions and associate them with the role
+        Set<Permission> newPermissions = updateRoleDto.getPermissions().stream()
+                .map(permissionDetail -> {
+                    Permission permission = new Permission();
+                    permission.setSchemaName(permissionDetail.getSchemaName());
+                    permission.setTableName(permissionDetail.getTableName());
+                    permission.setPermissionType(PermissionType.valueOf(permissionDetail.getPermissionType()));
+                    permission.setRole(existingRole);  // Set the role relationship
+                    return permission;
+                })
+                .collect(Collectors.toSet());
+
+        existingRole.setPermissions(newPermissions);
+
         Role updatedRole = roleRepository.save(existingRole);
         return roleMapper.toDto(updatedRole);
     }
