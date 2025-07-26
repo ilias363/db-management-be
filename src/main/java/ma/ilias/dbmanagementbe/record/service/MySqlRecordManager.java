@@ -368,16 +368,8 @@ public class MySqlRecordManager implements RecordService {
         return records.get(0);
     }
 
-    @Override
-    public List<RecordDto> getRecordsByValues(String schemaName, String tableName, Map<String, Object> identifyingValues,
-                                              boolean limitOne) {
-        return getRecordsByValues(schemaName, tableName, identifyingValues, limitOne, false);
-    }
-
-    @Override
-    public List<RecordDto> getRecordsByValues(String schemaName, String tableName, Map<String, Object> identifyingValues,
-                                              boolean limitOne, boolean checkAuthorization) {
-        if (checkAuthorization) databaseAuthorizationService.checkReadPermission(schemaName, tableName);
+    private List<RecordDto> getRecordsByValues(String schemaName, String tableName, Map<String, Object> identifyingValues,
+                                               boolean limitOne) {
 
         validateTableExists(schemaName, tableName);
 
@@ -429,6 +421,97 @@ public class MySqlRecordManager implements RecordService {
             }
 
             return records;
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to fetch records by values: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public RecordPageDto getRecordsByValues(String schemaName, String tableName, Map<String, Object> identifyingValues,
+                                            int page, int size, String sortBy, String sortDirection) {
+        databaseAuthorizationService.checkReadPermission(schemaName, tableName);
+
+        validateTableExists(schemaName, tableName);
+
+        // schema name and table name are validated during the table existence check
+        String validatedSchemaName = schemaName.trim().toLowerCase();
+        String validatedTableName = tableName.trim().toLowerCase();
+
+        if (identifyingValues == null || identifyingValues.isEmpty()) {
+            throw new InvalidRecordDataException(validatedTableName, "Identifying values cannot be null or empty");
+        }
+
+        List<String> columnNames = metadataProviderService.getColumnsByTable(
+                        validatedSchemaName,
+                        validatedTableName,
+                        false, false).stream()
+                .map(BaseColumnMetadataDto::getColumnName)
+                .toList();
+
+        // Build WHERE clause using identifying values
+        List<String> whereClauses = new ArrayList<>();
+        List<Object> values = new ArrayList<>();
+
+        for (Map.Entry<String, Object> entry : identifyingValues.entrySet()) {
+            String columnName = SqlSecurityUtils.validateColumnName(entry.getKey());
+            if (!columnNames.contains(columnName)) {
+                throw new InvalidRecordDataException(tableName, "Column '" + columnName + "' does not exist");
+            }
+            if (entry.getValue() == null) {
+                whereClauses.add(columnName + " IS NULL");
+            } else {
+                whereClauses.add(columnName + " = ?");
+                values.add(entry.getValue());
+            }
+        }
+
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("SELECT * FROM ").append(validatedSchemaName).append(".").append(validatedTableName)
+                .append(" WHERE ").append(String.join(" AND ", whereClauses));
+
+        // Add sorting if specified
+        if (sortBy != null && !sortBy.isBlank()) {
+            validateColumnExists(schemaName, tableName, sortBy);
+            queryBuilder.append(" ORDER BY ").append(sortBy.toLowerCase()).append(" ").append(sortDirection);
+        }
+
+        int offset = page * size;
+
+        queryBuilder.append(" LIMIT ? OFFSET ?");
+
+        // Build a separate list for pagination parameters
+        List<Object> paginatedValues = new ArrayList<>(values);
+        paginatedValues.add(size);
+        paginatedValues.add(offset);
+
+        try {
+            // Execute paginated query
+            List<RecordDto> records = jdbcTemplate.query(
+                    queryBuilder.toString(),
+                    this::mapRowToRecord,
+                    paginatedValues.toArray()
+            );
+
+            // Get total count for this filtered result set
+            String countQuery = "SELECT COUNT(*) FROM " + validatedSchemaName + "." + validatedTableName +
+                    " WHERE " + String.join(" AND ", whereClauses);
+
+            Long totalRecords = jdbcTemplate.queryForObject(countQuery, Long.class, values.toArray());
+            if (totalRecords == null) {
+                totalRecords = 0L;
+            }
+            int totalPages = (int) Math.ceil((double) totalRecords / size);
+
+            return RecordPageDto.builder()
+                    .items(records)
+                    .totalItems(totalRecords)
+                    .currentPage(page)
+                    .pageSize(size)
+                    .totalPages(totalPages)
+                    .tableName(validatedTableName)
+                    .schemaName(validatedSchemaName)
+                    .build();
+
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to fetch records by values: " + e.getMessage(), e);
         }

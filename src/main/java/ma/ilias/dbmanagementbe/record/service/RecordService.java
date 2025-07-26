@@ -26,11 +26,8 @@ public interface RecordService {
     RecordDto getRecordByValues(String schemaName, String tableName, Map<String, Object> identifyingValues,
                                 boolean checkAuthorization);
 
-    List<RecordDto> getRecordsByValues(String schemaName, String tableName, Map<String, Object> identifyingValues,
-                                       boolean limitOne);
-
-    List<RecordDto> getRecordsByValues(String schemaName, String tableName, Map<String, Object> identifyingValues,
-                                       boolean limitOne, boolean checkAuthorization);
+    RecordPageDto getRecordsByValues(String schemaName, String tableName, Map<String, Object> identifyingValues,
+                                     int page, int size, String sortBy, String sortDirection);
 
     List<RecordDto> updateRecordByValues(UpdateRecordByValuesDto updateDto);
 

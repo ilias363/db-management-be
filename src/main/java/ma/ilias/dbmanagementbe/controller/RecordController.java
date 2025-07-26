@@ -143,16 +143,20 @@ public class RecordController {
     }
 
     @GetMapping("/{schemaName}/{tableName}/records/by-values")
-    public ResponseEntity<ApiResponse<List<RecordDto>>> getRecordsByValues(
+    public ResponseEntity<ApiResponse<RecordPageDto>> getRecordsByValues(
             @PathVariable String schemaName,
             @PathVariable String tableName,
             @RequestParam Map<String, Object> identifyingValues,
-            @RequestParam(defaultValue = "false") boolean limitOne
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "ASC") @Pattern(regexp = "^(ASC|DESC)$",
+                    message = "Sort direction must be either ASC or DESC") String sortDirection
     ) {
-        List<RecordDto> records = recordService.getRecordsByValues(schemaName, tableName, identifyingValues,
-                limitOne, true);
-        return ResponseEntity.ok(ApiResponse.<List<RecordDto>>builder()
-                .message(records.size() + " record(s) fetched successfully using identifying values")
+        RecordPageDto records = recordService.getRecordsByValues(schemaName, tableName, identifyingValues,
+                page, size, sortBy, sortDirection);
+        return ResponseEntity.ok(ApiResponse.<RecordPageDto>builder()
+                .message("Records fetched successfully using identifying values")
                 .success(true)
                 .data(records)
                 .build());
