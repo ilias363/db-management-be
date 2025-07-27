@@ -119,6 +119,23 @@ public class MetadataProviderManager implements MetadataProviderService {
         return count != null && count > 0;
     }
 
+    public Boolean viewExists(String schemaName, String viewName) {
+        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
+        String validatedViewName = SqlSecurityUtils.validateTableName(viewName);
+
+        if (!schemaExists(validatedSchemaName)) {
+            throw new SchemaNotFoundException(validatedSchemaName.toLowerCase());
+        }
+
+        String sql = """
+                SELECT COUNT(*) FROM INFORMATION_SCHEMA.VIEWS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
+                """;
+
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, validatedSchemaName, validatedViewName);
+        return count != null && count > 0;
+    }
+
     public SchemaMetadataDto getSchemaByName(String schemaName, boolean includeTables, boolean checkSchemaExists) {
         if (checkSchemaExists && !schemaExists(schemaName)) {
             throw new SchemaNotFoundException(schemaName);

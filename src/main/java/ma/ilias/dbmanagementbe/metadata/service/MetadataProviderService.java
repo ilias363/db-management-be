@@ -20,6 +20,8 @@ public interface MetadataProviderService {
 
     Boolean indexExists(String schemaName, String tableName, String indexName);
 
+    Boolean viewExists(String schemaName, String viewName);
+
     SchemaMetadataDto getSchemaByName(String schemaName, boolean includeTables, boolean checkSchemaExists);
 
     TableMetadataDto getTable(String schemaName, String tableName, boolean includeSchema,
