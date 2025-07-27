@@ -10,7 +10,7 @@ import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.metadata.dto.view.UpdateViewDto;
 import ma.ilias.dbmanagementbe.metadata.dto.view.ViewMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.view.ViewService;
-import ma.ilias.dbmanagementbe.record.dto.RecordPageDto;
+import ma.ilias.dbmanagementbe.record.dto.ViewRecordPageDto;
 import ma.ilias.dbmanagementbe.record.service.RecordService;
 import ma.ilias.dbmanagementbe.service.AuditService;
 import org.springframework.http.ResponseEntity;
@@ -52,7 +52,7 @@ public class ViewController {
     }
 
     @GetMapping("/{schemaName}/{viewName}/records")
-    public ResponseEntity<ApiResponse<RecordPageDto>> getViewRecords(
+    public ResponseEntity<ApiResponse<ViewRecordPageDto>> getViewRecords(
             @PathVariable String schemaName,
             @PathVariable String viewName,
             @RequestParam(defaultValue = "0") @Min(0) int page,
@@ -61,8 +61,8 @@ public class ViewController {
             @RequestParam(defaultValue = "ASC") @Pattern(regexp = "^(ASC|DESC)$",
                     message = "Sort direction must be either ASC or DESC") String sortDirection
     ) {
-        RecordPageDto records = recordService.getViewRecords(schemaName, viewName, page, size, sortBy, sortDirection);
-        return ResponseEntity.ok(ApiResponse.<RecordPageDto>builder()
+        ViewRecordPageDto records = recordService.getViewRecords(schemaName, viewName, page, size, sortBy, sortDirection);
+        return ResponseEntity.ok(ApiResponse.<ViewRecordPageDto>builder()
                 .message("View records fetched successfully")
                 .success(true)
                 .data(records)

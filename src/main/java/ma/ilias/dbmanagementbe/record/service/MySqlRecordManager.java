@@ -82,8 +82,8 @@ public class MySqlRecordManager implements RecordService {
     }
 
     @Override
-    public RecordPageDto getViewRecords(String schemaName, String viewName, int page, int size,
-                                        String sortBy, String sortDirection) {
+    public ViewRecordPageDto getViewRecords(String schemaName, String viewName, int page, int size,
+                                            String sortBy, String sortDirection) {
         databaseAuthorizationService.checkReadPermission(schemaName, viewName);
 
         validateViewExists(schemaName, viewName);
@@ -116,13 +116,13 @@ public class MySqlRecordManager implements RecordService {
             long totalRecords = getViewRecordCount(validatedSchemaName, validatedViewName);
             int totalPages = (int) Math.ceil((double) totalRecords / size);
 
-            return RecordPageDto.builder()
+            return ViewRecordPageDto.builder()
                     .items(records)
                     .totalItems(totalRecords)
                     .currentPage(page)
                     .pageSize(size)
                     .totalPages(totalPages)
-                    .tableName(validatedViewName) // Using tableName field for view name
+                    .viewName(validatedViewName)
                     .schemaName(validatedSchemaName)
                     .build();
 
