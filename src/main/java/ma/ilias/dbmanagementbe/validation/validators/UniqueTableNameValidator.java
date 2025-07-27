@@ -28,7 +28,7 @@ public class UniqueTableNameValidator implements ConstraintValidator<UniqueTable
                 if (newDto.getTableName() == null) {
                     return true;
                 }
-                return !metadataProviderService.tableExists(newDto.getSchemaName(), newDto.getTableName());
+                return !metadataProviderService.tableOrViewExists(newDto.getSchemaName(), newDto.getTableName());
             }
 
             // For UpdateTableDto
@@ -36,7 +36,7 @@ public class UniqueTableNameValidator implements ConstraintValidator<UniqueTable
                 if (updateDto.getUpdatedTableName() == null) {
                     return true;
                 }
-                return !metadataProviderService.tableExists(updateDto.getSchemaName(), updateDto.getUpdatedTableName());
+                return !metadataProviderService.tableOrViewExists(updateDto.getSchemaName(), updateDto.getUpdatedTableName());
             }
             return true;
         } catch (SchemaNotFoundException ex) {
