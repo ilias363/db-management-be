@@ -2,18 +2,12 @@ package ma.ilias.dbmanagementbe.dao.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import ma.ilias.dbmanagementbe.enums.PermissionType;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
 
 @Entity
 @Table(name = "permissions")
@@ -28,7 +22,9 @@ public class Permission {
 
     private String schemaName; // null for all schemas
 
-    private String tableName; // null for all tables in schema
+    // null for both table and view means permission for all tables and views
+    private String tableName;
+    private String viewName;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

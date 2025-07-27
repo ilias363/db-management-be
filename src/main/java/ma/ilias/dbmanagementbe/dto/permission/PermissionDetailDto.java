@@ -5,18 +5,19 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ma.ilias.dbmanagementbe.validation.annotations.ExistingSchemaAndTable;
+import ma.ilias.dbmanagementbe.validation.annotations.ValidPermissionFields;
 import ma.ilias.dbmanagementbe.validation.annotations.ValidPermissionType;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Builder
-@ExistingSchemaAndTable
+@ValidPermissionFields
 public class PermissionDetailDto {
-    private String schemaName; // null for all schemas
+    private String schemaName;
 
-    private String tableName; // null for all tables in schema
+    private String tableName;
+    private String viewName;
 
     @ValidPermissionType
     @NotEmpty(message = "Permission type is required")
