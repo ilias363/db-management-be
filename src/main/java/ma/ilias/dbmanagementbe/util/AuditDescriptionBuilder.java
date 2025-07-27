@@ -28,6 +28,10 @@ public class AuditDescriptionBuilder {
         DESCRIPTION_TEMPLATES.put(ActionType.CREATE_INDEX, "Created index ''{2}'' on table ''{0}.{1}''");
         DESCRIPTION_TEMPLATES.put(ActionType.DELETE_INDEX, "Deleted index ''{2}'' from table ''{0}.{1}''");
 
+        DESCRIPTION_TEMPLATES.put(ActionType.CREATE_VIEW, "Created view ''{1}'' in schema ''{0}''");
+        DESCRIPTION_TEMPLATES.put(ActionType.UPDATE_VIEW, "Updated view ''{1}'' in schema ''{0}''");
+        DESCRIPTION_TEMPLATES.put(ActionType.DELETE_VIEW, "Deleted view ''{1}'' from schema ''{0}''");
+
         DESCRIPTION_TEMPLATES.put(ActionType.CREATE_RECORD, "Created record in table ''{0}.{1}''");
         DESCRIPTION_TEMPLATES.put(ActionType.UPDATE_RECORD, "Updated record in table ''{0}.{1}''");
         DESCRIPTION_TEMPLATES.put(ActionType.DELETE_RECORD, "Deleted record from table ''{0}.{1}''");
