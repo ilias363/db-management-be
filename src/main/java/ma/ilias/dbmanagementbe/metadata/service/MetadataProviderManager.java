@@ -15,6 +15,8 @@ import ma.ilias.dbmanagementbe.metadata.dto.index.IndexMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.index.indexcolumn.IndexColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.view.ViewColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.view.ViewMetadataDto;
 import ma.ilias.dbmanagementbe.util.SqlSecurityUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -396,6 +398,35 @@ public class MetadataProviderManager implements MetadataProviderService {
                 schemaName, tableName, indexName);
     }
 
+    public ViewMetadataDto getView(String schemaName, String viewName, boolean includeSchema,
+                                   boolean includeColumns, boolean checkViewExists) {
+        if (checkViewExists && !viewExists(schemaName, viewName)) {
+            throw new ViewNotFoundException(schemaName.toLowerCase(), viewName.toLowerCase());
+        }
+
+        String sql = """
+                SELECT TABLE_NAME as VIEW_NAME,
+                       VIEW_DEFINITION,
+                       CHECK_OPTION,
+                       IS_UPDATABLE,
+                       CHARACTER_SET_CLIENT,
+                       COLLATION_CONNECTION
+                FROM INFORMATION_SCHEMA.VIEWS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
+                """;
+
+        return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> ViewMetadataDto.builder()
+                .viewName(rs.getString("VIEW_NAME"))
+                .viewDefinition(rs.getString("VIEW_DEFINITION"))
+                .checkOption(rs.getString("CHECK_OPTION"))
+                .isUpdatable("YES".equalsIgnoreCase(rs.getString("IS_UPDATABLE")))
+                .characterSet(rs.getString("CHARACTER_SET_CLIENT"))
+                .collation(rs.getString("COLLATION_CONNECTION"))
+                .schema(includeSchema ? getSchemaByName(schemaName, false, false) : null)
+                .columns(includeColumns ? getColumnsByView(schemaName, viewName, false, false) : null)
+                .build(), schemaName, viewName);
+    }
+
     public List<SchemaMetadataDto> getAllSchemas(Boolean includeSystemSchemas) {
         String schemaSql = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA";
 
@@ -467,6 +498,37 @@ public class MetadataProviderManager implements MetadataProviderService {
         }
 
         return columns;
+    }
+
+    public List<ViewColumnMetadataDto> getColumnsByView(String schemaName, String viewName,
+                                                        boolean includeView, boolean checkViewExists) {
+        if (checkViewExists && !viewExists(schemaName, viewName)) {
+            throw new ViewNotFoundException(schemaName, viewName);
+        }
+
+        var columns = getColumnsByTable(schemaName, viewName, false, false)
+                .stream().map(this::mapBaseColumnToViewColumn).toList();
+
+        if (includeView) {
+            var view = getView(schemaName, viewName, true, false, false);
+            columns.forEach(col -> col.setView(view));
+        }
+        return columns;
+    }
+
+    private ViewColumnMetadataDto mapBaseColumnToViewColumn(BaseColumnMetadataDto column) {
+        return ViewColumnMetadataDto.builder()
+                .columnName(column.getColumnName())
+                .ordinalPosition(column.getOrdinalPosition())
+                .dataType(column.getDataType())
+                .characterMaxLength(column.getCharacterMaxLength())
+                .numericPrecision(column.getNumericPrecision())
+                .numericScale(column.getNumericScale())
+                .isNullable(column.getIsNullable())
+                .isUnique(column.getIsUnique())
+                .columnDefault(column.getColumnDefault())
+                .autoIncrement(column.getAutoIncrement())
+                .build();
     }
 
     public List<IndexMetadataDto> getIndexesByTable(String schemaName, String tableName,

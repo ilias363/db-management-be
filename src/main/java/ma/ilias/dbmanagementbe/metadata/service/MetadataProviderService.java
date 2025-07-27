@@ -4,6 +4,8 @@ import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.index.IndexMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.view.ViewColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.view.ViewMetadataDto;
 
 import java.util.List;
 
@@ -33,6 +35,9 @@ public interface MetadataProviderService {
     IndexMetadataDto getIndex(String schemaName, String tableName, String indexName,
                               boolean includeTable, boolean checkIndexExists);
 
+    ViewMetadataDto getView(String schemaName, String viewName, boolean includeSchema,
+                            boolean includeColumns, boolean checkViewExists);
+
     List<SchemaMetadataDto> getAllSchemas(Boolean includeSystemSchemas);
 
     List<TableMetadataDto> getTablesBySchema(String schemaName, boolean includeSchema, boolean includeColumns,
@@ -40,6 +45,9 @@ public interface MetadataProviderService {
 
     List<BaseColumnMetadataDto> getColumnsByTable(String schemaName, String tableName,
                                                   boolean includeTable, boolean checkTableExists);
+
+    List<ViewColumnMetadataDto> getColumnsByView(String schemaName, String tableName,
+                                                 boolean includeView, boolean checkViewExists);
 
     List<IndexMetadataDto> getIndexesByTable(String schemaName, String tableName,
                                              boolean includeTable, boolean checkTableExists);
