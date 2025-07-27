@@ -49,6 +49,8 @@ public class SecurityConfig {
                                 AuthorizationUtils.createDbReadDecision())
                         .requestMatchers(HttpMethod.GET, "/api/tables/**").access((authentication, context) ->
                                 AuthorizationUtils.createDbReadDecision())
+                        .requestMatchers(HttpMethod.GET, "/api/views/**").access((authentication, context) ->
+                                AuthorizationUtils.createDbReadDecision())
                         .requestMatchers(HttpMethod.GET, "/api/columns/**").access((authentication, context) ->
                                 AuthorizationUtils.createDbReadDecision())
                         .requestMatchers(HttpMethod.GET, "/api/indexes/**").access((authentication, context) ->
@@ -60,6 +62,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/schemas/**").access((authentication, context) ->
                                 AuthorizationUtils.createDbWriteDecision())
                         .requestMatchers("/api/tables/**").access((authentication, context) ->
+                                AuthorizationUtils.createDbWriteDecision())
+                        .requestMatchers("/api/views/**").access((authentication, context) ->
                                 AuthorizationUtils.createDbWriteDecision())
                         .requestMatchers("/api/columns/**").access((authentication, context) ->
                                 AuthorizationUtils.createDbWriteDecision())
