@@ -2,7 +2,6 @@ package ma.ilias.dbmanagementbe.metadata.dto.view;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
-import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 
 import java.util.ArrayList;
@@ -25,9 +24,9 @@ public class ViewMetadataDto {
     @EqualsAndHashCode.Exclude
     private SchemaMetadataDto schema;
 
-    @JsonIgnoreProperties("table")
+    @JsonIgnoreProperties("view")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     @Builder.Default
-    private List<BaseColumnMetadataDto> columns = new ArrayList<>();
+    private List<ViewColumnMetadataDto> columns = new ArrayList<>();
 }
