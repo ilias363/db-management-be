@@ -2,10 +2,7 @@ package ma.ilias.dbmanagementbe.metadata.service;
 
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.enums.IndexType;
-import ma.ilias.dbmanagementbe.exception.ColumnNotFoundException;
-import ma.ilias.dbmanagementbe.exception.IndexNotFoundException;
-import ma.ilias.dbmanagementbe.exception.SchemaNotFoundException;
-import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
+import ma.ilias.dbmanagementbe.exception.*;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.ForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.PrimaryKeyColumnMetadataDto;
@@ -472,6 +469,33 @@ public class MetadataProviderManager implements MetadataProviderService {
         }
 
         return tables;
+    }
+
+    public List<ViewMetadataDto> getViewsBySchema(String schemaName, boolean includeSchema, boolean includeColumns,
+                                                  boolean checkSchemaExists) {
+        if (checkSchemaExists && !schemaExists(schemaName)) {
+            throw new SchemaNotFoundException(schemaName.toLowerCase());
+        }
+
+        String sql = """
+                SELECT TABLE_NAME as VIEW_NAME
+                FROM INFORMATION_SCHEMA.VIEWS
+                WHERE TABLE_SCHEMA = ?
+                ORDER BY TABLE_NAME
+                """;
+
+        var views = jdbcTemplate.query(
+                sql,
+                (rs, rowNum) -> getView(schemaName, rs.getString("VIEW_NAME"),
+                        false, includeColumns, false),
+                schemaName);
+
+        if (includeSchema) {
+            var schema = getSchemaByName(schemaName, false, false);
+            views.forEach(view -> view.setSchema(schema));
+        }
+
+        return views;
     }
 
     public List<BaseColumnMetadataDto> getColumnsByTable(String schemaName, String tableName,
