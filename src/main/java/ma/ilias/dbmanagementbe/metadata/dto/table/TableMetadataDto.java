@@ -19,7 +19,7 @@ public class TableMetadataDto {
     private Long rowCount;
     private Long sizeInBytes;
 
-    @JsonIgnoreProperties("tables")
+    @JsonIgnoreProperties({"tables", "views"})
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private SchemaMetadataDto schema;

@@ -36,13 +36,14 @@ public class MySqlSchemaManager implements SchemaService {
     }
 
     @Override
-    public SchemaMetadataDto getSchemaByName(String schemaName, boolean includeTables, boolean checkSchemaExists) {
-        return getSchemaByName(schemaName, includeTables, checkSchemaExists, false);
+    public SchemaMetadataDto getSchemaByName(String schemaName, boolean includeTables,
+                                             boolean includeViews, boolean checkSchemaExists) {
+        return getSchemaByName(schemaName, includeTables, includeViews, checkSchemaExists, false);
     }
 
     @Override
-    public SchemaMetadataDto getSchemaByName(String schemaName, boolean includeTables, boolean checkSchemaExists,
-                                             boolean checkAuthorization) {
+    public SchemaMetadataDto getSchemaByName(String schemaName, boolean includeTables, boolean includeViews,
+                                             boolean checkSchemaExists, boolean checkAuthorization) {
         String normalizedSchemaName = schemaName != null ? schemaName.trim().toLowerCase() : null;
 
         // Check if user has schema-level read permission
@@ -57,7 +58,8 @@ public class MySqlSchemaManager implements SchemaService {
             }
         }
 
-        SchemaMetadataDto schema = metadataProviderService.getSchemaByName(schemaName, includeTables, checkSchemaExists);
+        SchemaMetadataDto schema = metadataProviderService.getSchemaByName(
+                schemaName, includeTables, includeViews, checkSchemaExists);
 
         // If user doesn't have schema-level permission, filter the tables to only show accessible ones
         if (!hasSchemaPermission && schema.getTables() != null) {
@@ -114,7 +116,7 @@ public class MySqlSchemaManager implements SchemaService {
 
         jdbcTemplate.execute("CREATE DATABASE " + validatedSchemaName);
 
-        return getSchemaByName(newSchema.getSchemaName(), false, false);
+        return getSchemaByName(newSchema.getSchemaName(), false, false, false);
     }
 
     @Override

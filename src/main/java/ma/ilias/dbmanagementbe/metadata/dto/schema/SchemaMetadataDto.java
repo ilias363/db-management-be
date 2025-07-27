@@ -3,6 +3,7 @@ package ma.ilias.dbmanagementbe.metadata.dto.schema;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.view.ViewMetadataDto;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -22,4 +23,10 @@ public class SchemaMetadataDto {
     @EqualsAndHashCode.Exclude
     @Builder.Default
     private List<TableMetadataDto> tables = new ArrayList<>();
+
+    @JsonIgnoreProperties({"schema", "columns"})
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @Builder.Default
+    private List<ViewMetadataDto> views = new ArrayList<>();
 }

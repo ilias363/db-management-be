@@ -19,7 +19,7 @@ public class ViewMetadataDto {
     private String characterSet;
     private String collation;
 
-    @JsonIgnoreProperties("tables")
+    @JsonIgnoreProperties({"views", "tables"})
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private SchemaMetadataDto schema;

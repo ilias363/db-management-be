@@ -135,7 +135,8 @@ public class MetadataProviderManager implements MetadataProviderService {
         return count != null && count > 0;
     }
 
-    public SchemaMetadataDto getSchemaByName(String schemaName, boolean includeTables, boolean checkSchemaExists) {
+    public SchemaMetadataDto getSchemaByName(String schemaName, boolean includeTables,
+                                             boolean includeViews, boolean checkSchemaExists) {
         if (checkSchemaExists && !schemaExists(schemaName)) {
             throw new SchemaNotFoundException(schemaName);
         }
@@ -146,6 +147,9 @@ public class MetadataProviderManager implements MetadataProviderService {
                 .creationDate(null)
                 .tables(includeTables ?
                         getTablesBySchema(schemaName, false, false, false, false)
+                        : null)
+                .views(includeViews ?
+                        getViewsBySchema(schemaName, false, false, false)
                         : null)
                 .build();
     }
@@ -175,7 +179,7 @@ public class MetadataProviderManager implements MetadataProviderService {
                         .columnCount(rs.getInt("COLUMN_COUNT"))
                         .rowCount(rs.getLong("TABLE_ROWS"))
                         .sizeInBytes(rs.getLong("SIZE_IN_BYTES"))
-                        .schema(includeSchema ? getSchemaByName(schemaName, false, false) : null)
+                        .schema(includeSchema ? getSchemaByName(schemaName, false, false, false) : null)
                         .columns(includeColumns ? getColumnsByTable(schemaName, tableName, false, false) : null)
                         .indexes(includeIndexes ? getIndexesByTable(schemaName, tableName, false, false) : null)
                         .build(),
@@ -419,7 +423,7 @@ public class MetadataProviderManager implements MetadataProviderService {
                 .isUpdatable("YES".equalsIgnoreCase(rs.getString("IS_UPDATABLE")))
                 .characterSet(rs.getString("CHARACTER_SET_CLIENT"))
                 .collation(rs.getString("COLLATION_CONNECTION"))
-                .schema(includeSchema ? getSchemaByName(schemaName, false, false) : null)
+                .schema(includeSchema ? getSchemaByName(schemaName, false, false, false) : null)
                 .columns(includeColumns ? getColumnsByView(schemaName, viewName, false, false) : null)
                 .build(), schemaName, viewName);
     }
@@ -437,7 +441,7 @@ public class MetadataProviderManager implements MetadataProviderService {
                     continue;
                 }
 
-                result.add(getSchemaByName(schemaName, true, false));
+                result.add(getSchemaByName(schemaName, true, true, false));
             }
 
             return result;
@@ -464,7 +468,7 @@ public class MetadataProviderManager implements MetadataProviderService {
                 schemaName);
 
         if (includeSchema) {
-            var schema = getSchemaByName(schemaName, false, false);
+            var schema = getSchemaByName(schemaName, false, false, false);
             tables.forEach(table -> table.setSchema(schema));
         }
 
@@ -491,7 +495,7 @@ public class MetadataProviderManager implements MetadataProviderService {
                 schemaName);
 
         if (includeSchema) {
-            var schema = getSchemaByName(schemaName, false, false);
+            var schema = getSchemaByName(schemaName, false, false, false);
             views.forEach(view -> view.setSchema(schema));
         }
 
