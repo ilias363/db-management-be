@@ -1,11 +1,13 @@
 package ma.ilias.dbmanagementbe.controller;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.enums.ActionType;
+import ma.ilias.dbmanagementbe.metadata.dto.view.UpdateViewDto;
 import ma.ilias.dbmanagementbe.metadata.dto.view.ViewMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.view.ViewService;
 import ma.ilias.dbmanagementbe.record.dto.RecordPageDto;
@@ -49,6 +51,46 @@ public class ViewController {
                 .build());
     }
 
+    @GetMapping("/{schemaName}/{viewName}/records")
+    public ResponseEntity<ApiResponse<RecordPageDto>> getViewRecords(
+            @PathVariable String schemaName,
+            @PathVariable String viewName,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "ASC") @Pattern(regexp = "^(ASC|DESC)$",
+                    message = "Sort direction must be either ASC or DESC") String sortDirection
+    ) {
+        RecordPageDto records = recordService.getViewRecords(schemaName, viewName, page, size, sortBy, sortDirection);
+        return ResponseEntity.ok(ApiResponse.<RecordPageDto>builder()
+                .message("View records fetched successfully")
+                .success(true)
+                .data(records)
+                .build());
+    }
+
+    @PutMapping
+    public ResponseEntity<ApiResponse<ViewMetadataDto>> renameView(
+            @Valid @RequestBody UpdateViewDto updateViewDto
+    ) {
+        try {
+            ViewMetadataDto updatedView = viewService.renameView(updateViewDto);
+
+            auditService.auditSuccessfulAction(ActionType.UPDATE_VIEW, updateViewDto.getSchemaName(),
+                    updateViewDto.getViewName(), null);
+
+            return ResponseEntity.ok(ApiResponse.<ViewMetadataDto>builder()
+                    .message("View updated successfully")
+                    .success(true)
+                    .data(updatedView)
+                    .build());
+        } catch (Exception e) {
+            auditService.auditFailedAction(ActionType.UPDATE_VIEW, updateViewDto.getSchemaName(),
+                    updateViewDto.getViewName(), null, e.getMessage());
+            throw e;
+        }
+    }
+
     @DeleteMapping("/{schemaName}/{viewName}")
     public ResponseEntity<ApiResponse<Void>> deleteView(
             @PathVariable String schemaName,
@@ -75,23 +117,5 @@ public class ViewController {
             auditService.auditFailedAction(ActionType.DELETE_VIEW, schemaName, viewName, e.getMessage());
             throw e;
         }
-    }
-
-    @GetMapping("/{schemaName}/{viewName}/records")
-    public ResponseEntity<ApiResponse<RecordPageDto>> getViewRecords(
-            @PathVariable String schemaName,
-            @PathVariable String viewName,
-            @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
-            @RequestParam(required = false) String sortBy,
-            @RequestParam(defaultValue = "ASC") @Pattern(regexp = "^(ASC|DESC)$",
-                    message = "Sort direction must be either ASC or DESC") String sortDirection
-    ) {
-        RecordPageDto records = recordService.getViewRecords(schemaName, viewName, page, size, sortBy, sortDirection);
-        return ResponseEntity.ok(ApiResponse.<RecordPageDto>builder()
-                .message("View records fetched successfully")
-                .success(true)
-                .data(records)
-                .build());
     }
 }

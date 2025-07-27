@@ -1,5 +1,6 @@
 package ma.ilias.dbmanagementbe.metadata.service.view;
 
+import ma.ilias.dbmanagementbe.metadata.dto.view.UpdateViewDto;
 import ma.ilias.dbmanagementbe.metadata.dto.view.ViewMetadataDto;
 
 import java.util.List;
@@ -15,6 +16,8 @@ public interface ViewService {
 
     List<ViewMetadataDto> getViewsBySchema(String schemaName, boolean includeSchema,
                                            boolean includeColumns, boolean checkSchemaExists);
+
+    ViewMetadataDto renameView(UpdateViewDto updateViewDto);
 
     Boolean deleteView(String schemaName, String viewName);
 }

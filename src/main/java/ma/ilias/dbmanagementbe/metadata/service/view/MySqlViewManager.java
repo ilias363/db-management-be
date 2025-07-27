@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.enums.PermissionType;
 import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
 import ma.ilias.dbmanagementbe.exception.ViewNotFoundException;
+import ma.ilias.dbmanagementbe.metadata.dto.view.UpdateViewDto;
 import ma.ilias.dbmanagementbe.metadata.dto.view.ViewMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.service.DatabaseAuthorizationService;
@@ -55,6 +56,23 @@ public class MySqlViewManager implements ViewService {
                         schemaName != null ? schemaName.trim().toLowerCase() : null,
                         view.getViewName() != null ? view.getViewName().trim().toLowerCase() : null))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public ViewMetadataDto renameView(UpdateViewDto updateViewDto) {
+        databaseAuthorizationService.checkWritePermission(updateViewDto.getSchemaName(), updateViewDto.getViewName());
+
+        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(updateViewDto.getSchemaName());
+
+        if (!updateViewDto.getViewName().equalsIgnoreCase(updateViewDto.getUpdatedViewName())) {
+            String renameSql = String.format("RENAME TABLE %s.%s TO %s.%s",
+                    validatedSchemaName, SqlSecurityUtils.validateTableName(updateViewDto.getViewName()),
+                    validatedSchemaName, SqlSecurityUtils.validateTableName(updateViewDto.getUpdatedViewName()));
+            jdbcTemplate.execute(renameSql);
+        }
+
+        return getView(updateViewDto.getSchemaName(), updateViewDto.getUpdatedViewName(),
+                true, true, false);
     }
 
     @Override
