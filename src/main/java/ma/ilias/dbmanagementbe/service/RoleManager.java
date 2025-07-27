@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dao.entities.Permission;
 import ma.ilias.dbmanagementbe.dao.entities.Role;
 import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
-import ma.ilias.dbmanagementbe.dao.repositories.PermissionRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.RoleRepository;
 import ma.ilias.dbmanagementbe.dto.role.NewRoleDto;
 import ma.ilias.dbmanagementbe.dto.role.RoleDto;
@@ -30,7 +29,6 @@ import java.util.stream.Collectors;
 public class RoleManager implements RoleService {
 
     private final RoleRepository roleRepository;
-    private final PermissionRepository permissionRepository;
     private final RoleMapper roleMapper;
     private final AppUserRepository appUserRepository;
 
@@ -56,6 +54,7 @@ public class RoleManager implements RoleService {
                     Permission permission = new Permission();
                     permission.setSchemaName(permissionDetail.getSchemaName());
                     permission.setTableName(permissionDetail.getTableName());
+                    permission.setViewName(permissionDetail.getViewName());
                     permission.setPermissionType(PermissionType.valueOf(permissionDetail.getPermissionType()));
                     permission.setRole(role);  // Set the role relationship
                     return permission;
@@ -125,6 +124,7 @@ public class RoleManager implements RoleService {
                     Permission permission = new Permission();
                     permission.setSchemaName(permissionDetail.getSchemaName());
                     permission.setTableName(permissionDetail.getTableName());
+                    permission.setViewName(permissionDetail.getViewName());
                     permission.setPermissionType(PermissionType.valueOf(permissionDetail.getPermissionType()));
                     permission.setRole(existingRole);  // Set the role relationship
                     return permission;

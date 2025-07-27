@@ -102,11 +102,12 @@ public class SystemRoleAndAdminUserInitService implements CommandLineRunner {
         Set<Permission> permissions = new HashSet<>();
 
         // Create permissions for all database operations (READ, WRITE, DELETE, CREATE)
-        // null schema and table means access to all schemas and tables
+        // null schema, table and view means access to all schemas and tables and views
         for (PermissionType permissionType : PermissionType.values()) {
             Permission permission = Permission.builder()
-                    .schemaName(null) // null means all schemas
-                    .tableName(null)  // null means all tables
+                    .schemaName(null)
+                    .tableName(null)
+                    .viewName(null)
                     .permissionType(permissionType)
                     .role(role)
                     .build();
@@ -122,8 +123,9 @@ public class SystemRoleAndAdminUserInitService implements CommandLineRunner {
 
         // Create only READ permission for viewer
         Permission readPermission = Permission.builder()
-                .schemaName(null) // null means all schemas
-                .tableName(null)  // null means all tables
+                .schemaName(null)
+                .tableName(null)
+                .viewName(null)
                 .permissionType(PermissionType.READ)
                 .role(role)
                 .build();

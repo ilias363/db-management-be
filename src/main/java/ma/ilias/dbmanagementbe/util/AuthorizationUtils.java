@@ -149,19 +149,19 @@ public class AuthorizationUtils {
 
         boolean hasGlobalCreate = allPermissions.stream()
                 .anyMatch(p -> p.getPermissionType() == PermissionType.CREATE &&
-                        p.getSchemaName() == null && p.getTableName() == null);
+                        p.getSchemaName() == null && p.getTableName() == null && p.getViewName() == null);
 
         boolean hasGlobalRead = allPermissions.stream()
                 .anyMatch(p -> p.getPermissionType() == PermissionType.READ &&
-                        p.getSchemaName() == null && p.getTableName() == null);
+                        p.getSchemaName() == null && p.getTableName() == null && p.getViewName() == null);
 
         boolean hasGlobalWrite = allPermissions.stream()
                 .anyMatch(p -> p.getPermissionType() == PermissionType.WRITE &&
-                        p.getSchemaName() == null && p.getTableName() == null);
+                        p.getSchemaName() == null && p.getTableName() == null && p.getViewName() == null);
 
         boolean hasGlobalDelete = allPermissions.stream()
                 .anyMatch(p -> p.getPermissionType() == PermissionType.DELETE &&
-                        p.getSchemaName() == null && p.getTableName() == null);
+                        p.getSchemaName() == null && p.getTableName() == null && p.getViewName() == null);
 
         return hasGlobalCreate && hasGlobalRead && hasGlobalWrite && hasGlobalDelete;
     }
@@ -177,13 +177,13 @@ public class AuthorizationUtils {
 
         return allPermissions.stream()
                 .anyMatch(p -> p.getPermissionType() == PermissionType.READ &&
-                        p.getSchemaName() == null && p.getTableName() == null);
+                        p.getSchemaName() == null && p.getTableName() == null && p.getViewName() == null);
     }
 
     /**
-     * Check if the current user has a specific permission type for a given schema/table
+     * Check if the current user has a specific permission type for a given schema/table/view
      */
-    public static boolean hasPermission(PermissionType permissionType, String schemaName, String tableName) {
+    public static boolean hasPermission(PermissionType permissionType, String schemaName, String objectName) {
         AppUser currentUser = getCurrentUser();
         if (currentUser == null) {
             return false;
@@ -193,14 +193,14 @@ public class AuthorizationUtils {
                 .flatMap(role -> role.getPermissions().stream())
                 .anyMatch(permission ->
                         permission.getPermissionType() == permissionType &&
-                                permissionMatches(permission, schemaName, tableName)
+                                permissionMatches(permission, schemaName, objectName)
                 );
     }
 
     /**
      * Check if a permission matches the requested schema/table
      */
-    private static boolean permissionMatches(Permission permission, String requestedSchema, String requestedTable) {
+    private static boolean permissionMatches(Permission permission, String requestedSchema, String requestedObject) {
         // If permission schema is null, it applies to all schemas
         if (permission.getSchemaName() == null) {
             return true;
@@ -211,13 +211,14 @@ public class AuthorizationUtils {
             return false;
         }
 
-        // If permission table is null, it applies to all tables in the schema
-        if (permission.getTableName() == null) {
+        // If permission table and view are null, it applies to all tables and views in the schema
+        if (permission.getTableName() == null && permission.getViewName() == null) {
             return true;
         }
 
-        // Check if table names match
-        return permission.getTableName().equals(requestedTable);
+        if (permission.getTableName() != null) return permission.getTableName().equals(requestedObject);
+
+        return permission.getViewName().equals(requestedObject);
     }
 
     // Spring Security Authorization Decision Methods

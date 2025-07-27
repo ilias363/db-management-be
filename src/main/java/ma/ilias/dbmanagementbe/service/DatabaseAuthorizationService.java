@@ -11,65 +11,65 @@ import org.springframework.stereotype.Service;
 public class DatabaseAuthorizationService {
 
     /**
-     * Check if the current user has permission to perform read operations on a specific schema/table
+     * Check if the current user has permission to perform read operations on a specific schema/table/view
      */
-    public void checkReadPermission(String schemaName, String tableName) {
+    public void checkReadPermission(String schemaName, String objectName) {
         if (!AuthorizationUtils.hasPermission(
                 PermissionType.READ,
                 schemaName != null ? schemaName.trim().toLowerCase() : null,
-                tableName != null ? tableName.trim().toLowerCase() : null)) {
+                objectName != null ? objectName.trim().toLowerCase() : null)) {
             throw new InsufficientPermissionException(
                     String.format("Access denied: No read permission for %s.%s",
                             schemaName == null ? "*" : schemaName,
-                            tableName == null ? "*" : tableName)
+                            objectName == null ? "*" : objectName)
             );
         }
     }
 
     /**
-     * Check if the current user has permission to perform write operations on a specific schema/table
+     * Check if the current user has permission to perform write operations on a specific schema/table/view
      */
-    public void checkWritePermission(String schemaName, String tableName) {
+    public void checkWritePermission(String schemaName, String objectName) {
         if (!AuthorizationUtils.hasPermission(
                 PermissionType.WRITE,
                 schemaName != null ? schemaName.trim().toLowerCase() : null,
-                tableName != null ? tableName.trim().toLowerCase() : null)) {
+                objectName != null ? objectName.trim().toLowerCase() : null)) {
             throw new InsufficientPermissionException(
                     String.format("Access denied: No write permission for %s.%s",
                             schemaName == null ? "*" : schemaName,
-                            tableName == null ? "*" : tableName)
+                            objectName == null ? "*" : objectName)
             );
         }
     }
 
     /**
-     * Check if the current user has permission to perform create operations on a specific schema/table
+     * Check if the current user has permission to perform create operations on a specific schema/table/view
      */
-    public void checkCreatePermission(String schemaName, String tableName) {
+    public void checkCreatePermission(String schemaName, String objectName) {
         if (!AuthorizationUtils.hasPermission(
                 PermissionType.CREATE,
                 schemaName != null ? schemaName.trim().toLowerCase() : null,
-                tableName != null ? tableName.trim().toLowerCase() : null)) {
+                objectName != null ? objectName.trim().toLowerCase() : null)) {
             throw new InsufficientPermissionException(
                     String.format("Access denied: No create permission for %s.%s",
                             schemaName == null ? "*" : schemaName,
-                            tableName == null ? "*" : tableName)
+                            objectName == null ? "*" : objectName)
             );
         }
     }
 
     /**
-     * Check if the current user has permission to perform delete operations on a specific schema/table
+     * Check if the current user has permission to perform delete operations on a specific schema/table/view
      */
-    public void checkDeletePermission(String schemaName, String tableName) {
+    public void checkDeletePermission(String schemaName, String objectName) {
         if (!AuthorizationUtils.hasPermission(
                 PermissionType.DELETE,
                 schemaName != null ? schemaName.trim().toLowerCase() : null,
-                tableName != null ? tableName.trim().toLowerCase() : null)) {
+                objectName != null ? objectName.trim().toLowerCase() : null)) {
             throw new InsufficientPermissionException(
                     String.format("Access denied: No delete permission for %s.%s",
                             schemaName == null ? "*" : schemaName,
-                            tableName == null ? "*" : tableName)
+                            objectName == null ? "*" : objectName)
             );
         }
     }

@@ -2,10 +2,7 @@ package ma.ilias.dbmanagementbe.dao.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -13,9 +10,6 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
 
 @Entity
 @Table(name = "roles")
@@ -56,6 +50,7 @@ public class Role {
                             .id(permission.getId())
                             .schemaName(permission.getSchemaName())
                             .tableName(permission.getTableName())
+                            .viewName(permission.getViewName())
                             .permissionType(permission.getPermissionType())
                             .build())
                     .collect(Collectors.toSet());
