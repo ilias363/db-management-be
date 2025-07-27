@@ -1,10 +1,15 @@
 package ma.ilias.dbmanagementbe.controller;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.metadata.dto.view.ViewMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.view.ViewService;
+import ma.ilias.dbmanagementbe.record.dto.RecordPageDto;
+import ma.ilias.dbmanagementbe.record.service.RecordService;
 import ma.ilias.dbmanagementbe.service.AuditService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +23,7 @@ public class ViewController {
 
     private final ViewService viewService;
     private final AuditService auditService;
+    private final RecordService recordService;
 
     @GetMapping("/{schemaName}")
     public ResponseEntity<ApiResponse<List<ViewMetadataDto>>> getAllViewsInSchema(@PathVariable String schemaName) {
@@ -69,5 +75,23 @@ public class ViewController {
             auditService.auditFailedAction(ActionType.DELETE_VIEW, schemaName, viewName, e.getMessage());
             throw e;
         }
+    }
+
+    @GetMapping("/{schemaName}/{viewName}/records")
+    public ResponseEntity<ApiResponse<RecordPageDto>> getViewRecords(
+            @PathVariable String schemaName,
+            @PathVariable String viewName,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "ASC") @Pattern(regexp = "^(ASC|DESC)$",
+                    message = "Sort direction must be either ASC or DESC") String sortDirection
+    ) {
+        RecordPageDto records = recordService.getViewRecords(schemaName, viewName, page, size, sortBy, sortDirection);
+        return ResponseEntity.ok(ApiResponse.<RecordPageDto>builder()
+                .message("View records fetched successfully")
+                .success(true)
+                .data(records)
+                .build());
     }
 }

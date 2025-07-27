@@ -2,10 +2,7 @@ package ma.ilias.dbmanagementbe.record.service;
 
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.enums.ColumnType;
-import ma.ilias.dbmanagementbe.exception.ColumnNotFoundException;
-import ma.ilias.dbmanagementbe.exception.InvalidRecordDataException;
-import ma.ilias.dbmanagementbe.exception.RecordNotFoundException;
-import ma.ilias.dbmanagementbe.exception.TableNotFoundException;
+import ma.ilias.dbmanagementbe.exception.*;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.ForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.PrimaryKeyForeignKeyColumnMetadataDto;
@@ -81,6 +78,56 @@ public class MySqlRecordManager implements RecordService {
 
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to fetch records from table: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public RecordPageDto getViewRecords(String schemaName, String viewName, int page, int size,
+                                        String sortBy, String sortDirection) {
+        databaseAuthorizationService.checkReadPermission(schemaName, viewName);
+
+        validateViewExists(schemaName, viewName);
+
+        // schema name and view name are validated during the view existence check
+        String validatedSchemaName = schemaName.trim().toLowerCase();
+        String validatedViewName = viewName.trim().toLowerCase();
+
+        int offset = page * size;
+
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("SELECT * FROM ").append(validatedSchemaName).append(".").append(validatedViewName);
+
+        if (sortBy != null && !sortBy.isBlank()) {
+            validateViewColumnExists(schemaName, viewName, sortBy);
+            String validatedSortBy = SqlSecurityUtils.validateColumnName(sortBy);
+            queryBuilder.append(" ORDER BY ").append(validatedSortBy).append(" ").append(sortDirection);
+        }
+
+        // Add pagination
+        queryBuilder.append(" LIMIT ? OFFSET ?");
+
+        try {
+            List<RecordDto> records = jdbcTemplate.query(
+                    queryBuilder.toString(),
+                    this::mapRowToRecord,
+                    size, offset
+            );
+
+            long totalRecords = getViewRecordCount(validatedSchemaName, validatedViewName);
+            int totalPages = (int) Math.ceil((double) totalRecords / size);
+
+            return RecordPageDto.builder()
+                    .items(records)
+                    .totalItems(totalRecords)
+                    .currentPage(page)
+                    .pageSize(size)
+                    .totalPages(totalPages)
+                    .tableName(validatedViewName) // Using tableName field for view name
+                    .schemaName(validatedSchemaName)
+                    .build();
+
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to fetch records from view: " + e.getMessage(), e);
         }
     }
 
@@ -1076,9 +1123,19 @@ public class MySqlRecordManager implements RecordService {
 
         try {
             Long count = jdbcTemplate.queryForObject(query, Long.class);
-            return count != null ? count : 0;
+            return count != null ? count : 0L;
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to get record count: " + e.getMessage(), e);
+        }
+    }
+
+    private long getViewRecordCount(String schemaName, String viewName) {
+        try {
+            String sql = "SELECT COUNT(*) FROM " + schemaName + "." + viewName;
+            Long count = jdbcTemplate.queryForObject(sql, Long.class);
+            return count != null ? count : 0L;
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to get view record count: " + e.getMessage(), e);
         }
     }
 
@@ -1320,6 +1377,21 @@ public class MySqlRecordManager implements RecordService {
             throw new ColumnNotFoundException(
                     schemaName.toLowerCase(),
                     tableName.toLowerCase(),
+                    columnName.toLowerCase());
+        }
+    }
+
+    private void validateViewExists(String schemaName, String viewName) {
+        if (!metadataProviderService.viewExists(schemaName, viewName)) {
+            throw new ViewNotFoundException(schemaName.toLowerCase(), viewName.toLowerCase());
+        }
+    }
+
+    private void validateViewColumnExists(String schemaName, String viewName, String columnName) {
+        if (!metadataProviderService.viewColumnExists(schemaName, viewName, columnName)) {
+            throw new ColumnNotFoundException(
+                    schemaName.toLowerCase(),
+                    viewName.toLowerCase(),
                     columnName.toLowerCase());
         }
     }

@@ -10,6 +10,9 @@ public interface RecordService {
     RecordPageDto getRecords(String schemaName, String tableName, int page, int size,
                              String sortBy, String sortDirection);
 
+    RecordPageDto getViewRecords(String schemaName, String viewName, int page, int size,
+                                 String sortBy, String sortDirection);
+
     RecordDto getRecord(String schemaName, String tableName, Map<String, Object> primaryKeyValues);
 
     RecordDto getRecord(String schemaName, String tableName, Map<String, Object> primaryKeyValues,

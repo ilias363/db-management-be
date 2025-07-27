@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(HttpStatus.NOT_FOUND)
 public class ColumnNotFoundException extends MetadataNotFoundException {
-    public ColumnNotFoundException(String schemaName, String tableName, String columnName) {
-        super("Column not found: " + schemaName + "." + tableName + "." + columnName);
+    public ColumnNotFoundException(String schemaName, String objectName, String columnName) {
+        super("Column not found: " + schemaName + "." + objectName + "." + columnName);
     }
 }
