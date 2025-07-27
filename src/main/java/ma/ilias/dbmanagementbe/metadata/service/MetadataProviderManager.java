@@ -101,6 +101,23 @@ public class MetadataProviderManager implements MetadataProviderService {
         return count != null && count > 0;
     }
 
+    public Boolean viewColumnExists(String schemaName, String viewColumn, String columnName) {
+        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
+        String validatedViewName = SqlSecurityUtils.validateTableName(viewColumn);
+        String validatedColumnName = SqlSecurityUtils.validateColumnName(columnName);
+
+        if (!viewExists(validatedSchemaName, validatedViewName)) {
+            throw new ViewNotFoundException(validatedSchemaName.toLowerCase(), validatedViewName.toLowerCase());
+        }
+
+        String sql = """
+                SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
+                """;
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, validatedSchemaName, validatedViewName, validatedColumnName);
+        return count != null && count > 0;
+    }
+
     public Boolean indexExists(String schemaName, String tableName, String indexName) {
         if (!tableExists(schemaName, tableName)) {
             throw new TableNotFoundException(schemaName.toLowerCase(), tableName.toLowerCase());

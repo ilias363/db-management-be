@@ -20,6 +20,8 @@ public interface MetadataProviderService {
 
     Boolean columnExists(String schemaName, String tableName, String columnName);
 
+    Boolean viewColumnExists(String schemaName, String viewName, String columnName);
+
     Boolean indexExists(String schemaName, String tableName, String indexName);
 
     Boolean viewExists(String schemaName, String viewName);
