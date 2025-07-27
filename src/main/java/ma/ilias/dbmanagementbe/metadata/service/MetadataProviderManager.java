@@ -70,7 +70,7 @@ public class MetadataProviderManager implements MetadataProviderService {
         String tableSql = """
                 SELECT TABLE_NAME
                 FROM INFORMATION_SCHEMA.TABLES
-                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
+                WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND TABLE_TYPE = 'BASE TABLE'
                 """;
 
         List<String> tables = jdbcTemplate.query(
@@ -457,7 +457,7 @@ public class MetadataProviderManager implements MetadataProviderService {
         String tableSql = """
                 SELECT TABLE_NAME
                 FROM INFORMATION_SCHEMA.TABLES
-                WHERE TABLE_SCHEMA = ?
+                WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = 'BASE TABLE'
                 """;
 
         var tables = jdbcTemplate.query(
