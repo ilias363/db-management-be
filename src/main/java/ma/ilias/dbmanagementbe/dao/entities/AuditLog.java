@@ -1,17 +1,11 @@
 package ma.ilias.dbmanagementbe.dao.entities;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import ma.ilias.dbmanagementbe.enums.ActionType;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
-
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
 
 @Entity
 @AllArgsConstructor
@@ -25,7 +19,7 @@ public class AuditLog {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id") // nullable for failed auth actions
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private AppUser user;

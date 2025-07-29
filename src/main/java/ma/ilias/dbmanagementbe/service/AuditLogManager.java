@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @AllArgsConstructor
@@ -110,7 +111,7 @@ public class AuditLogManager implements AuditLogService {
     public void createAuditLog(ActionType actionType, String schemaName, String tableName,
                                String objectName, String actionDetails, Boolean successful, String errorMessage) {
         AppUser currentUser = getCurrentUser();
-        if (currentUser == null) {
+        if (currentUser == null && !Set.of(ActionType.LOGIN, ActionType.LOGOUT).contains(actionType)) {
             throw new RuntimeException("No authenticated user found for audit logging");
         }
 
