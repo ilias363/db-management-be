@@ -7,6 +7,7 @@ import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.RoleRepository;
 import ma.ilias.dbmanagementbe.dto.role.NewRoleDto;
 import ma.ilias.dbmanagementbe.dto.role.RoleDto;
+import ma.ilias.dbmanagementbe.dto.role.RolePageDto;
 import ma.ilias.dbmanagementbe.dto.role.UpdateRoleDto;
 import ma.ilias.dbmanagementbe.enums.PermissionType;
 import ma.ilias.dbmanagementbe.enums.SystemRole;
@@ -15,6 +16,10 @@ import ma.ilias.dbmanagementbe.exception.RoleNotFoundException;
 import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
 import ma.ilias.dbmanagementbe.mapper.RoleMapper;
 import ma.ilias.dbmanagementbe.util.AuthorizationUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -78,14 +83,25 @@ public class RoleManager implements RoleService {
     }
 
     @Override
-    public List<RoleDto> findAll() {
+    public RolePageDto findAllPaginated(int page, int size, String sortBy, String sortDirection, String search) {
         if (!AuthorizationUtils.hasUserManagementAccess()) {
             throw new InsufficientPermissionException("Only administrators can view roles");
         }
 
-        return roleRepository.findAll().stream()
-                .map(roleMapper::toDto)
-                .collect(Collectors.toList());
+        Sort sort = createSort(sortBy, sortDirection);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<Role> rolePage = roleRepository.findAllWithSearch(search, pageable);
+
+        return RolePageDto.builder()
+                .items(rolePage.getContent().stream()
+                        .map(roleMapper::toDto)
+                        .toList())
+                .totalItems(rolePage.getTotalElements())
+                .currentPage(page)
+                .pageSize(size)
+                .totalPages(rolePage.getTotalPages())
+                .build();
     }
 
     @Override
@@ -158,5 +174,22 @@ public class RoleManager implements RoleService {
 
         roleRepository.deleteById(id);
         return !roleRepository.existsById(id);
+    }
+
+    private Sort createSort(String sortBy, String sortDirection) {
+        final List<String> validFields = List.of(
+                "id", "name", "description", "isSystemRole"
+        );
+
+        if (sortBy == null || sortBy.isBlank() || !validFields.contains(sortBy)) {
+            sortBy = "name";
+        }
+
+        Sort.Direction direction = Sort.Direction.ASC;
+        if ("DESC".equalsIgnoreCase(sortDirection)) {
+            direction = Sort.Direction.DESC;
+        }
+
+        return Sort.by(direction, sortBy);
     }
 }

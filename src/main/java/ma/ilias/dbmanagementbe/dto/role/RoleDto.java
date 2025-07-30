@@ -17,6 +17,7 @@ public class RoleDto implements RoleDtoBase {
     private Long id;
     private String name; // ADMIN, VIEWER, CUSTOM_ROLE_NAME
     private String description;
+    private Boolean isSystemRole;
 
     @Builder.Default
     private Set<PermissionDetailDto> permissions = new HashSet<>();

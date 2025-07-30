@@ -1,10 +1,14 @@
 package ma.ilias.dbmanagementbe.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.dto.role.NewRoleDto;
 import ma.ilias.dbmanagementbe.dto.role.RoleDto;
+import ma.ilias.dbmanagementbe.dto.role.RolePageDto;
 import ma.ilias.dbmanagementbe.dto.role.UpdateRoleDto;
 import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.service.AuditService;
@@ -12,8 +16,6 @@ import ma.ilias.dbmanagementbe.service.RoleService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/roles")
@@ -52,12 +54,19 @@ public class RoleController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<RoleDto>>> getAllRoles() {
-        List<RoleDto> roles = roleService.findAll();
-        return ResponseEntity.ok(ApiResponse.<List<RoleDto>>builder()
+    public ResponseEntity<ApiResponse<RolePageDto>> getAllRolesPaginated(
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "ASC") @Pattern(regexp = "^(ASC|DESC)$",
+                    message = "Sort direction must be either ASC or DESC") String sortDirection,
+            @RequestParam(required = false) String search
+    ) {
+        RolePageDto rolePage = roleService.findAllPaginated(page, size, sortBy, sortDirection, search);
+        return ResponseEntity.ok(ApiResponse.<RolePageDto>builder()
                 .message("Roles fetched successfully")
                 .success(true)
-                .data(roles)
+                .data(rolePage)
                 .build());
     }
 
