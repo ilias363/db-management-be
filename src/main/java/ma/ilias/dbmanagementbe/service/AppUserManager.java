@@ -5,6 +5,7 @@ import ma.ilias.dbmanagementbe.dao.entities.AppUser;
 import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.RoleRepository;
 import ma.ilias.dbmanagementbe.dto.appuser.AppUserDto;
+import ma.ilias.dbmanagementbe.dto.appuser.AppUserPageDto;
 import ma.ilias.dbmanagementbe.dto.appuser.NewAppUserDto;
 import ma.ilias.dbmanagementbe.dto.appuser.UpdateAppUserDto;
 import ma.ilias.dbmanagementbe.exception.InsufficientPermissionException;
@@ -12,6 +13,10 @@ import ma.ilias.dbmanagementbe.exception.RoleNotFoundException;
 import ma.ilias.dbmanagementbe.exception.UserNotFoundException;
 import ma.ilias.dbmanagementbe.mapper.AppUserMapper;
 import ma.ilias.dbmanagementbe.util.AuthorizationUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -72,25 +77,57 @@ public class AppUserManager implements AppUserService {
     }
 
     @Override
-    public List<AppUserDto> findAll() {
+    public AppUserPageDto findAllPaginated(int page, int size, String sortBy, String sortDirection, String search) {
         if (!AuthorizationUtils.hasUserManagementAccess()) {
             throw new InsufficientPermissionException("Only administrators can view users");
         }
 
-        return appUserRepository.findAll().stream()
-                .map(appUserMapper::toDto)
-                .collect(Collectors.toList());
+        Sort sort = createSort(sortBy, sortDirection);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<AppUser> userPage;
+        if (search != null && !search.isBlank()) {
+            userPage = appUserRepository.findByUsernameContainingIgnoreCase(search.trim(), pageable);
+        } else {
+            userPage = appUserRepository.findAll(pageable);
+        }
+
+        return AppUserPageDto.builder()
+                .items(userPage.getContent().stream()
+                        .map(appUserMapper::toDto)
+                        .toList())
+                .totalItems(userPage.getTotalElements())
+                .currentPage(page)
+                .pageSize(size)
+                .totalPages(userPage.getTotalPages())
+                .build();
     }
 
     @Override
-    public List<AppUserDto> findAllActive() {
+    public AppUserPageDto findAllActivePaginated(int page, int size, String sortBy, String sortDirection, String search) {
         if (!AuthorizationUtils.hasUserManagementAccess()) {
             throw new InsufficientPermissionException("Only administrators can view users");
         }
 
-        return appUserRepository.findByActive(true).stream()
-                .map(appUserMapper::toDto)
-                .collect(Collectors.toList());
+        Sort sort = createSort(sortBy, sortDirection);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<AppUser> userPage;
+        if (search != null && !search.isBlank()) {
+            userPage = appUserRepository.findByActiveAndUsernameContainingIgnoreCase(true, search.trim(), pageable);
+        } else {
+            userPage = appUserRepository.findByActive(true, pageable);
+        }
+
+        return AppUserPageDto.builder()
+                .items(userPage.getContent().stream()
+                        .map(appUserMapper::toDto)
+                        .toList())
+                .totalItems(userPage.getTotalElements())
+                .currentPage(page)
+                .pageSize(size)
+                .totalPages(userPage.getTotalPages())
+                .build();
     }
 
     @Override
@@ -173,5 +210,22 @@ public class AppUserManager implements AppUserService {
             }
         }
         return null;
+    }
+
+    private Sort createSort(String sortBy, String sortDirection) {
+        final List<String> validFields = List.of(
+                "id", "username", "active"
+        );
+
+        if (sortBy == null || sortBy.isBlank() || !validFields.contains(sortBy)) {
+            sortBy = "username";
+        }
+
+        Sort.Direction direction = Sort.Direction.ASC;
+        if ("DESC".equalsIgnoreCase(sortDirection)) {
+            direction = Sort.Direction.DESC;
+        }
+
+        return Sort.by(direction, sortBy);
     }
 }

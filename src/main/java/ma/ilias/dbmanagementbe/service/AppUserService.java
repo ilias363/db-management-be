@@ -1,10 +1,9 @@
 package ma.ilias.dbmanagementbe.service;
 
 import ma.ilias.dbmanagementbe.dto.appuser.AppUserDto;
+import ma.ilias.dbmanagementbe.dto.appuser.AppUserPageDto;
 import ma.ilias.dbmanagementbe.dto.appuser.NewAppUserDto;
 import ma.ilias.dbmanagementbe.dto.appuser.UpdateAppUserDto;
-
-import java.util.List;
 
 public interface AppUserService {
     AppUserDto save(NewAppUserDto newAppUserDto);
@@ -13,13 +12,14 @@ public interface AppUserService {
 
     AppUserDto findByUsername(String username, boolean checkAuthorization);
 
-    List<AppUserDto> findAll();
+    AppUserPageDto findAllPaginated(int page, int size, String sortBy, String sortDirection, String search);
 
-    List<AppUserDto> findAllActive();
+    AppUserPageDto findAllActivePaginated(int page, int size, String sortBy, String sortDirection, String search);
 
     AppUserDto update(Long id, UpdateAppUserDto appUserDto);
 
     //    Boolean deleteById(Long id);
+
     void deactivateById(Long id);
 
     void activateById(Long id);

@@ -1,9 +1,13 @@
 package ma.ilias.dbmanagementbe.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.dto.appuser.AppUserDto;
+import ma.ilias.dbmanagementbe.dto.appuser.AppUserPageDto;
 import ma.ilias.dbmanagementbe.dto.appuser.NewAppUserDto;
 import ma.ilias.dbmanagementbe.dto.appuser.UpdateAppUserDto;
 import ma.ilias.dbmanagementbe.enums.ActionType;
@@ -12,8 +16,6 @@ import ma.ilias.dbmanagementbe.service.AuditService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -63,22 +65,36 @@ public class AppUserController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<AppUserDto>>> getAllUsers() {
-        List<AppUserDto> appUsers = appUserService.findAll();
-        return ResponseEntity.ok(ApiResponse.<List<AppUserDto>>builder()
+    public ResponseEntity<ApiResponse<AppUserPageDto>> getAllUsersPaginated(
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "ASC") @Pattern(regexp = "^(ASC|DESC)$",
+                    message = "Sort direction must be either ASC or DESC") String sortDirection,
+            @RequestParam(required = false) String search
+    ) {
+        AppUserPageDto userPage = appUserService.findAllPaginated(page, size, sortBy, sortDirection, search);
+        return ResponseEntity.ok(ApiResponse.<AppUserPageDto>builder()
                 .message("Users fetched successfully")
                 .success(true)
-                .data(appUsers)
+                .data(userPage)
                 .build());
     }
 
     @GetMapping("/active")
-    public ResponseEntity<ApiResponse<List<AppUserDto>>> getAllActiveUsers() {
-        List<AppUserDto> appUsers = appUserService.findAllActive();
-        return ResponseEntity.ok(ApiResponse.<List<AppUserDto>>builder()
+    public ResponseEntity<ApiResponse<AppUserPageDto>> getAllActiveUsersPaginated(
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "ASC") @Pattern(regexp = "^(ASC|DESC)$",
+                    message = "Sort direction must be either ASC or DESC") String sortDirection,
+            @RequestParam(required = false) String search
+    ) {
+        AppUserPageDto userPage = appUserService.findAllActivePaginated(page, size, sortBy, sortDirection, search);
+        return ResponseEntity.ok(ApiResponse.<AppUserPageDto>builder()
                 .message("Active users fetched successfully")
                 .success(true)
-                .data(appUsers)
+                .data(userPage)
                 .build());
     }
 
