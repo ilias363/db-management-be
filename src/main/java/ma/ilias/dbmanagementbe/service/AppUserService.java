@@ -1,9 +1,6 @@
 package ma.ilias.dbmanagementbe.service;
 
-import ma.ilias.dbmanagementbe.dto.appuser.AppUserDto;
-import ma.ilias.dbmanagementbe.dto.appuser.AppUserPageDto;
-import ma.ilias.dbmanagementbe.dto.appuser.NewAppUserDto;
-import ma.ilias.dbmanagementbe.dto.appuser.UpdateAppUserDto;
+import ma.ilias.dbmanagementbe.dto.appuser.*;
 
 public interface AppUserService {
     AppUserDto save(NewAppUserDto newAppUserDto);
@@ -25,4 +22,6 @@ public interface AppUserService {
     void activateById(Long id);
 
     AppUserDto getCurrentUserInfo();
+
+    AppUserStatsDto getUserStats();
 }

@@ -4,10 +4,7 @@ import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dao.entities.AppUser;
 import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.RoleRepository;
-import ma.ilias.dbmanagementbe.dto.appuser.AppUserDto;
-import ma.ilias.dbmanagementbe.dto.appuser.AppUserPageDto;
-import ma.ilias.dbmanagementbe.dto.appuser.NewAppUserDto;
-import ma.ilias.dbmanagementbe.dto.appuser.UpdateAppUserDto;
+import ma.ilias.dbmanagementbe.dto.appuser.*;
 import ma.ilias.dbmanagementbe.exception.InsufficientPermissionException;
 import ma.ilias.dbmanagementbe.exception.RoleNotFoundException;
 import ma.ilias.dbmanagementbe.exception.UserNotFoundException;
@@ -210,6 +207,30 @@ public class AppUserManager implements AppUserService {
             }
         }
         return null;
+    }
+
+    @Override
+    public AppUserStatsDto getUserStats() {
+        if (!AuthorizationUtils.hasUserManagementAccess()) {
+            throw new InsufficientPermissionException("Only administrators can view user statistics");
+        }
+
+        long totalUsers = appUserRepository.count();
+        long activeUsers = appUserRepository.countActiveUsers();
+        long adminUsers = appUserRepository.countAdminUsers();
+        long newThisMonth = appUserRepository.countUsersCreatedThisMonth();
+
+        long inactiveUsers = totalUsers - activeUsers;
+        double activeUserPercentage = totalUsers > 0 ? (double) activeUsers / totalUsers * 100 : 0.0;
+
+        return AppUserStatsDto.builder()
+                .totalUsers(totalUsers)
+                .activeUsers(activeUsers)
+                .inactiveUsers(inactiveUsers)
+                .adminUsers(adminUsers)
+                .newThisMonth(newThisMonth)
+                .activeUserPercentage(Math.round(activeUserPercentage * 100.0) / 100.0)
+                .build();
     }
 
     private Sort createSort(String sortBy, String sortDirection) {

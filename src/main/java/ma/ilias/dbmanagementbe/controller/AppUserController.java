@@ -6,10 +6,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
-import ma.ilias.dbmanagementbe.dto.appuser.AppUserDto;
-import ma.ilias.dbmanagementbe.dto.appuser.AppUserPageDto;
-import ma.ilias.dbmanagementbe.dto.appuser.NewAppUserDto;
-import ma.ilias.dbmanagementbe.dto.appuser.UpdateAppUserDto;
+import ma.ilias.dbmanagementbe.dto.appuser.*;
 import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.service.AppUserService;
 import ma.ilias.dbmanagementbe.service.AuditService;
@@ -44,7 +41,7 @@ public class AppUserController {
         }
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<ApiResponse<AppUserDto>> getUserById(@PathVariable Long id) {
         AppUserDto appUserDto = appUserService.findById(id);
         return ResponseEntity.ok(ApiResponse.<AppUserDto>builder()
@@ -186,5 +183,15 @@ public class AppUserController {
             }
             throw e;
         }
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<AppUserStatsDto>> getUserStats() {
+        AppUserStatsDto stats = appUserService.getUserStats();
+        return ResponseEntity.ok(ApiResponse.<AppUserStatsDto>builder()
+                .message("User statistics retrieved successfully")
+                .success(true)
+                .data(stats)
+                .build());
     }
 }
