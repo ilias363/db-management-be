@@ -95,7 +95,7 @@ public class AppUserController {
                 .build());
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{id:\\d+}")
     public ResponseEntity<ApiResponse<AppUserDto>> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UpdateAppUserDto updateAppUserDto
@@ -139,7 +139,7 @@ public class AppUserController {
 //                        .build());
 //    }
 
-    @PutMapping("/{id}/deactivate")
+    @PutMapping("/{id:\\d+}/deactivate")
     public ResponseEntity<ApiResponse<Void>> deactivateUser(@PathVariable Long id) {
         try {
             AppUserDto user = appUserService.findById(id);
@@ -162,7 +162,7 @@ public class AppUserController {
         }
     }
 
-    @PutMapping("/{id}/activate")
+    @PutMapping("/{id:\\d+}/activate")
     public ResponseEntity<ApiResponse<Void>> activateUser(@PathVariable Long id) {
         try {
             AppUserDto user = appUserService.findById(id);
