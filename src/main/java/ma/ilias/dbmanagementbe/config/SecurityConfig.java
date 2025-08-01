@@ -36,7 +36,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // Public endpoints
-                        .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/refresh").permitAll()
 
                         // System admin only endpoints - User/Role/Permission/Audit-logs management
                         .requestMatchers("/api/users/**").access((authentication, context) ->
