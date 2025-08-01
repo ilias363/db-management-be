@@ -30,28 +30,28 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
-    public String generateToken(Long userId) {
+    public String generateToken(String userId) {
         return generateToken(new HashMap<>(), userId);
     }
 
-    public String generateToken(Map<String, Object> extraClaims, Long userId) {
+    public String generateToken(Map<String, Object> extraClaims, String userId) {
         return buildToken(extraClaims, userId, jwtExpirationMs);
     }
 
-    private String buildToken(Map<String, Object> extraClaims, Long userId, long expiration) {
+    private String buildToken(Map<String, Object> extraClaims, String userId, long expiration) {
         return Jwts
                 .builder()
                 .claims(extraClaims)
-                .subject(userId.toString())
+                .subject(userId)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSignInKey())
                 .compact();
     }
 
-    public boolean isTokenValid(String token, Long userId) {
+    public boolean isTokenValid(String token, String userId) {
         final String userIdClaim = extractUserId(token);
-        return (userIdClaim.equals(userId.toString())) && !isTokenExpired(token);
+        return (userIdClaim.equals(userId)) && !isTokenExpired(token);
     }
 
     public boolean isTokenExpired(String token) {
