@@ -7,8 +7,11 @@ import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.dto.appuser.AppUserDto;
 import ma.ilias.dbmanagementbe.dto.auth.LoginRequestDto;
 import ma.ilias.dbmanagementbe.dto.auth.LoginResponseDto;
+import ma.ilias.dbmanagementbe.dto.auth.TokenRefreshRequestDto;
+import ma.ilias.dbmanagementbe.dto.auth.TokenRefreshResponseDto;
 import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.enums.PermissionType;
+import ma.ilias.dbmanagementbe.exception.TokenRefreshException;
 import ma.ilias.dbmanagementbe.service.AppUserService;
 import ma.ilias.dbmanagementbe.service.AuditService;
 import ma.ilias.dbmanagementbe.service.JwtService;
@@ -109,6 +112,81 @@ public class AuthController {
                 .message("Logout successful")
                 .success(true)
                 .build());
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<TokenRefreshResponseDto>> refreshToken(
+            @Valid @RequestBody TokenRefreshRequestDto request) {
+        try {
+            String requestRefreshToken = request.getRefreshToken();
+
+            return refreshTokenService.findByToken(requestRefreshToken)
+                    .map(refreshTokenService::verifyExpiration)
+                    .map(RefreshToken::getUser)
+                    .map(user -> {
+                        String newAccessToken = jwtService.generateToken(user.getId().toString());
+                        RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user.getId());
+
+                        TokenRefreshResponseDto response = new TokenRefreshResponseDto(
+                                newAccessToken,
+                                newRefreshToken.getToken()
+                        );
+
+                        auditService.auditSuccessfulAction(ActionType.LOGIN,
+                                user.getUsername() + " (ID: " + user.getId() + ") - Token refresh");
+
+                        return ResponseEntity.ok(ApiResponse.<TokenRefreshResponseDto>builder()
+                                .message("Token refreshed successfully")
+                                .success(true)
+                                .data(response)
+                                .build());
+                    })
+                    .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Refresh token does not exist in database!"));
+
+        } catch (TokenRefreshException ex) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                    ApiResponse.<TokenRefreshResponseDto>builder()
+                            .message(ex.getMessage())
+                            .success(false)
+                            .build()
+            );
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiResponse.<TokenRefreshResponseDto>builder()
+                            .message("Token refresh failed: " + ex.getMessage())
+                            .success(false)
+                            .build()
+            );
+        }
+    }
+
+    @PostMapping("/cleanup-expired-tokens")
+    public ResponseEntity<ApiResponse<Map<String, Integer>>> cleanupExpiredTokens() {
+        if (!AuthorizationUtils.hasUserManagementAccess()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                    ApiResponse.<Map<String, Integer>>builder()
+                            .message("Insufficient permissions")
+                            .success(false)
+                            .build()
+            );
+        }
+
+        try {
+            int deletedCount = refreshTokenService.cleanupExpiredTokens();
+
+            return ResponseEntity.ok(ApiResponse.<Map<String, Integer>>builder()
+                    .message("Expired tokens cleaned up successfully")
+                    .success(true)
+                    .data(Map.of("deletedTokens", deletedCount))
+                    .build());
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiResponse.<Map<String, Integer>>builder()
+                            .message("Failed to cleanup expired tokens: " + ex.getMessage())
+                            .success(false)
+                            .build()
+            );
+        }
     }
 
     @GetMapping("/validate")
