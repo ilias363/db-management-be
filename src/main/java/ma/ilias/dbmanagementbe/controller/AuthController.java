@@ -160,35 +160,6 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/cleanup-expired-tokens")
-    public ResponseEntity<ApiResponse<Map<String, Integer>>> cleanupExpiredTokens() {
-        if (!AuthorizationUtils.hasUserManagementAccess()) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
-                    ApiResponse.<Map<String, Integer>>builder()
-                            .message("Insufficient permissions")
-                            .success(false)
-                            .build()
-            );
-        }
-
-        try {
-            int deletedCount = refreshTokenService.cleanupExpiredTokens();
-
-            return ResponseEntity.ok(ApiResponse.<Map<String, Integer>>builder()
-                    .message("Expired tokens cleaned up successfully")
-                    .success(true)
-                    .data(Map.of("deletedTokens", deletedCount))
-                    .build());
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiResponse.<Map<String, Integer>>builder()
-                            .message("Failed to cleanup expired tokens: " + ex.getMessage())
-                            .success(false)
-                            .build()
-            );
-        }
-    }
-
     @GetMapping("/validate")
     public ResponseEntity<ApiResponse<Map<String, Boolean>>> validateToken() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

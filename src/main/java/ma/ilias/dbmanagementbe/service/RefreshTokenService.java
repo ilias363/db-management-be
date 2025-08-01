@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -58,25 +57,5 @@ public class RefreshTokenService {
         AppUser user = appUserRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
         refreshTokenRepository.deleteByUser(user);
-    }
-
-    @Transactional
-    public void deleteByToken(String token) {
-        refreshTokenRepository.deleteByToken(token);
-    }
-
-    @Transactional
-    public void deleteExpiredTokens() {
-        refreshTokenRepository.deleteExpiredTokens(LocalDateTime.now());
-    }
-
-    @Transactional
-    public int cleanupExpiredTokens() {
-        List<RefreshToken> expiredTokens = refreshTokenRepository.findAllByExpiryDateBefore(LocalDateTime.now());
-        int deletedCount = expiredTokens.size();
-        if (!expiredTokens.isEmpty()) {
-            refreshTokenRepository.deleteAll(expiredTokens);
-        }
-        return deletedCount;
     }
 }
