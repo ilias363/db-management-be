@@ -9,6 +9,8 @@ public interface AppUserService {
 
     AppUserDto findByUsername(String username, boolean checkAuthorization);
 
+    String getUsernameById(Long id);
+
     AppUserPageDto findAllPaginated(int page, int size, String sortBy, String sortDirection, String search);
 
     AppUserPageDto findAllActivePaginated(int page, int size, String sortBy, String sortDirection, String search);

@@ -74,6 +74,12 @@ public class AppUserManager implements AppUserService {
     }
 
     @Override
+    public String getUsernameById(Long id) {
+        AppUser appUser = appUserRepository.findById(id).orElse(null);
+        return appUser == null ? null : appUser.getUsername();
+    }
+
+    @Override
     public AppUserPageDto findAllPaginated(int page, int size, String sortBy, String sortDirection, String search) {
         if (!AuthorizationUtils.hasUserManagementAccess()) {
             throw new InsufficientPermissionException("Only administrators can view users");
@@ -199,12 +205,8 @@ public class AppUserManager implements AppUserService {
         if (authentication != null && authentication.isAuthenticated() &&
                 !"anonymousUser".equals(authentication.getPrincipal())) {
 
-            if (authentication.getPrincipal() instanceof AppUser) {
-                return appUserMapper.toDto((AppUser) authentication.getPrincipal());
-            } else if (authentication.getName() != null) {
-                return appUserMapper.toDto(
-                        appUserRepository.findByUsername(authentication.getName()).orElse(null));
-            }
+            return appUserMapper.toDto(
+                    appUserRepository.findByUsername(authentication.getName()).orElse(null));
         }
         return null;
     }
