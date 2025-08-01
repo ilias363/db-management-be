@@ -6,7 +6,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import ma.ilias.dbmanagementbe.service.AppUserService;
+import lombok.extern.slf4j.Slf4j;
+import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.service.JwtService;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,12 +19,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final AppUserService appUserService;
+    private final AppUserRepository appUserRepository;
     private final UserDetailsService userDetailsService;
 
     @Override
@@ -52,10 +54,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             userId = jwtService.extractUserId(jwt);
             if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                String username = appUserService.getUsernameById(Long.parseLong(userId));
+                var appUser = appUserRepository.findById(Long.parseLong(userId)).orElse(null);
 
-                if (username != null) {
-                    UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+                if (appUser != null) {
+                    UserDetails userDetails = this.userDetailsService.loadUserByUsername(appUser.getUsername());
 
                     if (jwtService.isTokenValid(jwt, userId)) {
                         UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
