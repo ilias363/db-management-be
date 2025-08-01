@@ -2,6 +2,7 @@ package ma.ilias.dbmanagementbe.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import ma.ilias.dbmanagementbe.dao.entities.RefreshToken;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.dto.appuser.AppUserDto;
 import ma.ilias.dbmanagementbe.dto.auth.LoginRequestDto;
@@ -11,6 +12,7 @@ import ma.ilias.dbmanagementbe.enums.PermissionType;
 import ma.ilias.dbmanagementbe.service.AppUserService;
 import ma.ilias.dbmanagementbe.service.AuditService;
 import ma.ilias.dbmanagementbe.service.JwtService;
+import ma.ilias.dbmanagementbe.service.RefreshTokenService;
 import ma.ilias.dbmanagementbe.util.AuthorizationUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +35,7 @@ public class AuthController {
     private final AuditService auditService;
     private final AppUserService appUserService;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponseDto>> login(@Valid @RequestBody LoginRequestDto loginRequestDto) {
@@ -47,10 +50,11 @@ public class AuthController {
             AppUserDto user = appUserService.findByUsername(loginRequestDto.getUsername(), false);
 
             String accessToken = jwtService.generateToken(user.getId().toString());
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
             auditService.auditSuccessfulAction(ActionType.LOGIN, user.getUsername() + " (ID: " + user.getId() + ")");
 
-            LoginResponseDto jwtResponse = new LoginResponseDto(accessToken);
+            LoginResponseDto jwtResponse = new LoginResponseDto(accessToken, refreshToken.getToken());
 
             return ResponseEntity.ok(ApiResponse.<LoginResponseDto>builder()
                     .message("Login successful")
@@ -90,14 +94,16 @@ public class AuthController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = (auth != null && auth.isAuthenticated()) ? auth.getName() : "unknown";
 
-        SecurityContextHolder.clearContext();
-
         if (!username.equals("unknown")) {
             AppUserDto user = appUserService.findByUsername(username, false);
+            // Delete refresh tokens for this user
+            refreshTokenService.deleteByUserId(user.getId());
             auditService.auditSuccessfulAction(ActionType.LOGOUT, username + " (ID: " + user.getId() + ")");
         } else {
             auditService.auditSuccessfulAction(ActionType.LOGOUT, username);
         }
+
+        SecurityContextHolder.clearContext();
 
         return ResponseEntity.ok(ApiResponse.<Void>builder()
                 .message("Logout successful")
