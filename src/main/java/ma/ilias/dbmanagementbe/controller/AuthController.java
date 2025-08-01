@@ -1,16 +1,16 @@
 package ma.ilias.dbmanagementbe.controller;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.dto.appuser.AppUserDto;
 import ma.ilias.dbmanagementbe.dto.auth.LoginRequestDto;
+import ma.ilias.dbmanagementbe.dto.auth.LoginResponseDto;
 import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.enums.PermissionType;
 import ma.ilias.dbmanagementbe.service.AppUserService;
 import ma.ilias.dbmanagementbe.service.AuditService;
+import ma.ilias.dbmanagementbe.service.JwtService;
 import ma.ilias.dbmanagementbe.util.AuthorizationUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,42 +24,38 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
-@AllArgsConstructor
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("api/auth")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final AuditService auditService;
     private final AppUserService appUserService;
+    private final JwtService jwtService;
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<Void>> login(@Valid @RequestBody LoginRequestDto loginRequestDto,
-                                                   HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<LoginResponseDto>> login(@Valid @RequestBody LoginRequestDto loginRequestDto) {
         try {
-            Authentication authentication = authenticationManager.authenticate(
+            authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequestDto.getUsername(),
                             loginRequestDto.getPassword()
                     )
             );
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            HttpSession session = request.getSession(false);
-            if (session != null) {
-                session.invalidate();
-            }
-            HttpSession newSession = request.getSession(true);
-            newSession.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
-
             AppUserDto user = appUserService.findByUsername(loginRequestDto.getUsername(), false);
+
+            String accessToken = jwtService.generateToken(user.getId().toString());
 
             auditService.auditSuccessfulAction(ActionType.LOGIN, user.getUsername() + " (ID: " + user.getId() + ")");
 
-            return ResponseEntity.ok(ApiResponse.<Void>builder()
+            LoginResponseDto jwtResponse = new LoginResponseDto(accessToken);
+
+            return ResponseEntity.ok(ApiResponse.<LoginResponseDto>builder()
                     .message("Login successful")
                     .success(true)
+                    .data(jwtResponse)
                     .build());
         } catch (BadCredentialsException ex) {
             AppUserDto user = appUserService.findByUsername(loginRequestDto.getUsername(), false);
@@ -68,7 +64,7 @@ public class AuthController {
                     "Invalid credentials");
 
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-                    ApiResponse.<Void>builder()
+                    ApiResponse.<LoginResponseDto>builder()
                             .message("Invalid credentials")
                             .success(false)
                             .build()
@@ -80,7 +76,7 @@ public class AuthController {
                     "Authentication failed: " + ex.getMessage());
 
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-                    ApiResponse.<Void>builder()
+                    ApiResponse.<LoginResponseDto>builder()
                             .message("Authentication failed : " + ex.getMessage())
                             .success(false)
                             .build()
@@ -89,15 +85,10 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<Void>> logout() {
         // Get current user before clearing context for audit
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = (auth != null && auth.isAuthenticated()) ? auth.getName() : "unknown";
-
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.invalidate();
-        }
 
         SecurityContextHolder.clearContext();
 
@@ -108,23 +99,22 @@ public class AuthController {
             auditService.auditSuccessfulAction(ActionType.LOGOUT, username);
         }
 
-
         return ResponseEntity.ok(ApiResponse.<Void>builder()
                 .message("Logout successful")
                 .success(true)
                 .build());
     }
 
-    @GetMapping("/isloggedin")
-    public ResponseEntity<ApiResponse<Map<String, Boolean>>> isLoggedIn(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
-        boolean isLoggedIn = session != null && session.getAttribute("SPRING_SECURITY_CONTEXT") != null;
+    @GetMapping("/validate")
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> validateToken() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isValid = auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName());
 
         return ResponseEntity.ok(
                 ApiResponse.<Map<String, Boolean>>builder()
-                        .message("Successful")
+                        .message("Token validation successful")
                         .success(true)
-                        .data(Map.of("isLoggedIn", isLoggedIn))
+                        .data(Map.of("isValid", isValid))
                         .build()
         );
     }
