@@ -26,6 +26,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -57,7 +58,16 @@ public class AuthController {
 
             auditService.auditSuccessfulAction(ActionType.LOGIN, user.getUsername() + " (ID: " + user.getId() + ")");
 
-            LoginResponseDto jwtResponse = new LoginResponseDto(accessToken, refreshToken.getToken());
+            LoginResponseDto jwtResponse = LoginResponseDto.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken.getToken())
+                    .accessTokenExpiry(jwtService.extractExpiration(accessToken).getTime())
+                    .refreshTokenExpiry(refreshToken
+                            .getExpiryDate()
+                            .atZone(ZoneId.systemDefault())
+                            .toInstant()
+                            .toEpochMilli())
+                    .build();
 
             return ResponseEntity.ok(ApiResponse.<LoginResponseDto>builder()
                     .message("Login successful")
