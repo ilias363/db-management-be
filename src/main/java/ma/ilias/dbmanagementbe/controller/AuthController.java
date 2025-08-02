@@ -137,10 +137,16 @@ public class AuthController {
                         String newAccessToken = jwtService.generateToken(user.getId().toString());
                         RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user.getId());
 
-                        TokenRefreshResponseDto response = new TokenRefreshResponseDto(
-                                newAccessToken,
-                                newRefreshToken.getToken()
-                        );
+                        TokenRefreshResponseDto response = TokenRefreshResponseDto.builder()
+                                .newAccessToken(newAccessToken)
+                                .newRefreshToken(newRefreshToken.getToken())
+                                .newAccessTokenExpiry(jwtService.extractExpiration(newAccessToken).getTime())
+                                .newRefreshTokenExpiry(newRefreshToken
+                                        .getExpiryDate()
+                                        .atZone(ZoneId.systemDefault())
+                                        .toInstant()
+                                        .toEpochMilli())
+                                .build();
 
                         auditService.auditSuccessfulAction(ActionType.LOGIN,
                                 user.getUsername() + " (ID: " + user.getId() + ") - Token refresh");
