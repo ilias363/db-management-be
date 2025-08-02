@@ -17,7 +17,7 @@ public class RefreshTokenCleanupService {
 
     private final RefreshTokenRepository refreshTokenRepository;
 
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedRate = 86400000)
     @Transactional
     public void deleteExpiredTokens() {
         refreshTokenRepository.deleteExpiredTokens(LocalDateTime.now());
