@@ -203,7 +203,18 @@ public class AuthController {
         );
     }
 
-    @GetMapping("current-user/permissions")
+    @GetMapping("/current-user/is-system-admin")
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> isCurrentUserSystemAdmin() {
+        return ResponseEntity.ok(
+                ApiResponse.<Map<String, Boolean>>builder()
+                        .message("Is user system admin retrieved successfully")
+                        .success(true)
+                        .data(Map.of("isSystemAdmin", AuthorizationUtils.hasUserManagementAccess()))
+                        .build()
+        );
+    }
+
+    @GetMapping("/current-user/permissions")
     public ResponseEntity<ApiResponse<Map<String, Boolean>>> getCurrentUserPermissions() {
         Map<String, Boolean> permissions = new HashMap<>();
 
@@ -221,7 +232,7 @@ public class AuthController {
                 .build());
     }
 
-    @GetMapping("current-user/detailed-permissions")
+    @GetMapping("/current-user/detailed-permissions")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getDetailedPermissions(
             @RequestParam(required = false) String schemaName,
             @RequestParam(required = false) String tableName) {
