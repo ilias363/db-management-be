@@ -182,13 +182,13 @@ public class RoleManager implements RoleService {
         long totalRoles = roleRepository.count();
         long systemRoles = roleRepository.countSystemRoles();
         long customRoles = totalRoles - systemRoles;
-        long roleAssignations = roleRepository.countRoleAssignations();
+        long roleAssignments = roleRepository.countRoleAssignments();
 
         return RoleStatsDto.builder()
                 .totalRoles(totalRoles)
                 .systemRoles(systemRoles)
                 .customRoles(customRoles)
-                .roleAssignations(roleAssignations)
+                .roleAssignments(roleAssignments)
                 .build();
     }
 

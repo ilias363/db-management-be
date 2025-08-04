@@ -13,5 +13,5 @@ public class RoleStatsDto {
     Long totalRoles;
     Long systemRoles;
     Long customRoles;
-    Long roleAssignations;
+    Long roleAssignments;
 }

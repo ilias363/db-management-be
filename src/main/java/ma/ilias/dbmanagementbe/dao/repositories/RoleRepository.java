@@ -22,5 +22,5 @@ public interface RoleRepository extends JpaRepository<Role, Long> {
     long countSystemRoles();
 
     @Query(value = "SELECT COUNT(*) FROM user_roles", nativeQuery = true)
-    long countRoleAssignations();
+    long countRoleAssignments();
 }
