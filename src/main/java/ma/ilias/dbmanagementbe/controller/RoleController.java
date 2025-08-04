@@ -6,10 +6,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
-import ma.ilias.dbmanagementbe.dto.role.NewRoleDto;
-import ma.ilias.dbmanagementbe.dto.role.RoleDto;
-import ma.ilias.dbmanagementbe.dto.role.RolePageDto;
-import ma.ilias.dbmanagementbe.dto.role.UpdateRoleDto;
+import ma.ilias.dbmanagementbe.dto.role.*;
 import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.service.AuditService;
 import ma.ilias.dbmanagementbe.service.RoleService;
@@ -43,7 +40,7 @@ public class RoleController {
         }
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<ApiResponse<RoleDto>> getRoleById(@PathVariable Long id) {
         RoleDto roleDto = roleService.findById(id);
         return ResponseEntity.ok(ApiResponse.<RoleDto>builder()
@@ -70,7 +67,7 @@ public class RoleController {
                 .build());
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{id:\\d+}")
     public ResponseEntity<ApiResponse<RoleDto>> updateRole(
             @PathVariable Long id,
             @Valid @RequestBody UpdateRoleDto updateRoleDto
@@ -97,7 +94,7 @@ public class RoleController {
         }
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id:\\d+}")
     public ResponseEntity<ApiResponse<Void>> deleteRole(@PathVariable Long id) {
         try {
             RoleDto role = roleService.findById(id);
@@ -127,5 +124,15 @@ public class RoleController {
             }
             throw e;
         }
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<RoleStatsDto>> getUserStats() {
+        RoleStatsDto stats = roleService.getRoleStats();
+        return ResponseEntity.ok(ApiResponse.<RoleStatsDto>builder()
+                .message("Role statistics retrieved successfully")
+                .success(true)
+                .data(stats)
+                .build());
     }
 }
