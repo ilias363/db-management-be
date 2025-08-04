@@ -25,7 +25,7 @@ import java.util.List;
 @Service
 @AllArgsConstructor
 @Transactional
-public class MetadataProviderManager implements MetadataProviderService {
+public class MySqlMetadataProviderManager implements MetadataProviderService {
 
     private final JdbcTemplate jdbcTemplate;
 
