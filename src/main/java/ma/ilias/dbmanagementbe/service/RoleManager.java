@@ -5,10 +5,7 @@ import ma.ilias.dbmanagementbe.dao.entities.Permission;
 import ma.ilias.dbmanagementbe.dao.entities.Role;
 import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.RoleRepository;
-import ma.ilias.dbmanagementbe.dto.role.NewRoleDto;
-import ma.ilias.dbmanagementbe.dto.role.RoleDto;
-import ma.ilias.dbmanagementbe.dto.role.RolePageDto;
-import ma.ilias.dbmanagementbe.dto.role.UpdateRoleDto;
+import ma.ilias.dbmanagementbe.dto.role.*;
 import ma.ilias.dbmanagementbe.enums.PermissionType;
 import ma.ilias.dbmanagementbe.enums.SystemRole;
 import ma.ilias.dbmanagementbe.exception.InsufficientPermissionException;
@@ -174,6 +171,25 @@ public class RoleManager implements RoleService {
 
         roleRepository.deleteById(id);
         return !roleRepository.existsById(id);
+    }
+
+    @Override
+    public RoleStatsDto getRoleStats() {
+        if (!AuthorizationUtils.hasUserManagementAccess()) {
+            throw new InsufficientPermissionException("Only administrators can view role statistics");
+        }
+
+        long totalRoles = roleRepository.count();
+        long systemRoles = roleRepository.countSystemRoles();
+        long customRoles = totalRoles - systemRoles;
+        long roleAssignations = roleRepository.countRoleAssignations();
+
+        return RoleStatsDto.builder()
+                .totalRoles(totalRoles)
+                .systemRoles(systemRoles)
+                .customRoles(customRoles)
+                .roleAssignations(roleAssignations)
+                .build();
     }
 
     private Sort createSort(String sortBy, String sortDirection) {

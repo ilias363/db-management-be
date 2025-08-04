@@ -17,4 +17,10 @@ public interface RoleRepository extends JpaRepository<Role, Long> {
             "LOWER(r.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(r.description) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Role> findAllWithSearch(@Param("search") String search, Pageable pageable);
+
+    @Query("SELECT COUNT(r) FROM Role r WHERE r.isSystemRole = true")
+    long countSystemRoles();
+
+    @Query(value = "SELECT COUNT(*) FROM user_roles", nativeQuery = true)
+    long countRoleAssignations();
 }

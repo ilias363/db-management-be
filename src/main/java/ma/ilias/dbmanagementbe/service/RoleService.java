@@ -1,9 +1,6 @@
 package ma.ilias.dbmanagementbe.service;
 
-import ma.ilias.dbmanagementbe.dto.role.NewRoleDto;
-import ma.ilias.dbmanagementbe.dto.role.RoleDto;
-import ma.ilias.dbmanagementbe.dto.role.RolePageDto;
-import ma.ilias.dbmanagementbe.dto.role.UpdateRoleDto;
+import ma.ilias.dbmanagementbe.dto.role.*;
 
 public interface RoleService {
     RoleDto save(NewRoleDto newRoleDto);
@@ -15,4 +12,6 @@ public interface RoleService {
     RoleDto update(Long id, UpdateRoleDto updateRoleDto);
 
     Boolean deleteById(Long id);
+
+    RoleStatsDto getRoleStats();
 }
