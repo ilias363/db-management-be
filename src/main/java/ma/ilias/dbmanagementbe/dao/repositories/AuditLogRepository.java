@@ -37,13 +37,12 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
     Double calculateAverageActionsPerDay();
 
     @Query("""
-            SELECT a FROM AuditLog a WHERE
+            SELECT a FROM AuditLog a LEFT JOIN FETCH a.user WHERE
             (:search IS NULL OR :search = '' OR
-            LOWER(a.actionDetails) LIKE LOWER(CONCAT('%', :search, '%')) OR
+            LOWER(a.user.username) LIKE LOWER(CONCAT('%', :search, '%')) OR
             LOWER(a.schemaName) LIKE LOWER(CONCAT('%', :search, '%')) OR
             LOWER(a.tableName) LIKE LOWER(CONCAT('%', :search, '%')) OR
-            LOWER(a.objectName) LIKE LOWER(CONCAT('%', :search, '%')) OR
-            LOWER(a.errorMessage) LIKE LOWER(CONCAT('%', :search, '%'))) AND
+            LOWER(a.objectName) LIKE LOWER(CONCAT('%', :search, '%'))) AND
             (:userId IS NULL OR a.user.id = :userId) AND
             (:actionType IS NULL OR a.actionType = :actionType) AND
             (:successful IS NULL OR a.successful = :successful) AND
