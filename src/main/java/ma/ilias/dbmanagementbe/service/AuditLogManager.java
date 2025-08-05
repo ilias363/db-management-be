@@ -7,6 +7,7 @@ import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.AuditLogRepository;
 import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogDto;
 import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogPageDto;
+import ma.ilias.dbmanagementbe.dto.auditlog.AuditStatsDto;
 import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.exception.AuditLogNotFoundException;
 import ma.ilias.dbmanagementbe.exception.InsufficientPermissionException;
@@ -140,6 +141,39 @@ public class AuditLogManager implements AuditLogService {
                 .build();
 
         auditLogRepository.save(auditLog);
+    }
+
+    @Override
+    public AuditStatsDto getAuditStats() {
+        if (!AuthorizationUtils.hasUserManagementAccess()) {
+            throw new InsufficientPermissionException("Only administrators can view audit statistics");
+        }
+
+        long totalAudits = auditLogRepository.count();
+        long totalSuccessful = auditLogRepository.countSuccessfulAudits();
+        long totalFailed = auditLogRepository.countFailedAudits();
+        long last24hActivityCount = auditLogRepository.countAuditsLast24Hours();
+        String mostCommonActionString = auditLogRepository.findMostCommonActionString();
+        ActionType mostCommonAction = null;
+        if (mostCommonActionString != null) {
+            try {
+                mostCommonAction = ActionType.valueOf(mostCommonActionString);
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        Double averageActionsPerDay = auditLogRepository.calculateAverageActionsPerDay();
+
+        double failedPercentage = totalAudits > 0 ? (double) totalFailed / totalAudits * 100 : 0.0;
+
+        return AuditStatsDto.builder()
+                .totalAudits(totalAudits)
+                .totalSuccessful(totalSuccessful)
+                .totalFailed(totalFailed)
+                .failedPercentage(Math.round(failedPercentage * 100.0) / 100.0)
+                .last24hActivityCount(last24hActivityCount)
+                .mostCommonAction(mostCommonAction)
+                .averageActionsPerDay(averageActionsPerDay != null ? Math.round(averageActionsPerDay * 100.0) / 100.0 : 0.0)
+                .build();
     }
 
     private AppUser getCurrentUser() {
