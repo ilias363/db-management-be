@@ -144,7 +144,7 @@ public class RoleManager implements RoleService {
                 })
                 .collect(Collectors.toSet());
 
-        existingRole.setPermissions(newPermissions);
+        existingRole.getPermissions().addAll(newPermissions);
 
         Role updatedRole = roleRepository.save(existingRole);
         return roleMapper.toDto(updatedRole);

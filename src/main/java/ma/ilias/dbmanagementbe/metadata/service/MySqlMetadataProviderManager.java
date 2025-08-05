@@ -279,8 +279,8 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
                         rs.getString("REFERENCED_TABLE_SCHEMA"),
                         rs.getString("REFERENCED_TABLE_NAME"),
                         rs.getString("REFERENCED_COLUMN_NAME"),
-                        rs.getString("DELETE_RULE"),
-                        rs.getString("UPDATE_RULE")));
+                        rs.getString("UPDATE_RULE"),
+                        rs.getString("DELETE_RULE")));
 
         return jdbcTemplate.queryForObject(
                 sql,

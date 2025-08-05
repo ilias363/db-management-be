@@ -51,7 +51,7 @@ public class ValidPermissionFieldsValidator implements ConstraintValidator<Valid
             }
 
             if (hasView && !metadataProviderService.viewExists(dto.getSchemaName(), dto.getViewName())) {
-                ValidationUtils.addConstraintViolation(context, "Table does not exist", "tableName");
+                ValidationUtils.addConstraintViolation(context, "View does not exist", "viewName");
                 return false;
             }
 
