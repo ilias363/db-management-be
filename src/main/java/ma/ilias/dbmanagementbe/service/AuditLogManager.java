@@ -48,8 +48,9 @@ public class AuditLogManager implements AuditLogService {
         return auditLogMapper.toDto(auditLog);
     }
 
-    @Override
-    public AuditLogPageDto findAllPaginated(int page, int size, String sortBy, String sortDirection) {
+    public AuditLogPageDto findAllPaginated(int page, int size, String sortBy, String sortDirection,
+                                            String search, Long userId, ActionType actionType, Boolean successful,
+                                            LocalDateTime after, LocalDateTime before) {
         if (!AuthorizationUtils.hasUserManagementAccess()) {
             throw new InsufficientPermissionException("Only administrators can view audit logs");
         }
@@ -57,7 +58,7 @@ public class AuditLogManager implements AuditLogService {
         Sort sort = createSort(sortBy, sortDirection);
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Page<AuditLog> auditLogPage = auditLogRepository.findAll(pageable);
+        Page<AuditLog> auditLogPage = auditLogRepository.findAllWithFilters(search, userId, actionType, successful, after, before, pageable);
 
         return AuditLogPageDto.builder()
                 .items(auditLogPage.getContent().stream()
