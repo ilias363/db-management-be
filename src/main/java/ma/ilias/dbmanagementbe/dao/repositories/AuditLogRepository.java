@@ -1,6 +1,7 @@
 package ma.ilias.dbmanagementbe.dao.repositories;
 
 import ma.ilias.dbmanagementbe.dao.entities.AuditLog;
+import ma.ilias.dbmanagementbe.enums.ActionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -34,4 +35,26 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
             WHERE audit_timestamp IS NOT NULL
             """, nativeQuery = true)
     Double calculateAverageActionsPerDay();
+
+    @Query("""
+            SELECT a FROM AuditLog a WHERE
+            (:search IS NULL OR :search = '' OR
+            LOWER(a.actionDetails) LIKE LOWER(CONCAT('%', :search, '%')) OR
+            LOWER(a.schemaName) LIKE LOWER(CONCAT('%', :search, '%')) OR
+            LOWER(a.tableName) LIKE LOWER(CONCAT('%', :search, '%')) OR
+            LOWER(a.objectName) LIKE LOWER(CONCAT('%', :search, '%')) OR
+            LOWER(a.errorMessage) LIKE LOWER(CONCAT('%', :search, '%'))) AND
+            (:userId IS NULL OR a.user.id = :userId) AND
+            (:actionType IS NULL OR a.actionType = :actionType) AND
+            (:successful IS NULL OR a.successful = :successful) AND
+            (:after IS NULL OR a.auditTimestamp >= :after) AND
+            (:before IS NULL OR a.auditTimestamp <= :before)
+            """)
+    Page<AuditLog> findAllWithFilters(@Param("search") String search,
+                                      @Param("userId") Long userId,
+                                      @Param("actionType") ActionType actionType,
+                                      @Param("successful") Boolean successful,
+                                      @Param("after") LocalDateTime after,
+                                      @Param("before") LocalDateTime before,
+                                      Pageable pageable);
 }
