@@ -24,6 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -152,7 +153,7 @@ public class AuditLogManager implements AuditLogService {
         long totalAudits = auditLogRepository.count();
         long totalSuccessful = auditLogRepository.countSuccessfulAudits();
         long totalFailed = auditLogRepository.countFailedAudits();
-        long last24hActivityCount = auditLogRepository.countAuditsLast24Hours();
+        long last24hActivityCount = auditLogRepository.countAuditsSince(LocalDateTime.now().minusDays(1));
         String mostCommonActionString = auditLogRepository.findMostCommonActionString();
         ActionType mostCommonAction = null;
         if (mostCommonActionString != null) {
