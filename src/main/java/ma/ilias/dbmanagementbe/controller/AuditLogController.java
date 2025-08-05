@@ -8,9 +8,13 @@ import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogDto;
 import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogPageDto;
 import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogStatsDto;
+import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.service.AuditLogService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/audit-logs")
@@ -25,9 +29,28 @@ public class AuditLogController {
             @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
             @RequestParam(required = false) String sortBy,
             @RequestParam(defaultValue = "DESC") @Pattern(regexp = "^(ASC|DESC)$",
-                    message = "Sort direction must be either ASC or DESC") String sortDirection
+                    message = "Sort direction must be either ASC or DESC") String sortDirection,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) String actionType,
+            @RequestParam(required = false) Boolean successful,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime after,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime before
     ) {
-        AuditLogPageDto auditLogPage = auditLogService.findAllPaginated(page, size, sortBy, sortDirection);
+        ActionType actionTypeEnum = null;
+        if (actionType != null && !actionType.isBlank()) {
+            try {
+                actionTypeEnum = ActionType.valueOf(actionType.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().body(ApiResponse.<AuditLogPageDto>builder()
+                        .message("Invalid action type: " + actionType)
+                        .success(false)
+                        .build());
+            }
+        }
+
+        AuditLogPageDto auditLogPage = auditLogService.findAllPaginated(page, size, sortBy, sortDirection,
+                search, userId, actionTypeEnum, successful, after, before);
         return ResponseEntity.ok(ApiResponse.<AuditLogPageDto>builder()
                 .message("Audit logs fetched successfully")
                 .success(true)
