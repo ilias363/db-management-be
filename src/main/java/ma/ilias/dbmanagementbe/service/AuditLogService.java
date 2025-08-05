@@ -2,7 +2,7 @@ package ma.ilias.dbmanagementbe.service;
 
 import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogDto;
 import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogPageDto;
-import ma.ilias.dbmanagementbe.dto.auditlog.AuditStatsDto;
+import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogStatsDto;
 import ma.ilias.dbmanagementbe.enums.ActionType;
 
 public interface AuditLogService {
@@ -17,5 +17,5 @@ public interface AuditLogService {
     void createAuditLog(ActionType actionType, String schemaName, String tableName,
                         String objectName, String actionDetails, Boolean successful, String errorMessage);
 
-    AuditStatsDto getAuditStats();
+    AuditLogStatsDto getAuditStats();
 }

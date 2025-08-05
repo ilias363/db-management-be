@@ -7,7 +7,7 @@ import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogDto;
 import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogPageDto;
-import ma.ilias.dbmanagementbe.dto.auditlog.AuditStatsDto;
+import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogStatsDto;
 import ma.ilias.dbmanagementbe.service.AuditLogService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -77,9 +77,9 @@ public class AuditLogController {
     }
 
     @GetMapping("/stats")
-    public ResponseEntity<ApiResponse<AuditStatsDto>> getAuditStats() {
-        AuditStatsDto stats = auditLogService.getAuditStats();
-        return ResponseEntity.ok(ApiResponse.<AuditStatsDto>builder()
+    public ResponseEntity<ApiResponse<AuditLogStatsDto>> getAuditStats() {
+        AuditLogStatsDto stats = auditLogService.getAuditStats();
+        return ResponseEntity.ok(ApiResponse.<AuditLogStatsDto>builder()
                 .message("Audit statistics retrieved successfully")
                 .success(true)
                 .data(stats)

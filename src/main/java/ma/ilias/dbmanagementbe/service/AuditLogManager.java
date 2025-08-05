@@ -7,7 +7,7 @@ import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.AuditLogRepository;
 import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogDto;
 import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogPageDto;
-import ma.ilias.dbmanagementbe.dto.auditlog.AuditStatsDto;
+import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogStatsDto;
 import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.exception.AuditLogNotFoundException;
 import ma.ilias.dbmanagementbe.exception.InsufficientPermissionException;
@@ -145,7 +145,7 @@ public class AuditLogManager implements AuditLogService {
     }
 
     @Override
-    public AuditStatsDto getAuditStats() {
+    public AuditLogStatsDto getAuditStats() {
         if (!AuthorizationUtils.hasUserManagementAccess()) {
             throw new InsufficientPermissionException("Only administrators can view audit statistics");
         }
@@ -166,7 +166,7 @@ public class AuditLogManager implements AuditLogService {
 
         double failedPercentage = totalAudits > 0 ? (double) totalFailed / totalAudits * 100 : 0.0;
 
-        return AuditStatsDto.builder()
+        return AuditLogStatsDto.builder()
                 .totalAudits(totalAudits)
                 .totalSuccessful(totalSuccessful)
                 .totalFailed(totalFailed)

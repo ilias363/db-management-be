@@ -10,12 +10,12 @@ import ma.ilias.dbmanagementbe.enums.ActionType;
 @NoArgsConstructor
 @Data
 @Builder
-public class AuditStatsDto {
+public class AuditLogStatsDto {
     private Long totalAudits;
+    private Long totalSuccessful;
     private Long totalFailed;
     private Double failedPercentage;
     private Long last24hActivityCount;
-    private Long totalSuccessful;
     private ActionType mostCommonAction;
     private Double averageActionsPerDay;
 }
