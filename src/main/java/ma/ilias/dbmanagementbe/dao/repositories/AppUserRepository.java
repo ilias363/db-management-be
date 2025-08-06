@@ -31,4 +31,7 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
             "WHERE YEAR(u.createdAt) = YEAR(CURRENT_DATE) " +
             "AND MONTH(u.createdAt) = MONTH(CURRENT_DATE)")
     long countUsersCreatedThisMonth();
+
+    @Query("SELECT u FROM AppUser u JOIN u.roles r WHERE r.id = :roleId ")
+    Page<AppUser> findByRoleId(@Param("roleId") Long roleId, Pageable pageable);
 }

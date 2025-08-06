@@ -229,6 +229,32 @@ public class AppUserManager implements AppUserService {
                 .build();
     }
 
+    @Override
+    public AppUserPageDto findUsersByRolePaginated(Long roleId, int page, int size, String sortBy, String sortDirection) {
+        if (!AuthorizationUtils.hasUserManagementAccess()) {
+            throw new InsufficientPermissionException("Only administrators can view users");
+        }
+
+        if (!roleRepository.existsById(roleId)) {
+            throw new RoleNotFoundException("Role not found with ID: " + roleId);
+        }
+
+        Sort sort = createSort(sortBy, sortDirection);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<AppUser> userPage = appUserRepository.findByRoleId(roleId, pageable);
+
+        return AppUserPageDto.builder()
+                .items(userPage.getContent().stream()
+                        .map(appUserMapper::toDto)
+                        .toList())
+                .totalItems(userPage.getTotalElements())
+                .currentPage(page)
+                .pageSize(size)
+                .totalPages(userPage.getTotalPages())
+                .build();
+    }
+
     private Sort createSort(String sortBy, String sortDirection) {
         final List<String> validFields = List.of(
                 "id", "username", "active"

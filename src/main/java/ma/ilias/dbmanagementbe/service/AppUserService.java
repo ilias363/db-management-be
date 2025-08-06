@@ -24,4 +24,6 @@ public interface AppUserService {
     AppUserDto getCurrentUserInfo();
 
     AppUserStatsDto getUserStats();
+
+    AppUserPageDto findUsersByRolePaginated(Long roleId, int page, int size, String sortBy, String sortDirection);
 }

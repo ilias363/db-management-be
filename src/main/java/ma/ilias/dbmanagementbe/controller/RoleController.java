@@ -6,8 +6,10 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
+import ma.ilias.dbmanagementbe.dto.appuser.AppUserPageDto;
 import ma.ilias.dbmanagementbe.dto.role.*;
 import ma.ilias.dbmanagementbe.enums.ActionType;
+import ma.ilias.dbmanagementbe.service.AppUserService;
 import ma.ilias.dbmanagementbe.service.AuditService;
 import ma.ilias.dbmanagementbe.service.RoleService;
 import org.springframework.http.HttpStatus;
@@ -23,6 +25,7 @@ public class RoleController {
 
     private final RoleService roleService;
     private final AuditService auditService;
+    private final AppUserService appUserService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<RoleDto>> createRole(@Valid @RequestBody NewRoleDto newRoleDto) {
@@ -145,6 +148,23 @@ public class RoleController {
                 .message("Role statistics retrieved successfully")
                 .success(true)
                 .data(stats)
+                .build());
+    }
+
+    @GetMapping("/{roleId:\\d+}/users")
+    public ResponseEntity<ApiResponse<AppUserPageDto>> getUsersByRole(
+            @PathVariable Long roleId,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "ASC") @Pattern(regexp = "^(ASC|DESC)$",
+                    message = "Sort direction must be either ASC or DESC") String sortDirection
+    ) {
+        AppUserPageDto userPage = appUserService.findUsersByRolePaginated(roleId, page, size, sortBy, sortDirection);
+        return ResponseEntity.ok(ApiResponse.<AppUserPageDto>builder()
+                .message("Users by role fetched successfully")
+                .success(true)
+                .data(userPage)
                 .build());
     }
 }
