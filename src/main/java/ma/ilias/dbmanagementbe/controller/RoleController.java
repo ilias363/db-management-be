@@ -14,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/roles")
 @AllArgsConstructor
@@ -50,6 +52,16 @@ public class RoleController {
                 .build());
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<ApiResponse<List<RoleDto>>> getAllRoles() {
+        List<RoleDto> roles = roleService.findAll();
+        return ResponseEntity.ok(ApiResponse.<List<RoleDto>>builder()
+                .message("Roles fetched successfully")
+                .success(true)
+                .data(roles)
+                .build());
+    }
+
     @GetMapping
     public ResponseEntity<ApiResponse<RolePageDto>> getAllRolesPaginated(
             @RequestParam(defaultValue = "0") @Min(0) int page,
@@ -61,7 +73,7 @@ public class RoleController {
     ) {
         RolePageDto rolePage = roleService.findAllPaginated(page, size, sortBy, sortDirection, search);
         return ResponseEntity.ok(ApiResponse.<RolePageDto>builder()
-                .message("Roles fetched successfully")
+                .message("Paginated roles fetched successfully")
                 .success(true)
                 .data(rolePage)
                 .build());

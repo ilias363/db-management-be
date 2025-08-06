@@ -80,6 +80,19 @@ public class RoleManager implements RoleService {
     }
 
     @Override
+    public List<RoleDto> findAll() {
+        if (!AuthorizationUtils.hasUserManagementAccess()) {
+            throw new InsufficientPermissionException("Only administrators can view roles");
+        }
+
+        List<Role> roles = roleRepository.findAll();
+        return roles
+                .stream()
+                .map(roleMapper::toDto)
+                .toList();
+    }
+
+    @Override
     public RolePageDto findAllPaginated(int page, int size, String sortBy, String sortDirection, String search) {
         if (!AuthorizationUtils.hasUserManagementAccess()) {
             throw new InsufficientPermissionException("Only administrators can view roles");
