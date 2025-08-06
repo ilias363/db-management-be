@@ -148,9 +148,6 @@ public class AuthController {
                                         .toEpochMilli())
                                 .build();
 
-                        auditService.auditSuccessfulAction(ActionType.LOGIN,
-                                user.getUsername() + " (ID: " + user.getId() + ") - Token refresh");
-
                         return ResponseEntity.ok(ApiResponse.<TokenRefreshResponseDto>builder()
                                 .message("Token refreshed successfully")
                                 .success(true)
