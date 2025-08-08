@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.NewSchemaDto;
+import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaListResponseDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.schema.SchemaService;
 import ma.ilias.dbmanagementbe.service.AuditService;
@@ -52,14 +53,14 @@ public class SchemaController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<SchemaMetadataDto>>> getAllSchemas(
+    public ResponseEntity<ApiResponse<SchemaListResponseDto>> getAllSchemas(
             @RequestParam(defaultValue = "false") boolean includeSystem
     ) {
         List<SchemaMetadataDto> schemas = schemaService.getAllSchemas(includeSystem);
-        return ResponseEntity.ok(ApiResponse.<List<SchemaMetadataDto>>builder()
+        return ResponseEntity.ok(ApiResponse.<SchemaListResponseDto>builder()
                 .message("Schemas fetched successfully")
                 .success(true)
-                .data(schemas)
+                .data(new SchemaListResponseDto(schemas))
                 .build());
     }
 

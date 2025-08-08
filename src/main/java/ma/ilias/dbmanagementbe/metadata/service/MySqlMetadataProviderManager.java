@@ -466,7 +466,7 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
                 .build(), schemaName, viewName);
     }
 
-    public List<SchemaMetadataDto> getAllSchemas(Boolean includeSystemSchemas) {
+    public List<SchemaMetadataDto> getAllSchemas(boolean includeSystemSchemas, boolean includeTables, boolean includeViews) {
         String schemaSql = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA";
 
         return jdbcTemplate.query(schemaSql, (rs) -> {
@@ -479,7 +479,7 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
                     continue;
                 }
 
-                result.add(getSchemaByName(schemaName, true, true, false));
+                result.add(getSchemaByName(schemaName, includeTables, includeViews, false));
             }
 
             return result;

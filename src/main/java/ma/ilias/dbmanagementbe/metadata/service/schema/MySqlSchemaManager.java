@@ -74,7 +74,7 @@ public class MySqlSchemaManager implements SchemaService {
 
     @Override
     public List<SchemaMetadataDto> getAllSchemas(Boolean includeSystemSchemas) {
-        List<SchemaMetadataDto> allSchemas = metadataProviderService.getAllSchemas(includeSystemSchemas);
+        List<SchemaMetadataDto> allSchemas = metadataProviderService.getAllSchemas(includeSystemSchemas, false, false);
 
         // Filter schemas based on read permissions and apply table filtering to each schema
         return allSchemas.stream()

@@ -42,7 +42,7 @@ public interface MetadataProviderService {
     ViewMetadataDto getView(String schemaName, String viewName, boolean includeSchema,
                             boolean includeColumns, boolean checkViewExists);
 
-    List<SchemaMetadataDto> getAllSchemas(Boolean includeSystemSchemas);
+    List<SchemaMetadataDto> getAllSchemas(boolean includeSystemSchemas, boolean includeTables, boolean includeViews);
 
     List<TableMetadataDto> getTablesBySchema(String schemaName, boolean includeSchema, boolean includeColumns,
                                              boolean includeIndexes, boolean checkSchemaExists);
