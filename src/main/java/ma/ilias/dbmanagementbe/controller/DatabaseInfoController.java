@@ -32,9 +32,9 @@ public class DatabaseInfoController {
 
     @GetMapping("/stats")
     public ResponseEntity<ApiResponse<DatabaseStatsDto>> getDatabaseStats(
-            @RequestParam(name = "includeSystem", defaultValue = "false") boolean includeSystemSchemas
+            @RequestParam(defaultValue = "false") boolean includeSystem
     ) {
-        DatabaseStatsDto stats = databaseInfoService.getStats(includeSystemSchemas);
+        DatabaseStatsDto stats = databaseInfoService.getStats(includeSystem);
         return ResponseEntity.ok(ApiResponse.<DatabaseStatsDto>builder()
                 .message("Database stats fetched successfully")
                 .success(true)
