@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.metadata.dto.view.UpdateViewDto;
+import ma.ilias.dbmanagementbe.metadata.dto.view.ViewListResponseDto;
 import ma.ilias.dbmanagementbe.metadata.dto.view.ViewMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.view.ViewService;
 import ma.ilias.dbmanagementbe.record.dto.ViewRecordPageDto;
@@ -28,13 +29,13 @@ public class ViewController {
     private final RecordService recordService;
 
     @GetMapping("/{schemaName}")
-    public ResponseEntity<ApiResponse<List<ViewMetadataDto>>> getAllViewsInSchema(@PathVariable String schemaName) {
+    public ResponseEntity<ApiResponse<ViewListResponseDto>> getAllViewsInSchema(@PathVariable String schemaName) {
 
-        List<ViewMetadataDto> views = viewService.getViewsBySchema(schemaName, true, true, true);
-        return ResponseEntity.ok(ApiResponse.<List<ViewMetadataDto>>builder()
+        List<ViewMetadataDto> views = viewService.getViewsBySchema(schemaName, false, false, true);
+        return ResponseEntity.ok(ApiResponse.<ViewListResponseDto>builder()
                 .message("Views fetched successfully")
                 .success(true)
-                .data(views)
+                .data(new ViewListResponseDto(views))
                 .build());
     }
 
