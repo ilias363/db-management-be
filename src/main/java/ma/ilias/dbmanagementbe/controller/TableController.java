@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.metadata.dto.table.NewTableDto;
+import ma.ilias.dbmanagementbe.metadata.dto.table.TableListResponseDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.UpdateTableDto;
 import ma.ilias.dbmanagementbe.metadata.service.table.TableService;
@@ -41,12 +42,12 @@ public class TableController {
     }
 
     @GetMapping("/{schemaName}")
-    public ResponseEntity<ApiResponse<List<TableMetadataDto>>> getAllTablesInSchema(@PathVariable String schemaName) {
-        List<TableMetadataDto> tables = tableService.getTablesBySchema(schemaName, true, true, true, true);
-        return ResponseEntity.ok(ApiResponse.<List<TableMetadataDto>>builder()
+    public ResponseEntity<ApiResponse<TableListResponseDto>> getAllTablesInSchema(@PathVariable String schemaName) {
+        List<TableMetadataDto> tables = tableService.getTablesBySchema(schemaName, false, false, false, true);
+        return ResponseEntity.ok(ApiResponse.<TableListResponseDto>builder()
                 .message("Tables fetched successfully")
                 .success(true)
-                .data(tables)
+                .data(new TableListResponseDto(tables))
                 .build());
     }
 
