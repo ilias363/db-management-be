@@ -52,20 +52,12 @@ public class SchemaController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<SchemaMetadataDto>>> getAllSchemas() {
-        List<SchemaMetadataDto> schemas = schemaService.getAllSchemas(false);
+    public ResponseEntity<ApiResponse<List<SchemaMetadataDto>>> getAllSchemas(
+            @RequestParam(defaultValue = "false") boolean includeSystem
+    ) {
+        List<SchemaMetadataDto> schemas = schemaService.getAllSchemas(includeSystem);
         return ResponseEntity.ok(ApiResponse.<List<SchemaMetadataDto>>builder()
                 .message("Schemas fetched successfully")
-                .success(true)
-                .data(schemas)
-                .build());
-    }
-
-    @GetMapping("/include-system")
-    public ResponseEntity<ApiResponse<List<SchemaMetadataDto>>> getAllSchemasIncludingSystem() {
-        List<SchemaMetadataDto> schemas = schemaService.getAllSchemas(true);
-        return ResponseEntity.ok(ApiResponse.<List<SchemaMetadataDto>>builder()
-                .message("All schemas fetched successfully")
                 .success(true)
                 .data(schemas)
                 .build());
