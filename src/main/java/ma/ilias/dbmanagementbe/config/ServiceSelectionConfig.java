@@ -1,6 +1,8 @@
 package ma.ilias.dbmanagementbe.config;
 
 import lombok.AllArgsConstructor;
+import ma.ilias.dbmanagementbe.database.service.DatabaseInfoService;
+import ma.ilias.dbmanagementbe.database.service.MySqlDatabaseInfoManager;
 import ma.ilias.dbmanagementbe.enums.DatabaseType;
 import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.metadata.service.MySqlMetadataProviderManager;
@@ -109,6 +111,19 @@ public class ServiceSelectionConfig {
     public RecordService recordService(MySqlRecordManager mysqlRecordMananger) {
         return switch (databaseType) {
             case MYSQL -> mysqlRecordMananger;
+            case POSTGRESQL -> throw new IllegalArgumentException("PostgreSQL services are not implemented yet");
+            case SQL_SERVER -> throw new IllegalArgumentException("SQL Server services are not implemented yet");
+            case ORACLE -> throw new IllegalArgumentException("Oracle Database services are not implemented yet");
+            case H2 -> throw new IllegalArgumentException("H2 Database services are not implemented yet");
+            case SQLITE -> throw new IllegalArgumentException("SQLite services are not implemented yet");
+        };
+    }
+
+    @Bean
+    @Primary
+    public DatabaseInfoService databaseInfoService(MySqlDatabaseInfoManager mySqlDatabaseInfoManager) {
+        return switch (databaseType) {
+            case MYSQL -> mySqlDatabaseInfoManager;
             case POSTGRESQL -> throw new IllegalArgumentException("PostgreSQL services are not implemented yet");
             case SQL_SERVER -> throw new IllegalArgumentException("SQL Server services are not implemented yet");
             case ORACLE -> throw new IllegalArgumentException("Oracle Database services are not implemented yet");
