@@ -252,22 +252,19 @@ public class AuthController {
         dbPermissions.put("hasDbWriteAccess", AuthorizationUtils.hasDbWriteAccess());
         result.put("databasePermissions", dbPermissions);
 
-        // Granular permissions (if schema/table specified)
-        if (schemaName != null) {
-            Map<String, Boolean> granularPermissions = new HashMap<>();
-            granularPermissions.put("canRead", AuthorizationUtils.hasPermission(
-                    PermissionType.READ, schemaName, tableName));
-            granularPermissions.put("canWrite", AuthorizationUtils.hasPermission(
-                    PermissionType.WRITE, schemaName, tableName));
-            granularPermissions.put("canCreate", AuthorizationUtils.hasPermission(
-                    PermissionType.CREATE, schemaName, tableName));
-            granularPermissions.put("canDelete", AuthorizationUtils.hasPermission(
-                    PermissionType.DELETE, schemaName, tableName));
+        Map<String, Boolean> granularPermissions = new HashMap<>();
+        granularPermissions.put("canRead", AuthorizationUtils.hasPermission(
+                PermissionType.READ, schemaName, tableName));
+        granularPermissions.put("canWrite", AuthorizationUtils.hasPermission(
+                PermissionType.WRITE, schemaName, tableName));
+        granularPermissions.put("canCreate", AuthorizationUtils.hasPermission(
+                PermissionType.CREATE, schemaName, tableName));
+        granularPermissions.put("canDelete", AuthorizationUtils.hasPermission(
+                PermissionType.DELETE, schemaName, tableName));
 
-            result.put("granularPermissions", granularPermissions);
-            result.put("targetSchema", schemaName);
-            result.put("targetTable", tableName);
-        }
+        result.put("granularPermissions", granularPermissions);
+        result.put("targetSchema", schemaName);
+        result.put("targetTable", tableName);
 
         return ResponseEntity.ok(ApiResponse.<Map<String, Object>>builder()
                 .message("Detailed permissions retrieved successfully")
