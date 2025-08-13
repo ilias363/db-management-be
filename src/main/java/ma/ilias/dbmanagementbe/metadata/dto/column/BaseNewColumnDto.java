@@ -3,6 +3,7 @@ package ma.ilias.dbmanagementbe.metadata.dto.column;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -59,7 +60,6 @@ public abstract class BaseNewColumnDto implements IColumnDataTypeDefinition, ICo
     private Integer numericPrecision;
     private Integer numericScale;
 
-    @NotBlank(message = "Column type cannot be blank", groups = NotStandaloneColumnCreation.class)
     private ColumnType columnType;
 
     @Override
