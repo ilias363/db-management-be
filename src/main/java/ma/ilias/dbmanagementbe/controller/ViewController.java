@@ -1,9 +1,6 @@
 package ma.ilias.dbmanagementbe.controller;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.enums.ActionType;
@@ -11,8 +8,6 @@ import ma.ilias.dbmanagementbe.metadata.dto.view.UpdateViewDto;
 import ma.ilias.dbmanagementbe.metadata.dto.view.ViewListResponseDto;
 import ma.ilias.dbmanagementbe.metadata.dto.view.ViewMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.view.ViewService;
-import ma.ilias.dbmanagementbe.record.dto.ViewRecordPageDto;
-import ma.ilias.dbmanagementbe.record.service.RecordService;
 import ma.ilias.dbmanagementbe.service.AuditService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,7 +21,6 @@ public class ViewController {
 
     private final ViewService viewService;
     private final AuditService auditService;
-    private final RecordService recordService;
 
     @GetMapping("/{schemaName}")
     public ResponseEntity<ApiResponse<ViewListResponseDto>> getAllViewsInSchema(@PathVariable String schemaName) {
@@ -49,24 +43,6 @@ public class ViewController {
                 .message("View fetched successfully")
                 .success(true)
                 .data(view)
-                .build());
-    }
-
-    @GetMapping("/{schemaName}/{viewName}/records")
-    public ResponseEntity<ApiResponse<ViewRecordPageDto>> getViewRecords(
-            @PathVariable String schemaName,
-            @PathVariable String viewName,
-            @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
-            @RequestParam(required = false) String sortBy,
-            @RequestParam(defaultValue = "ASC") @Pattern(regexp = "^(ASC|DESC)$",
-                    message = "Sort direction must be either ASC or DESC") String sortDirection
-    ) {
-        ViewRecordPageDto records = recordService.getViewRecords(schemaName, viewName, page, size, sortBy, sortDirection);
-        return ResponseEntity.ok(ApiResponse.<ViewRecordPageDto>builder()
-                .message("View records fetched successfully")
-                .success(true)
-                .data(records)
                 .build());
     }
 
