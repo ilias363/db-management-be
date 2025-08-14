@@ -6,6 +6,7 @@ import ma.ilias.dbmanagementbe.exception.*;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.ForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.PrimaryKeyForeignKeyColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.view.ViewColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.record.dto.*;
 import ma.ilias.dbmanagementbe.record.utils.SearchQueryBuilder;
@@ -113,7 +114,7 @@ public class MySqlRecordManager implements RecordService {
                     size, offset
             );
 
-            long totalRecords = getViewRecordCount(validatedSchemaName, validatedViewName);
+            long totalRecords = getViewRecordCount(validatedSchemaName, validatedViewName, false, false);
             int totalPages = (int) Math.ceil((double) totalRecords / size);
 
             return ViewRecordPageDto.builder()
@@ -561,6 +562,88 @@ public class MySqlRecordManager implements RecordService {
 
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to fetch records by values: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public ViewRecordPageDto getViewRecordsByValues(String schemaName, String viewName, Map<String, Object> identifyingValues,
+                                                    int page, int size, String sortBy, String sortDirection) {
+        databaseAuthorizationService.checkReadPermission(schemaName, viewName);
+        validateViewExists(schemaName, viewName);
+
+        String validatedSchemaName = schemaName.trim().toLowerCase();
+        String validatedViewName = viewName.trim().toLowerCase();
+
+        if (identifyingValues == null || identifyingValues.isEmpty()) {
+            throw new InvalidRecordDataException(validatedViewName, "Identifying values cannot be null or empty");
+        }
+
+        List<String> columnNames = metadataProviderService.getColumnsByView(
+                        validatedSchemaName, validatedViewName, false, false).stream()
+                .map(ViewColumnMetadataDto::getColumnName)
+                .toList();
+
+        // Build WHERE clause
+        List<String> whereClauses = new ArrayList<>();
+        List<Object> values = new ArrayList<>();
+
+        for (Map.Entry<String, Object> entry : identifyingValues.entrySet()) {
+            String columnName = SqlSecurityUtils.validateColumnName(entry.getKey());
+            if (!columnNames.contains(columnName)) {
+                throw new InvalidRecordDataException(viewName, "Column '" + columnName + "' does not exist");
+            }
+            if (entry.getValue() == null) {
+                whereClauses.add(columnName + " IS NULL");
+            } else {
+                whereClauses.add(columnName + " = ?");
+                values.add(entry.getValue());
+            }
+        }
+
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append("SELECT * FROM ").append(validatedSchemaName).append(".").append(validatedViewName)
+                .append(" WHERE ").append(String.join(" AND ", whereClauses));
+
+        if (sortBy != null && !sortBy.isBlank()) {
+            validateViewColumnExists(schemaName, viewName, sortBy);
+            queryBuilder.append(" ORDER BY ").append(sortBy.toLowerCase()).append(" ").append(sortDirection);
+        }
+
+        int offset = page * size;
+        queryBuilder.append(" LIMIT ? OFFSET ?");
+
+        List<Object> paginatedValues = new ArrayList<>(values);
+        paginatedValues.add(size);
+        paginatedValues.add(offset);
+
+        try {
+            List<RecordDto> records = jdbcTemplate.query(
+                    queryBuilder.toString(),
+                    this::mapRowToRecord,
+                    paginatedValues.toArray()
+            );
+
+            String countQuery = "SELECT COUNT(*) FROM " + validatedSchemaName + "." + validatedViewName +
+                    " WHERE " + String.join(" AND ", whereClauses);
+
+            Long totalRecords = jdbcTemplate.queryForObject(countQuery, Long.class, values.toArray());
+            if (totalRecords == null) {
+                totalRecords = 0L;
+            }
+            int totalPages = (int) Math.ceil((double) totalRecords / size);
+
+            return ViewRecordPageDto.builder()
+                    .items(records)
+                    .totalItems(totalRecords)
+                    .currentPage(page)
+                    .pageSize(size)
+                    .totalPages(totalPages)
+                    .viewName(validatedViewName)
+                    .schemaName(validatedSchemaName)
+                    .build();
+
+        } catch (DataAccessException e) {
+            throw new RuntimeException("Failed to fetch view records by values: " + e.getMessage(), e);
         }
     }
 
@@ -1129,9 +1212,17 @@ public class MySqlRecordManager implements RecordService {
         }
     }
 
-    private long getViewRecordCount(String schemaName, String viewName) {
+    @Override
+    public long getViewRecordCount(String schemaName, String viewName, boolean checkViewExists, boolean checkAuthorization) {
+        if (checkAuthorization) databaseAuthorizationService.checkReadPermission(schemaName, viewName);
+
+        String validatedSchemaName = schemaName.trim().toLowerCase();
+        String validatedViewName = viewName.trim().toLowerCase();
+
+        if (checkViewExists) validateViewExists(validatedSchemaName, validatedViewName);
+
         try {
-            String sql = "SELECT COUNT(*) FROM " + schemaName + "." + viewName;
+            String sql = "SELECT COUNT(*) FROM " + validatedSchemaName + "." + validatedViewName;
             Long count = jdbcTemplate.queryForObject(sql, Long.class);
             return count != null ? count : 0L;
         } catch (DataAccessException e) {

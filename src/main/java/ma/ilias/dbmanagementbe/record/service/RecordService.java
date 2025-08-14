@@ -32,6 +32,9 @@ public interface RecordService {
     RecordPageDto getRecordsByValues(String schemaName, String tableName, Map<String, Object> identifyingValues,
                                      int page, int size, String sortBy, String sortDirection);
 
+    ViewRecordPageDto getViewRecordsByValues(String schemaName, String viewName, Map<String, Object> identifyingValues,
+                                             int page, int size, String sortBy, String sortDirection);
+
     List<RecordDto> updateRecordByValues(UpdateRecordByValuesDto updateDto);
 
     int deleteRecordByValues(DeleteRecordByValuesDto deleteDto);
@@ -49,6 +52,8 @@ public interface RecordService {
     long getRecordCount(String schemaName, String tableName, boolean checkTableExists);
 
     long getRecordCount(String schemaName, String tableName, boolean checkTableExists, boolean checkAuthorization);
+
+    long getViewRecordCount(String schemaName, String viewName, boolean checkViewExists, boolean checkAuthorization);
 
     void validateRecordData(String schemaName, String tableName, Map<String, Object> data,
                             List<BaseColumnMetadataDto> columns, boolean isUpdate);

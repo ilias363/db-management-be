@@ -25,7 +25,7 @@ public class RecordController {
     private final RecordService recordService;
     private final AuditService auditService;
 
-    @GetMapping("/{schemaName}/{tableName}")
+    @GetMapping("/table/{schemaName}/{tableName}")
     public ResponseEntity<ApiResponse<RecordPageDto>> getRecords(
             @PathVariable String schemaName,
             @PathVariable String tableName,
@@ -43,19 +43,37 @@ public class RecordController {
                 .build());
     }
 
-    @GetMapping("/{schemaName}/{tableName}/record")
-    public ResponseEntity<ApiResponse<RecordDto>> getRecord(
+    @GetMapping("/view/{schemaName}/{viewName}")
+    public ResponseEntity<ApiResponse<ViewRecordPageDto>> getViewRecords(
             @PathVariable String schemaName,
-            @PathVariable String tableName,
-            @RequestParam Map<String, Object> primaryKeyValues
+            @PathVariable String viewName,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "ASC") @Pattern(regexp = "^(ASC|DESC)$",
+                    message = "Sort direction must be either ASC or DESC") String sortDirection
     ) {
-        RecordDto record = recordService.getRecord(schemaName, tableName, primaryKeyValues, true);
-        return ResponseEntity.ok(ApiResponse.<RecordDto>builder()
-                .message("Record fetched successfully")
+        ViewRecordPageDto records = recordService.getViewRecords(schemaName, viewName, page, size, sortBy, sortDirection);
+        return ResponseEntity.ok(ApiResponse.<ViewRecordPageDto>builder()
+                .message("View records fetched successfully")
                 .success(true)
-                .data(record)
+                .data(records)
                 .build());
     }
+
+//    @GetMapping("/{schemaName}/{tableName}/record")
+//    public ResponseEntity<ApiResponse<RecordDto>> getRecord(
+//            @PathVariable String schemaName,
+//            @PathVariable String tableName,
+//            @RequestParam Map<String, Object> primaryKeyValues
+//    ) {
+//        RecordDto record = recordService.getRecord(schemaName, tableName, primaryKeyValues, true);
+//        return ResponseEntity.ok(ApiResponse.<RecordDto>builder()
+//                .message("Record fetched successfully")
+//                .success(true)
+//                .data(record)
+//                .build());
+//    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<RecordDto>> createRecord(
@@ -131,21 +149,21 @@ public class RecordController {
         }
     }
 
-    @GetMapping("/{schemaName}/{tableName}/record/by-values")
-    public ResponseEntity<ApiResponse<RecordDto>> getRecordByValues(
-            @PathVariable String schemaName,
-            @PathVariable String tableName,
-            @RequestParam Map<String, Object> identifyingValues
-    ) {
-        RecordDto record = recordService.getRecordByValues(schemaName, tableName, identifyingValues, true);
-        return ResponseEntity.ok(ApiResponse.<RecordDto>builder()
-                .message("Record fetched successfully using identifying values")
-                .success(true)
-                .data(record)
-                .build());
-    }
+//    @GetMapping("/{schemaName}/{tableName}/record/by-values")
+//    public ResponseEntity<ApiResponse<RecordDto>> getRecordByValues(
+//            @PathVariable String schemaName,
+//            @PathVariable String tableName,
+//            @RequestParam Map<String, Object> identifyingValues
+//    ) {
+//        RecordDto record = recordService.getRecordByValues(schemaName, tableName, identifyingValues, true);
+//        return ResponseEntity.ok(ApiResponse.<RecordDto>builder()
+//                .message("Record fetched successfully using identifying values")
+//                .success(true)
+//                .data(record)
+//                .build());
+//    }
 
-    @GetMapping("/{schemaName}/{tableName}/records/by-values")
+    @GetMapping("/table/{schemaName}/{tableName}/by-values")
     public ResponseEntity<ApiResponse<RecordPageDto>> getRecordsByValues(
             @PathVariable String schemaName,
             @PathVariable String tableName,
@@ -160,6 +178,26 @@ public class RecordController {
                 page, size, sortBy, sortDirection);
         return ResponseEntity.ok(ApiResponse.<RecordPageDto>builder()
                 .message("Records fetched successfully using identifying values")
+                .success(true)
+                .data(records)
+                .build());
+    }
+
+    @GetMapping("/view/{schemaName}/{viewName}/by-values")
+    public ResponseEntity<ApiResponse<ViewRecordPageDto>> getViewRecordsByValues(
+            @PathVariable String schemaName,
+            @PathVariable String viewName,
+            @RequestParam Map<String, Object> identifyingValues,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "ASC") @Pattern(regexp = "^(ASC|DESC)$",
+                    message = "Sort direction must be either ASC or DESC") String sortDirection
+    ) {
+        ViewRecordPageDto records = recordService.getViewRecordsByValues(schemaName, viewName, identifyingValues,
+                page, size, sortBy, sortDirection);
+        return ResponseEntity.ok(ApiResponse.<ViewRecordPageDto>builder()
+                .message("View records fetched successfully using identifying values")
                 .success(true)
                 .data(records)
                 .build());
@@ -354,7 +392,7 @@ public class RecordController {
         }
     }
 
-    @PostMapping("/advanced-search")
+    @PostMapping("/table/advanced-search")
     public ResponseEntity<ApiResponse<AdvancedSearchResponseDto>> advancedSearch(
             @Valid @RequestBody AdvancedSearchRequestDto searchRequest
     ) {
@@ -366,7 +404,7 @@ public class RecordController {
                 .build());
     }
 
-    @GetMapping("/{schemaName}/{tableName}/count")
+    @GetMapping("/table/{schemaName}/{tableName}/count")
     public ResponseEntity<ApiResponse<Long>> getRecordCount(
             @PathVariable String schemaName,
             @PathVariable String tableName
@@ -374,6 +412,19 @@ public class RecordController {
         long count = recordService.getRecordCount(schemaName, tableName, true, true);
         return ResponseEntity.ok(ApiResponse.<Long>builder()
                 .message("Record count fetched successfully")
+                .success(true)
+                .data(count)
+                .build());
+    }
+
+    @GetMapping("/view/{schemaName}/{viewName}/count")
+    public ResponseEntity<ApiResponse<Long>> getViewRecordCount(
+            @PathVariable String schemaName,
+            @PathVariable String viewName
+    ) {
+        long count = recordService.getViewRecordCount(schemaName, viewName, true, true);
+        return ResponseEntity.ok(ApiResponse.<Long>builder()
+                .message("View record count fetched successfully")
                 .success(true)
                 .data(count)
                 .build());
