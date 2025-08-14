@@ -1,6 +1,6 @@
 package ma.ilias.dbmanagementbe.metadata.service;
 
-import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseTableColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.index.IndexMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
@@ -33,8 +33,8 @@ public interface MetadataProviderService {
     TableMetadataDto getTable(String schemaName, String tableName, boolean includeSchema,
                               boolean includeColumns, boolean includeIndexes, boolean checkTableExists);
 
-    BaseColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
-                                    boolean includeTable, boolean checkColumnExists);
+    BaseTableColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
+                                         boolean includeTable, boolean checkColumnExists);
 
     IndexMetadataDto getIndex(String schemaName, String tableName, String indexName,
                               boolean includeTable, boolean checkIndexExists);
@@ -50,8 +50,8 @@ public interface MetadataProviderService {
     List<ViewMetadataDto> getViewsBySchema(String schemaName, boolean includeSchema, boolean includeColumns,
                                            boolean checkSchemaExists);
 
-    List<BaseColumnMetadataDto> getColumnsByTable(String schemaName, String tableName,
-                                                  boolean includeTable, boolean checkTableExists);
+    List<BaseTableColumnMetadataDto> getColumnsByTable(String schemaName, String tableName,
+                                                       boolean includeTable, boolean checkTableExists);
 
     List<ViewColumnMetadataDto> getColumnsByView(String schemaName, String tableName,
                                                  boolean includeView, boolean checkViewExists);

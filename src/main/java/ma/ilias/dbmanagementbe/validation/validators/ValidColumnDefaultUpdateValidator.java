@@ -4,7 +4,7 @@ import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import lombok.RequiredArgsConstructor;
 import ma.ilias.dbmanagementbe.enums.ColumnType;
-import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseTableColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnDefaultDto;
 import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
@@ -25,7 +25,7 @@ public class ValidColumnDefaultUpdateValidator
             return true;
         }
 
-        BaseColumnMetadataDto currentColumn;
+        BaseTableColumnMetadataDto currentColumn;
 
         try {
             currentColumn = metadataProviderService.getColumn(

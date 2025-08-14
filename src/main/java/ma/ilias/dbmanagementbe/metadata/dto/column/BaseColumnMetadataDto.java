@@ -1,11 +1,10 @@
 package ma.ilias.dbmanagementbe.metadata.dto.column;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import ma.ilias.dbmanagementbe.enums.ColumnType;
 import ma.ilias.dbmanagementbe.metadata.dto.common.IColumnDataTypeDefinition;
-import ma.ilias.dbmanagementbe.metadata.dto.table.TableMetadataDto;
 
 @Data
 @SuperBuilder
@@ -22,11 +21,4 @@ public abstract class BaseColumnMetadataDto implements IColumnDataTypeDefinition
     private Boolean isUnique;
     private String columnDefault;
     private Boolean autoIncrement;
-
-    @JsonIgnoreProperties({"columns", "indexes"})
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private TableMetadataDto table;
-
-    public abstract ColumnType getColumnType();
 }

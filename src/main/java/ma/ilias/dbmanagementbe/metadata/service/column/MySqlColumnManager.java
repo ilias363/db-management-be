@@ -3,8 +3,8 @@ package ma.ilias.dbmanagementbe.metadata.service.column;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.exception.ColumnNotFoundException;
 import ma.ilias.dbmanagementbe.exception.UnauthorizedActionException;
-import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseTableColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.NewForeignKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.NewPrimaryKeyForeignKeyColumnDto;
@@ -38,27 +38,27 @@ public class MySqlColumnManager implements ColumnService {
     }
 
     @Override
-    public BaseColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
-                                           boolean includeTable, boolean checkColumnExists) {
+    public BaseTableColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
+                                                boolean includeTable, boolean checkColumnExists) {
         return getColumn(schemaName, tableName, columnName, includeTable, checkColumnExists, false);
     }
 
     @Override
-    public BaseColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
-                                           boolean includeTable, boolean checkColumnExists, boolean checkAuthorization) {
+    public BaseTableColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
+                                                boolean includeTable, boolean checkColumnExists, boolean checkAuthorization) {
         if (checkAuthorization) databaseAuthorizationService.checkReadPermission(schemaName, tableName);
         return metadataProviderService.getColumn(schemaName, tableName, columnName, includeTable, checkColumnExists);
     }
 
     @Override
-    public List<BaseColumnMetadataDto> getColumnsByTable(String schemaName, String tableName,
-                                                         boolean includeTable, boolean checkTableExists) {
+    public List<BaseTableColumnMetadataDto> getColumnsByTable(String schemaName, String tableName,
+                                                              boolean includeTable, boolean checkTableExists) {
         databaseAuthorizationService.checkReadPermission(schemaName, tableName);
         return metadataProviderService.getColumnsByTable(schemaName, tableName, includeTable, checkTableExists);
     }
 
     @Override
-    public BaseColumnMetadataDto createColumn(BaseNewColumnDto newColumnDto) {
+    public BaseTableColumnMetadataDto createColumn(BaseNewColumnDto newColumnDto) {
         databaseAuthorizationService.checkCreatePermission(newColumnDto.getSchemaName(), newColumnDto.getTableName());
 
         if (newColumnDto instanceof NewPrimaryKeyForeignKeyColumnDto) {
@@ -384,7 +384,7 @@ public class MySqlColumnManager implements ColumnService {
     }
 
     @Override
-    public BaseColumnMetadataDto renameColumn(RenameColumnDto renameColumnDto) {
+    public BaseTableColumnMetadataDto renameColumn(RenameColumnDto renameColumnDto) {
         databaseAuthorizationService.checkWritePermission(renameColumnDto.getSchemaName(), renameColumnDto.getTableName());
 
         String sql = "ALTER TABLE " + renameColumnDto.getSchemaName() + "." + renameColumnDto.getTableName() +
@@ -400,7 +400,7 @@ public class MySqlColumnManager implements ColumnService {
     }
 
     @Override
-    public BaseColumnMetadataDto updateColumnDataType(UpdateColumnDataTypeDto updateColDataTypeDto) {
+    public BaseTableColumnMetadataDto updateColumnDataType(UpdateColumnDataTypeDto updateColDataTypeDto) {
         databaseAuthorizationService.checkWritePermission(updateColDataTypeDto.getSchemaName(), updateColDataTypeDto.getTableName());
 
         String sql = "ALTER TABLE " + updateColDataTypeDto.getSchemaName() + "." + updateColDataTypeDto.getTableName() +
@@ -416,10 +416,10 @@ public class MySqlColumnManager implements ColumnService {
     }
 
     @Override
-    public BaseColumnMetadataDto updateColumnAutoIncrement(UpdateColumnAutoIncrementDto updateColAutoIncrementDto) {
+    public BaseTableColumnMetadataDto updateColumnAutoIncrement(UpdateColumnAutoIncrementDto updateColAutoIncrementDto) {
         databaseAuthorizationService.checkWritePermission(updateColAutoIncrementDto.getSchemaName(), updateColAutoIncrementDto.getTableName());
 
-        BaseColumnMetadataDto currentColumn = getColumn(
+        BaseTableColumnMetadataDto currentColumn = getColumn(
                 updateColAutoIncrementDto.getSchemaName(),
                 updateColAutoIncrementDto.getTableName(),
                 updateColAutoIncrementDto.getColumnName(),
@@ -444,10 +444,10 @@ public class MySqlColumnManager implements ColumnService {
     }
 
     @Override
-    public BaseColumnMetadataDto updateColumnNullable(UpdateColumnNullableDto updateColNullableDto, boolean populate) {
+    public BaseTableColumnMetadataDto updateColumnNullable(UpdateColumnNullableDto updateColNullableDto, boolean populate) {
         databaseAuthorizationService.checkWritePermission(updateColNullableDto.getSchemaName(), updateColNullableDto.getTableName());
 
-        BaseColumnMetadataDto currentColumn = getColumn(
+        BaseTableColumnMetadataDto currentColumn = getColumn(
                 updateColNullableDto.getSchemaName(),
                 updateColNullableDto.getTableName(),
                 updateColNullableDto.getColumnName(),
@@ -529,7 +529,7 @@ public class MySqlColumnManager implements ColumnService {
     }
 
     @Override
-    public BaseColumnMetadataDto updateColumnUnique(UpdateColumnUniqueDto updateColUniqueDto) {
+    public BaseTableColumnMetadataDto updateColumnUnique(UpdateColumnUniqueDto updateColUniqueDto) {
         databaseAuthorizationService.checkWritePermission(updateColUniqueDto.getSchemaName(), updateColUniqueDto.getTableName());
 
         String uniqueColConstraintsSql = """
@@ -601,10 +601,10 @@ public class MySqlColumnManager implements ColumnService {
     }
 
     @Override
-    public BaseColumnMetadataDto updateColumnDefault(UpdateColumnDefaultDto updateColDefaultDto) {
+    public BaseTableColumnMetadataDto updateColumnDefault(UpdateColumnDefaultDto updateColDefaultDto) {
         databaseAuthorizationService.checkWritePermission(updateColDefaultDto.getSchemaName(), updateColDefaultDto.getTableName());
 
-        BaseColumnMetadataDto currentColumn = getColumn(
+        BaseTableColumnMetadataDto currentColumn = getColumn(
                 updateColDefaultDto.getSchemaName(),
                 updateColDefaultDto.getTableName(),
                 updateColDefaultDto.getColumnName(),
@@ -642,7 +642,7 @@ public class MySqlColumnManager implements ColumnService {
     }
 
     @Override
-    public List<BaseColumnMetadataDto> updateColumnPrimaryKey(UpdateColumnPrimaryKeyDto updateColPKDto, boolean force) {
+    public List<BaseTableColumnMetadataDto> updateColumnPrimaryKey(UpdateColumnPrimaryKeyDto updateColPKDto, boolean force) {
         databaseAuthorizationService.checkWritePermission(updateColPKDto.getSchemaName(), updateColPKDto.getTableName());
 
         boolean isCurrentlyPrimaryKey = updateColPKDto.getColumnNames().stream().anyMatch(
@@ -722,7 +722,7 @@ public class MySqlColumnManager implements ColumnService {
                 updateColPKDto.getSchemaName(), updateColPKDto.getTableName(),
                 true, false, false, false);
 
-        List<BaseColumnMetadataDto> pksMetadata = updateColPKDto.getColumnNames().stream()
+        List<BaseTableColumnMetadataDto> pksMetadata = updateColPKDto.getColumnNames().stream()
                 .map(colName -> getColumn(
                         updateColPKDto.getSchemaName(),
                         updateColPKDto.getTableName(),
@@ -735,7 +735,7 @@ public class MySqlColumnManager implements ColumnService {
     }
 
     @Override
-    public BaseColumnMetadataDto updateColumnForeignKey(UpdateColumnForeignKeyDto updateColFKDto) {
+    public BaseTableColumnMetadataDto updateColumnForeignKey(UpdateColumnForeignKeyDto updateColFKDto) {
         databaseAuthorizationService.checkWritePermission(updateColFKDto.getSchemaName(), updateColFKDto.getTableName());
 
         if (updateColFKDto.getIsForeignKey()) {

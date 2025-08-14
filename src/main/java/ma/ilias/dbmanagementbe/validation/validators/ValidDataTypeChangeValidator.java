@@ -3,7 +3,7 @@ package ma.ilias.dbmanagementbe.validation.validators;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import lombok.RequiredArgsConstructor;
-import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseTableColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnDataTypeDto;
 import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
@@ -21,7 +21,7 @@ public class ValidDataTypeChangeValidator implements ConstraintValidator<ValidDa
         }
 
         try {
-            BaseColumnMetadataDto currentColumn = metadataProviderService.getColumn(
+            BaseTableColumnMetadataDto currentColumn = metadataProviderService.getColumn(
                     value.getSchemaName(),
                     value.getTableName(),
                     value.getColumnName(),

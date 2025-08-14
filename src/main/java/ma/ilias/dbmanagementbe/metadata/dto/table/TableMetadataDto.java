@@ -2,7 +2,7 @@ package ma.ilias.dbmanagementbe.metadata.dto.table;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
-import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseTableColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.index.IndexMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.schema.SchemaMetadataDto;
 
@@ -28,7 +28,7 @@ public class TableMetadataDto {
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     @Builder.Default
-    private List<BaseColumnMetadataDto> columns = new ArrayList<>();
+    private List<BaseTableColumnMetadataDto> columns = new ArrayList<>();
 
     @JsonIgnoreProperties("table")
     @ToString.Exclude

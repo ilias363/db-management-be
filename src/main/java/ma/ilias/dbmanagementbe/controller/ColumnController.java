@@ -5,7 +5,7 @@ import jakarta.validation.groups.Default;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import ma.ilias.dbmanagementbe.enums.ActionType;
-import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseTableColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.NewForeignKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.NewPrimaryKeyColumnDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.standard.NewStandardColumnDto;
@@ -29,15 +29,15 @@ public class ColumnController {
     private AuditService auditService;
 
     @GetMapping("/{schemaName}/{tableName}/{columnName}")
-    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> getColumn(
+    public ResponseEntity<ApiResponse<BaseTableColumnMetadataDto>> getColumn(
             @PathVariable String schemaName,
             @PathVariable String tableName,
             @PathVariable String columnName
     ) {
-        BaseColumnMetadataDto column = columnService.getColumn(
+        BaseTableColumnMetadataDto column = columnService.getColumn(
                 schemaName, tableName, columnName,
                 true, true, true);
-        return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
+        return ResponseEntity.ok(ApiResponse.<BaseTableColumnMetadataDto>builder()
                 .message("Column fetched successfully")
                 .success(true)
                 .data(column)
@@ -45,12 +45,12 @@ public class ColumnController {
     }
 
     @GetMapping("/{schemaName}/{tableName}")
-    public ResponseEntity<ApiResponse<List<BaseColumnMetadataDto>>> getColumnsByTable(
+    public ResponseEntity<ApiResponse<List<BaseTableColumnMetadataDto>>> getColumnsByTable(
             @PathVariable String schemaName,
             @PathVariable String tableName
     ) {
-        List<BaseColumnMetadataDto> columns = columnService.getColumnsByTable(schemaName, tableName, true, true);
-        return ResponseEntity.ok(ApiResponse.<List<BaseColumnMetadataDto>>builder()
+        List<BaseTableColumnMetadataDto> columns = columnService.getColumnsByTable(schemaName, tableName, true, true);
+        return ResponseEntity.ok(ApiResponse.<List<BaseTableColumnMetadataDto>>builder()
                 .message("Column fetched successfully")
                 .success(true)
                 .data(columns)
@@ -58,16 +58,16 @@ public class ColumnController {
     }
 
     @PostMapping("/standard")
-    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> createStandardColumn(
+    public ResponseEntity<ApiResponse<BaseTableColumnMetadataDto>> createStandardColumn(
             @Validated({StandaloneColumnCreation.class, Default.class}) @RequestBody NewStandardColumnDto newStandardColumnDto
     ) {
         try {
-            BaseColumnMetadataDto createdColumn = columnService.createColumn(newStandardColumnDto);
+            BaseTableColumnMetadataDto createdColumn = columnService.createColumn(newStandardColumnDto);
 
             auditService.auditSuccessfulAction(ActionType.CREATE_COLUMN, createdColumn.getTable().getSchema().getSchemaName(),
                     createdColumn.getTable().getTableName(), createdColumn.getColumnName());
 
-            return new ResponseEntity<>(ApiResponse.<BaseColumnMetadataDto>builder()
+            return new ResponseEntity<>(ApiResponse.<BaseTableColumnMetadataDto>builder()
                     .message("Standard column created successfully")
                     .success(true)
                     .data(createdColumn)
@@ -80,16 +80,16 @@ public class ColumnController {
     }
 
     @PostMapping("/foreign-key")
-    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> createForeignKeyColumn(
+    public ResponseEntity<ApiResponse<BaseTableColumnMetadataDto>> createForeignKeyColumn(
             @Validated({StandaloneColumnCreation.class, Default.class}) @RequestBody NewForeignKeyColumnDto newForeignKeyColumnDto
     ) {
         try {
-            BaseColumnMetadataDto createdColumn = columnService.createColumn(newForeignKeyColumnDto);
+            BaseTableColumnMetadataDto createdColumn = columnService.createColumn(newForeignKeyColumnDto);
 
             auditService.auditSuccessfulAction(ActionType.CREATE_COLUMN, createdColumn.getTable().getSchema().getSchemaName(),
                     createdColumn.getTable().getTableName(), createdColumn.getColumnName());
 
-            return new ResponseEntity<>(ApiResponse.<BaseColumnMetadataDto>builder()
+            return new ResponseEntity<>(ApiResponse.<BaseTableColumnMetadataDto>builder()
                     .message("Foreign key column created successfully")
                     .success(true)
                     .data(createdColumn)
@@ -102,16 +102,16 @@ public class ColumnController {
     }
 
     @PostMapping("/primary-key")
-    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> createPrimaryKeyColumn(
+    public ResponseEntity<ApiResponse<BaseTableColumnMetadataDto>> createPrimaryKeyColumn(
             @Validated({StandaloneColumnCreation.class, Default.class}) @RequestBody NewPrimaryKeyColumnDto newPrimaryKeyColumnDto
     ) {
         try {
-            BaseColumnMetadataDto createdColumn = columnService.createColumn(newPrimaryKeyColumnDto);
+            BaseTableColumnMetadataDto createdColumn = columnService.createColumn(newPrimaryKeyColumnDto);
 
             auditService.auditSuccessfulAction(ActionType.CREATE_COLUMN, createdColumn.getTable().getSchema().getSchemaName(),
                     createdColumn.getTable().getTableName(), createdColumn.getColumnName());
 
-            return new ResponseEntity<>(ApiResponse.<BaseColumnMetadataDto>builder()
+            return new ResponseEntity<>(ApiResponse.<BaseTableColumnMetadataDto>builder()
                     .message("Primary key column created successfully")
                     .success(true)
                     .data(createdColumn)
@@ -155,16 +155,16 @@ public class ColumnController {
     }
 
     @PatchMapping("/rename")
-    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> renameColumn(
+    public ResponseEntity<ApiResponse<BaseTableColumnMetadataDto>> renameColumn(
             @Valid @RequestBody RenameColumnDto renameColumnDto
     ) {
         try {
-            BaseColumnMetadataDto updatedColumn = columnService.renameColumn(renameColumnDto);
+            BaseTableColumnMetadataDto updatedColumn = columnService.renameColumn(renameColumnDto);
 
             auditService.auditSuccessfulAction(ActionType.UPDATE_COLUMN, renameColumnDto.getSchemaName(),
                     renameColumnDto.getTableName(), renameColumnDto.getColumnName());
 
-            return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
+            return ResponseEntity.ok(ApiResponse.<BaseTableColumnMetadataDto>builder()
                     .message("Column renamed successfully")
                     .success(true)
                     .data(updatedColumn)
@@ -177,16 +177,16 @@ public class ColumnController {
     }
 
     @PatchMapping("/data-type")
-    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> updateColumnDataType(
+    public ResponseEntity<ApiResponse<BaseTableColumnMetadataDto>> updateColumnDataType(
             @Valid @RequestBody UpdateColumnDataTypeDto updateColumnDataTypeDto
     ) {
         try {
-            BaseColumnMetadataDto updatedColumn = columnService.updateColumnDataType(updateColumnDataTypeDto);
+            BaseTableColumnMetadataDto updatedColumn = columnService.updateColumnDataType(updateColumnDataTypeDto);
 
             auditService.auditSuccessfulAction(ActionType.UPDATE_COLUMN, updatedColumn.getTable().getSchema().getSchemaName(),
                     updatedColumn.getTable().getTableName(), updatedColumn.getColumnName());
 
-            return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
+            return ResponseEntity.ok(ApiResponse.<BaseTableColumnMetadataDto>builder()
                     .message("Column data type updated successfully")
                     .success(true)
                     .data(updatedColumn)
@@ -199,16 +199,16 @@ public class ColumnController {
     }
 
     @PatchMapping("/auto-increment")
-    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> updateColumnAutoIncrement(
+    public ResponseEntity<ApiResponse<BaseTableColumnMetadataDto>> updateColumnAutoIncrement(
             @Valid @RequestBody UpdateColumnAutoIncrementDto updateColumnAutoIncrementDto
     ) {
         try {
-            BaseColumnMetadataDto updatedColumn = columnService.updateColumnAutoIncrement(updateColumnAutoIncrementDto);
+            BaseTableColumnMetadataDto updatedColumn = columnService.updateColumnAutoIncrement(updateColumnAutoIncrementDto);
 
             auditService.auditSuccessfulAction(ActionType.UPDATE_COLUMN, updatedColumn.getTable().getSchema().getSchemaName(),
                     updatedColumn.getTable().getTableName(), updatedColumn.getColumnName());
 
-            return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
+            return ResponseEntity.ok(ApiResponse.<BaseTableColumnMetadataDto>builder()
                     .message("Column auto increment updated successfully")
                     .success(true)
                     .data(updatedColumn)
@@ -221,17 +221,17 @@ public class ColumnController {
     }
 
     @PatchMapping("/nullable")
-    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> updateColumnNullable(
+    public ResponseEntity<ApiResponse<BaseTableColumnMetadataDto>> updateColumnNullable(
             @Valid @RequestBody UpdateColumnNullableDto updateColumnNullableDto,
             @RequestParam(defaultValue = "false") boolean populate
     ) {
         try {
-            BaseColumnMetadataDto updatedColumn = columnService.updateColumnNullable(updateColumnNullableDto, populate);
+            BaseTableColumnMetadataDto updatedColumn = columnService.updateColumnNullable(updateColumnNullableDto, populate);
 
             auditService.auditSuccessfulAction(ActionType.UPDATE_COLUMN, updatedColumn.getTable().getSchema().getSchemaName(),
                     updatedColumn.getTable().getTableName(), updatedColumn.getColumnName());
 
-            return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
+            return ResponseEntity.ok(ApiResponse.<BaseTableColumnMetadataDto>builder()
                     .message("Column nullable constraint updated successfully")
                     .success(true)
                     .data(updatedColumn)
@@ -244,16 +244,16 @@ public class ColumnController {
     }
 
     @PatchMapping("/unique")
-    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> updateColumnUnique(
+    public ResponseEntity<ApiResponse<BaseTableColumnMetadataDto>> updateColumnUnique(
             @Valid @RequestBody UpdateColumnUniqueDto updateColumnUniqueDto
     ) {
         try {
-            BaseColumnMetadataDto updatedColumn = columnService.updateColumnUnique(updateColumnUniqueDto);
+            BaseTableColumnMetadataDto updatedColumn = columnService.updateColumnUnique(updateColumnUniqueDto);
 
             auditService.auditSuccessfulAction(ActionType.UPDATE_COLUMN, updatedColumn.getTable().getSchema().getSchemaName(),
                     updatedColumn.getTable().getTableName(), updatedColumn.getColumnName());
 
-            return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
+            return ResponseEntity.ok(ApiResponse.<BaseTableColumnMetadataDto>builder()
                     .message("Column unique constraint updated successfully")
                     .success(true)
                     .data(updatedColumn)
@@ -266,16 +266,16 @@ public class ColumnController {
     }
 
     @PatchMapping("/default")
-    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> updateColumnDefault(
+    public ResponseEntity<ApiResponse<BaseTableColumnMetadataDto>> updateColumnDefault(
             @Valid @RequestBody UpdateColumnDefaultDto updateColumnDefaultDto
     ) {
         try {
-            BaseColumnMetadataDto updatedColumn = columnService.updateColumnDefault(updateColumnDefaultDto);
+            BaseTableColumnMetadataDto updatedColumn = columnService.updateColumnDefault(updateColumnDefaultDto);
 
             auditService.auditSuccessfulAction(ActionType.UPDATE_COLUMN, updatedColumn.getTable().getSchema().getSchemaName(),
                     updatedColumn.getTable().getTableName(), updatedColumn.getColumnName());
 
-            return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
+            return ResponseEntity.ok(ApiResponse.<BaseTableColumnMetadataDto>builder()
                     .message("Column default value updated successfully")
                     .success(true)
                     .data(updatedColumn)
@@ -288,21 +288,21 @@ public class ColumnController {
     }
 
     @PatchMapping("/primary-key")
-    public ResponseEntity<ApiResponse<List<BaseColumnMetadataDto>>> updateColumnPrimaryKey(
+    public ResponseEntity<ApiResponse<List<BaseTableColumnMetadataDto>>> updateColumnPrimaryKey(
             @Valid @RequestBody UpdateColumnPrimaryKeyDto updateColumnPrimaryKeyDto,
             @RequestParam(defaultValue = "false") boolean force
     ) {
         try {
-            List<BaseColumnMetadataDto> updatedColumns = columnService.updateColumnPrimaryKey(updateColumnPrimaryKeyDto, force);
+            List<BaseTableColumnMetadataDto> updatedColumns = columnService.updateColumnPrimaryKey(updateColumnPrimaryKeyDto, force);
 
             auditService.auditFailedAction(
                     ActionType.UPDATE_COLUMN,
                     updatedColumns.get(0).getTable().getSchema().getSchemaName(),
                     updatedColumns.get(0).getTable().getTableName(),
                     String.join("|", updatedColumns.stream()
-                            .map(BaseColumnMetadataDto::getColumnName).toList()));
+                            .map(BaseTableColumnMetadataDto::getColumnName).toList()));
 
-            return ResponseEntity.ok(ApiResponse.<List<BaseColumnMetadataDto>>builder()
+            return ResponseEntity.ok(ApiResponse.<List<BaseTableColumnMetadataDto>>builder()
                     .message("Column primary key constraint updated successfully")
                     .success(true)
                     .data(updatedColumns)
@@ -319,16 +319,16 @@ public class ColumnController {
     }
 
     @PatchMapping("/foreign-key")
-    public ResponseEntity<ApiResponse<BaseColumnMetadataDto>> updateColumnForeignKey(
+    public ResponseEntity<ApiResponse<BaseTableColumnMetadataDto>> updateColumnForeignKey(
             @Valid @RequestBody UpdateColumnForeignKeyDto updateColumnForeignKeyDto
     ) {
         try {
-            BaseColumnMetadataDto updatedColumn = columnService.updateColumnForeignKey(updateColumnForeignKeyDto);
+            BaseTableColumnMetadataDto updatedColumn = columnService.updateColumnForeignKey(updateColumnForeignKeyDto);
 
             auditService.auditSuccessfulAction(ActionType.UPDATE_COLUMN, updatedColumn.getTable().getSchema().getSchemaName(),
                     updatedColumn.getTable().getTableName(), updatedColumn.getColumnName());
 
-            return ResponseEntity.ok(ApiResponse.<BaseColumnMetadataDto>builder()
+            return ResponseEntity.ok(ApiResponse.<BaseTableColumnMetadataDto>builder()
                     .message("Column foreign key constraint updated successfully")
                     .success(true)
                     .data(updatedColumn)

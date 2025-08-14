@@ -4,7 +4,7 @@ import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import lombok.RequiredArgsConstructor;
 import ma.ilias.dbmanagementbe.enums.ColumnType;
-import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseTableColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.UpdateColumnForeignKeyDto;
 import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
@@ -53,7 +53,7 @@ public class ValidForeignKeyChangeValidator
         return true;
     }
 
-    private boolean validateForeignKeyConstraints(UpdateColumnForeignKeyDto dto, BaseColumnMetadataDto currentColumn,
+    private boolean validateForeignKeyConstraints(UpdateColumnForeignKeyDto dto, BaseTableColumnMetadataDto currentColumn,
                                                   ConstraintValidatorContext context) {
         boolean isValid = true;
 
@@ -91,8 +91,8 @@ public class ValidForeignKeyChangeValidator
         return isValid;
     }
 
-    private boolean validateDataTypeProperties(BaseColumnMetadataDto currentColumn,
-                                               BaseColumnMetadataDto referencedColumn,
+    private boolean validateDataTypeProperties(BaseTableColumnMetadataDto currentColumn,
+                                               BaseTableColumnMetadataDto referencedColumn,
                                                ConstraintValidatorContext context) {
         String dataType = currentColumn.getDataType().toUpperCase();
 

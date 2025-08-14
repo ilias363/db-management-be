@@ -2,23 +2,15 @@ package ma.ilias.dbmanagementbe.metadata.dto.view;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 
 @Data
-@Builder
+@SuperBuilder
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class ViewColumnMetadataDto {
-    private String columnName;
-    private Integer ordinalPosition;
-    private String dataType;
-    private Long characterMaxLength;
-    private Integer numericPrecision;
-    private Integer numericScale;
-    private Boolean isNullable;
-    private Boolean isUnique;
-    private String columnDefault;
-    private Boolean autoIncrement;
-
+public class ViewColumnMetadataDto extends BaseColumnMetadataDto {
     @JsonIgnoreProperties({"columns"})
     @ToString.Exclude
     @EqualsAndHashCode.Exclude

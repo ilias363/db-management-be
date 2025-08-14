@@ -1,7 +1,7 @@
 package ma.ilias.dbmanagementbe.metadata.service.column;
 
-import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseTableColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.update.*;
 
 import java.util.List;
@@ -9,34 +9,34 @@ import java.util.List;
 public interface ColumnService {
     Boolean columnExists(String schemaName, String tableName, String columnName);
 
-    BaseColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
-                                    boolean includeTable, boolean checkColumnExists, boolean checkAuthorization);
+    BaseTableColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
+                                         boolean includeTable, boolean checkColumnExists, boolean checkAuthorization);
 
-    BaseColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
-                                    boolean includeTable, boolean checkColumnExists);
+    BaseTableColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
+                                         boolean includeTable, boolean checkColumnExists);
 
-    List<BaseColumnMetadataDto> getColumnsByTable(String schemaName, String tableName,
-                                                  boolean includeTable, boolean checkTableExists);
+    List<BaseTableColumnMetadataDto> getColumnsByTable(String schemaName, String tableName,
+                                                       boolean includeTable, boolean checkTableExists);
 
-    BaseColumnMetadataDto createColumn(BaseNewColumnDto newColumnDto);
+    BaseTableColumnMetadataDto createColumn(BaseNewColumnDto newColumnDto);
 
     Boolean deleteColumn(String schemaName, String tableName, String columnName, boolean force);
 
     Boolean isColumnPrimaryKey(String schemaName, String tableName, String columnName);
 
-    BaseColumnMetadataDto renameColumn(RenameColumnDto renameColumnDto);
+    BaseTableColumnMetadataDto renameColumn(RenameColumnDto renameColumnDto);
 
-    BaseColumnMetadataDto updateColumnDataType(UpdateColumnDataTypeDto updateColumnDataTypeDto);
+    BaseTableColumnMetadataDto updateColumnDataType(UpdateColumnDataTypeDto updateColumnDataTypeDto);
 
-    BaseColumnMetadataDto updateColumnAutoIncrement(UpdateColumnAutoIncrementDto updateColumnAutoIncrementDto);
+    BaseTableColumnMetadataDto updateColumnAutoIncrement(UpdateColumnAutoIncrementDto updateColumnAutoIncrementDto);
 
-    BaseColumnMetadataDto updateColumnNullable(UpdateColumnNullableDto updateColumnNullableDto, boolean populate);
+    BaseTableColumnMetadataDto updateColumnNullable(UpdateColumnNullableDto updateColumnNullableDto, boolean populate);
 
-    BaseColumnMetadataDto updateColumnUnique(UpdateColumnUniqueDto updateColumnUniqueDto);
+    BaseTableColumnMetadataDto updateColumnUnique(UpdateColumnUniqueDto updateColumnUniqueDto);
 
-    BaseColumnMetadataDto updateColumnDefault(UpdateColumnDefaultDto updateColumnDefaultDto);
+    BaseTableColumnMetadataDto updateColumnDefault(UpdateColumnDefaultDto updateColumnDefaultDto);
 
-    List<BaseColumnMetadataDto> updateColumnPrimaryKey(UpdateColumnPrimaryKeyDto updateColumnPrimaryKeyDto, boolean force);
+    List<BaseTableColumnMetadataDto> updateColumnPrimaryKey(UpdateColumnPrimaryKeyDto updateColumnPrimaryKeyDto, boolean force);
 
-    BaseColumnMetadataDto updateColumnForeignKey(UpdateColumnForeignKeyDto updateColumnForeignKeyDto);
+    BaseTableColumnMetadataDto updateColumnForeignKey(UpdateColumnForeignKeyDto updateColumnForeignKeyDto);
 }

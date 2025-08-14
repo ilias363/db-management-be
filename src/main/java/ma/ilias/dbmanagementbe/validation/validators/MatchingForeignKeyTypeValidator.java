@@ -3,8 +3,8 @@ package ma.ilias.dbmanagementbe.validation.validators;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import lombok.RequiredArgsConstructor;
-import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseNewForeignKeyColumnDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseTableColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.service.MetadataProviderService;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import ma.ilias.dbmanagementbe.validation.annotations.MatchingForeignKeyType;
@@ -30,7 +30,7 @@ public class MatchingForeignKeyTypeValidator
         context.disableDefaultConstraintViolation();
 
         try {
-            BaseColumnMetadataDto referencedColumn = metadataProviderService.getColumn(
+            BaseTableColumnMetadataDto referencedColumn = metadataProviderService.getColumn(
                     dto.getReferencedSchemaName(),
                     dto.getReferencedTableName(),
                     dto.getReferencedColumnName(),
@@ -52,7 +52,7 @@ public class MatchingForeignKeyTypeValidator
         return isValid;
     }
 
-    private boolean validateDataTypeProperties(BaseNewForeignKeyColumnDto dto, BaseColumnMetadataDto referencedColumn,
+    private boolean validateDataTypeProperties(BaseNewForeignKeyColumnDto dto, BaseTableColumnMetadataDto referencedColumn,
                                                ConstraintValidatorContext context) {
         String dataType = dto.getDataType().toUpperCase();
 

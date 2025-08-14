@@ -3,7 +3,7 @@ package ma.ilias.dbmanagementbe.metadata.service;
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.enums.IndexType;
 import ma.ilias.dbmanagementbe.exception.*;
-import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseTableColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.ForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykey.PrimaryKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.PrimaryKeyForeignKeyColumnMetadataDto;
@@ -225,8 +225,8 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
                 tableName);
     }
 
-    public BaseColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
-                                           boolean includeTable, boolean checkColumnExists) {
+    public BaseTableColumnMetadataDto getColumn(String schemaName, String tableName, String columnName,
+                                                boolean includeTable, boolean checkColumnExists) {
         if (checkColumnExists && !columnExists(schemaName, tableName, columnName)) {
             throw new ColumnNotFoundException(schemaName, tableName, columnName);
         }
@@ -540,8 +540,8 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
         return views;
     }
 
-    public List<BaseColumnMetadataDto> getColumnsByTable(String schemaName, String tableName,
-                                                         boolean includeTable, boolean checkTableExists) {
+    public List<BaseTableColumnMetadataDto> getColumnsByTable(String schemaName, String tableName,
+                                                              boolean includeTable, boolean checkTableExists) {
         if (checkTableExists && !tableExists(schemaName, tableName)) {
             throw new TableNotFoundException(schemaName, tableName);
         }
@@ -553,7 +553,7 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
                 ORDER BY c.ORDINAL_POSITION
                 """;
 
-        List<BaseColumnMetadataDto> columns = jdbcTemplate.query(
+        List<BaseTableColumnMetadataDto> columns = jdbcTemplate.query(
                 columnsSql,
                 (rs, rowNum) -> getColumn(schemaName, tableName, rs.getString("COLUMN_NAME"), false, false),
                 schemaName, tableName);
@@ -582,7 +582,7 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
         return columns;
     }
 
-    private ViewColumnMetadataDto mapBaseColumnToViewColumn(BaseColumnMetadataDto column) {
+    private ViewColumnMetadataDto mapBaseColumnToViewColumn(BaseTableColumnMetadataDto column) {
         return ViewColumnMetadataDto.builder()
                 .columnName(column.getColumnName())
                 .ordinalPosition(column.getOrdinalPosition())
