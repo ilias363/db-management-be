@@ -14,7 +14,7 @@ import java.util.Map;
 
 public class SearchQueryBuilder {
     private final String schemaName;
-    private final String tableName;
+    private final String objectName;
     private final List<String> whereClauses = new ArrayList<>();
     private final List<String> orderByClauses = new ArrayList<>();
     private final List<Object> parameters = new ArrayList<>();
@@ -23,9 +23,9 @@ public class SearchQueryBuilder {
     private Integer limit;
     private Integer offset;
 
-    public SearchQueryBuilder(String schemaName, String tableName) {
+    public SearchQueryBuilder(String schemaName, String objectName) {
         this.schemaName = schemaName;
-        this.tableName = tableName;
+        this.objectName = objectName;
     }
 
     public void addFilter(FilterCriteriaDto filter, BaseColumnMetadataDto columnMeta, boolean
@@ -183,7 +183,7 @@ public class SearchQueryBuilder {
         if (distinct) {
             query.append("DISTINCT ");
         }
-        query.append("* FROM ").append(schemaName).append(".").append(tableName);
+        query.append("* FROM ").append(schemaName).append(".").append(objectName);
 
         if (!whereClauses.isEmpty()) {
             query.append(" WHERE ").append(String.join(" AND ", whereClauses));
@@ -212,7 +212,7 @@ public class SearchQueryBuilder {
         } else {
             query.append("*");
         }
-        query.append(") FROM ").append(schemaName).append(".").append(tableName);
+        query.append(") FROM ").append(schemaName).append(".").append(objectName);
 
         if (!whereClauses.isEmpty()) {
             query.append(" WHERE ").append(String.join(" AND ", whereClauses));
@@ -237,7 +237,7 @@ public class SearchQueryBuilder {
             try {
                 BaseColumnMetadataDto columnMeta = columnMetadataMap.get(filter.getColumnName().trim());
                 if (columnMeta == null) {
-                    errors.add(String.format("Column '%s' not found in table metadata", filter.getColumnName()));
+                    errors.add(String.format("Column '%s' not found in table/view metadata", filter.getColumnName()));
                     continue;
                 }
 

@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.enums.ColumnType;
 import ma.ilias.dbmanagementbe.exception.*;
 import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseTableColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.foreignkey.ForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.column.primarykeyforeignkey.PrimaryKeyForeignKeyColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.view.ViewColumnMetadataDto;
@@ -148,7 +149,7 @@ public class MySqlRecordManager implements RecordService {
         String validatedSchemaName = schemaName.trim().toLowerCase();
         String validatedTableName = tableName.trim().toLowerCase();
 
-        List<BaseColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
+        List<BaseTableColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
 
         if (primaryKeyColumns.isEmpty()) {
             throw new InvalidRecordDataException(validatedTableName, "Table has no primary key defined, use get by values");
@@ -198,7 +199,7 @@ public class MySqlRecordManager implements RecordService {
         String validatedSchemaName = newRecordDto.getSchemaName().trim().toLowerCase();
         String validatedTableName = newRecordDto.getTableName().trim().toLowerCase();
 
-        List<BaseColumnMetadataDto> columns = metadataProviderService.getColumnsByTable(
+        List<BaseTableColumnMetadataDto> columns = metadataProviderService.getColumnsByTable(
                 validatedSchemaName, validatedTableName, false, false);
 
         validateRecordData(validatedSchemaName, validatedTableName, newRecordDto.getData(), columns, false);
@@ -208,7 +209,7 @@ public class MySqlRecordManager implements RecordService {
         List<Object> values = new ArrayList<>();
         List<String> placeholders = new ArrayList<>();
 
-        for (BaseColumnMetadataDto column : columns) {
+        for (BaseTableColumnMetadataDto column : columns) {
             String columnName = column.getColumnName();
             if (newRecordDto.getData().containsKey(columnName)) {
                 columnNames.add(columnName);
@@ -232,7 +233,7 @@ public class MySqlRecordManager implements RecordService {
             jdbcTemplate.update(query, values.toArray());
 
             // For tables with auto-increment primary key, get the generated key
-            List<BaseColumnMetadataDto> primaryKeyColumns = columns.stream()
+            List<BaseTableColumnMetadataDto> primaryKeyColumns = columns.stream()
                     .filter(column -> Set.of(ColumnType.PRIMARY_KEY, ColumnType.PRIMARY_KEY_FOREIGN_KEY)
                             .contains(column.getColumnType()))
                     .toList();
@@ -251,7 +252,7 @@ public class MySqlRecordManager implements RecordService {
             } else {
                 // Build primary key values from the inserted data
                 Map<String, Object> pkValues = new HashMap<>();
-                for (BaseColumnMetadataDto pkColumn : primaryKeyColumns) {
+                for (BaseTableColumnMetadataDto pkColumn : primaryKeyColumns) {
                     String columnName = pkColumn.getColumnName();
                     if (newRecordDto.getData().containsKey(columnName)) {
                         pkValues.put(columnName, newRecordDto.getData().get(columnName));
@@ -275,7 +276,7 @@ public class MySqlRecordManager implements RecordService {
         String validatedSchemaName = updateRecordDto.getSchemaName().trim().toLowerCase();
         String validatedTableName = updateRecordDto.getTableName().trim().toLowerCase();
 
-        List<BaseColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
+        List<BaseTableColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
 
         if (primaryKeyColumns.isEmpty()) {
             throw new InvalidRecordDataException(validatedTableName, "Table has no primary key columns, use update by values");
@@ -340,7 +341,7 @@ public class MySqlRecordManager implements RecordService {
         String validatedSchemaName = deleteRecordDto.getSchemaName().trim().toLowerCase();
         String validatedTableName = deleteRecordDto.getTableName().trim().toLowerCase();
 
-        List<BaseColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
+        List<BaseTableColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
 
         if (primaryKeyColumns.isEmpty()) {
             throw new InvalidRecordDataException(validatedTableName, "Table has no primary key columns, use delete by values");
@@ -356,7 +357,7 @@ public class MySqlRecordManager implements RecordService {
                 .map(String::toLowerCase)
                 .collect(Collectors.toSet());
         Set<String> requiredPkColumns = primaryKeyColumns.stream()
-                .map(BaseColumnMetadataDto::getColumnName)
+                .map(BaseTableColumnMetadataDto::getColumnName)
                 .map(String::toLowerCase)
                 .collect(Collectors.toSet());
 
@@ -433,7 +434,7 @@ public class MySqlRecordManager implements RecordService {
                         validatedSchemaName,
                         validatedTableName,
                         false, false).stream()
-                .map(BaseColumnMetadataDto::getColumnName)
+                .map(BaseTableColumnMetadataDto::getColumnName)
                 .toList();
 
         // Build WHERE clause using identifying values
@@ -493,7 +494,7 @@ public class MySqlRecordManager implements RecordService {
                         validatedSchemaName,
                         validatedTableName,
                         false, false).stream()
-                .map(BaseColumnMetadataDto::getColumnName)
+                .map(BaseTableColumnMetadataDto::getColumnName)
                 .toList();
 
         // Build WHERE clause using identifying values
@@ -776,10 +777,10 @@ public class MySqlRecordManager implements RecordService {
         String validatedSchemaName = batchNewRecords.getSchemaName().trim().toLowerCase();
         String validatedTableName = batchNewRecords.getTableName().trim().toLowerCase();
 
-        List<BaseColumnMetadataDto> columns = metadataProviderService.getColumnsByTable(
+        List<BaseTableColumnMetadataDto> columns = metadataProviderService.getColumnsByTable(
                 validatedSchemaName, validatedTableName, false, false);
 
-        List<BaseColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
+        List<BaseTableColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
 
         // Phase 1: Validate ALL records first before any database operations
         List<ValidatedRecordData> validatedRecords = new ArrayList<>();
@@ -792,7 +793,7 @@ public class MySqlRecordManager implements RecordService {
             List<Object> values = new ArrayList<>();
             List<String> placeholders = new ArrayList<>();
 
-            for (BaseColumnMetadataDto column : columns) {
+            for (BaseTableColumnMetadataDto column : columns) {
                 String columnName = column.getColumnName();
                 if (recordData.containsKey(columnName)) {
                     columnNames.add(columnName);
@@ -839,7 +840,7 @@ public class MySqlRecordManager implements RecordService {
                 } else {
                     // Build primary key values from the inserted data
                     Map<String, Object> pkValues = new HashMap<>();
-                    for (BaseColumnMetadataDto pkColumn : primaryKeyColumns) {
+                    for (BaseTableColumnMetadataDto pkColumn : primaryKeyColumns) {
                         String columnName = pkColumn.getColumnName();
                         if (validatedRecord.originalData.containsKey(columnName)) {
                             pkValues.put(columnName, validatedRecord.originalData.get(columnName));
@@ -872,7 +873,7 @@ public class MySqlRecordManager implements RecordService {
         String validatedSchemaName = batchUpdateRecords.getSchemaName().trim().toLowerCase();
         String validatedTableName = batchUpdateRecords.getTableName().trim().toLowerCase();
 
-        List<BaseColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
+        List<BaseTableColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
 
         if (primaryKeyColumns.isEmpty()) {
             throw new InvalidRecordDataException(validatedTableName, "Table has no primary key columns, use update by values");
@@ -957,7 +958,7 @@ public class MySqlRecordManager implements RecordService {
         String validatedSchemaName = batchDeleteRecords.getSchemaName().trim().toLowerCase();
         String validatedTableName = batchDeleteRecords.getTableName().trim().toLowerCase();
 
-        List<BaseColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
+        List<BaseTableColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
 
         if (primaryKeyColumns.isEmpty()) {
             throw new InvalidRecordDataException(validatedTableName, "Table has no primary key columns, use delete by values");
@@ -968,7 +969,7 @@ public class MySqlRecordManager implements RecordService {
 
         // Get required primary key columns for validation
         Set<String> requiredPkColumns = primaryKeyColumns.stream()
-                .map(BaseColumnMetadataDto::getColumnName)
+                .map(BaseTableColumnMetadataDto::getColumnName)
                 .map(String::toLowerCase)
                 .collect(Collectors.toSet());
 
@@ -1232,7 +1233,7 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public void validateRecordData(String schemaName, String tableName, Map<String, Object> data,
-                                   List<BaseColumnMetadataDto> columns, boolean isUpdate) {
+                                   List<BaseTableColumnMetadataDto> columns, boolean isUpdate) {
         if (data == null || data.isEmpty()) {
             throw new InvalidRecordDataException(tableName, "Record data cannot be null or empty");
         }
@@ -1242,15 +1243,15 @@ public class MySqlRecordManager implements RecordService {
             // or fetched here if 'columns=null'
             columns = metadataProviderService.getColumnsByTable(schemaName, tableName, false, false);
         }
-        Map<String, BaseColumnMetadataDto> columnMap = columns.stream()
-                .collect(Collectors.toMap(BaseColumnMetadataDto::getColumnName, col -> col));
+        Map<String, BaseTableColumnMetadataDto> columnMap = columns.stream()
+                .collect(Collectors.toMap(BaseTableColumnMetadataDto::getColumnName, col -> col));
 
         // Validate each provided column
         for (Map.Entry<String, Object> entry : data.entrySet()) {
             String columnName = entry.getKey();
             Object value = entry.getValue();
 
-            BaseColumnMetadataDto column = columnMap.get(columnName);
+            BaseTableColumnMetadataDto column = columnMap.get(columnName);
             if (column == null) {
                 throw new InvalidRecordDataException(tableName, "Column does not exist: " + columnName);
             }
@@ -1291,7 +1292,7 @@ public class MySqlRecordManager implements RecordService {
         }
     }
 
-    private void validateValueDatatype(String tableName, String columnName, Object value, BaseColumnMetadataDto column) {
+    private void validateValueDatatype(String tableName, String columnName, Object value, BaseTableColumnMetadataDto column) {
         switch (column.getDataType().toUpperCase()) {
             case "VARCHAR", "CHAR" -> {
                 if (value instanceof String stringValue) {
@@ -1434,7 +1435,7 @@ public class MySqlRecordManager implements RecordService {
         }
     }
 
-    private List<BaseColumnMetadataDto> getPrimaryKeyColumns(String schemaName, String tableName) {
+    private List<BaseTableColumnMetadataDto> getPrimaryKeyColumns(String schemaName, String tableName) {
         return metadataProviderService.getColumnsByTable(schemaName, tableName, false, false)
                 .stream()
                 .filter(column -> Set.of(ColumnType.PRIMARY_KEY, ColumnType.PRIMARY_KEY_FOREIGN_KEY)
@@ -1489,15 +1490,16 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public AdvancedSearchResponseDto advancedSearch(AdvancedSearchRequestDto searchRequest) {
-        databaseAuthorizationService.checkReadPermission(searchRequest.getSchemaName(), searchRequest.getTableName());
+        databaseAuthorizationService.checkReadPermission(searchRequest.getSchemaName(), searchRequest.getObjectName());
 
-        validateTableExists(searchRequest.getSchemaName(), searchRequest.getTableName());
+        validateTableExists(searchRequest.getSchemaName(), searchRequest.getObjectName());
 
         String validatedSchemaName = searchRequest.getSchemaName().trim().toLowerCase();
-        String validatedTableName = searchRequest.getTableName().trim().toLowerCase();
+        String validatedTableName = searchRequest.getObjectName().trim().toLowerCase();
 
         List<BaseColumnMetadataDto> tableColumns = metadataProviderService.getColumnsByTable(
-                validatedSchemaName, validatedTableName, false, false);
+                        validatedSchemaName, validatedTableName, false, false)
+                .stream().map(col -> (BaseColumnMetadataDto) col).toList();
         Map<String, BaseColumnMetadataDto> columnMap = tableColumns.stream()
                 .collect(Collectors.toMap(BaseColumnMetadataDto::getColumnName, col -> col));
 
@@ -1568,7 +1570,91 @@ public class MySqlRecordManager implements RecordService {
                 .currentPage(searchRequest.getPage())
                 .pageSize(searchRequest.getSize())
                 .totalPages(totalPages)
-                .tableName(validatedTableName)
+                .objectName(validatedTableName)
+                .schemaName(validatedSchemaName)
+                .hasFilters(searchRequest.getFilters() != null && !searchRequest.getFilters().isEmpty())
+                .hasGlobalSearch(searchRequest.getGlobalSearch() != null && !searchRequest.getGlobalSearch().isBlank())
+                .hasSort(searchRequest.getSorts() != null && !searchRequest.getSorts().isEmpty())
+                .isDistinct(searchRequest.isDistinct())
+                .appliedFilters(searchRequest.getFilters())
+                .appliedSorts(searchRequest.getSorts())
+                .appliedGlobalSearch(searchRequest.getGlobalSearch())
+                .build();
+    }
+
+    @Override
+    public AdvancedSearchResponseDto advancedSearchView(AdvancedSearchRequestDto searchRequest) {
+        databaseAuthorizationService.checkReadPermission(searchRequest.getSchemaName(), searchRequest.getObjectName());
+        validateViewExists(searchRequest.getSchemaName(), searchRequest.getObjectName());
+
+        String validatedSchemaName = searchRequest.getSchemaName().trim().toLowerCase();
+        String validatedViewName = searchRequest.getObjectName().trim().toLowerCase();
+
+        List<BaseColumnMetadataDto> viewColumns = metadataProviderService.getColumnsByView(
+                        validatedSchemaName, validatedViewName, false, false)
+                .stream().map(col -> (BaseColumnMetadataDto) col).toList();
+        Map<String, BaseColumnMetadataDto> columnMap = viewColumns.stream()
+                .collect(Collectors.toMap(BaseColumnMetadataDto::getColumnName, col -> col));
+
+        SearchQueryBuilder queryBuilder = new SearchQueryBuilder(validatedSchemaName, validatedViewName);
+
+        // Apply filters
+        if (searchRequest.getFilters() != null && !searchRequest.getFilters().isEmpty()) {
+            List<String> errors = SearchQueryBuilder.getValidationErrors(
+                    searchRequest.getFilters(),
+                    columnMap);
+
+            if (!errors.isEmpty()) {
+                throw new InvalidRecordDataException(
+                        validatedViewName,
+                        "Invalid filter criteria:\n\n" + String.join("\n", errors));
+            }
+
+            for (FilterCriteriaDto filter : searchRequest.getFilters()) {
+                queryBuilder.addFilter(filter, columnMap.get(filter.getColumnName().trim()), false);
+            }
+        }
+
+        // Apply global search
+        if (searchRequest.getGlobalSearch() != null && !searchRequest.getGlobalSearch().isBlank()) {
+            queryBuilder.addGlobalSearch(searchRequest.getGlobalSearch(), getTextColumns(viewColumns));
+        }
+
+        // Apply sorting
+        if (searchRequest.getSorts() != null && !searchRequest.getSorts().isEmpty()) {
+            for (SortCriteriaDto sort : searchRequest.getSorts()) {
+                validateViewColumnExists(validatedSchemaName, validatedViewName, sort.getColumnName());
+                queryBuilder.addSort(sort);
+            }
+        }
+
+        queryBuilder.setDistinct(searchRequest.isDistinct());
+
+        String countQuery = queryBuilder.buildCountQuery();
+        Long filteredRecords = jdbcTemplate.queryForObject(countQuery, Long.class,
+                queryBuilder.getParameters().toArray());
+
+        if (filteredRecords == null) {
+            filteredRecords = 0L;
+        }
+
+        queryBuilder.addPagination(searchRequest.getPage(), searchRequest.getSize());
+
+        String mainQuery = queryBuilder.buildSelectQuery();
+        List<RecordDto> records = jdbcTemplate.query(mainQuery, this::mapRowToRecord,
+                queryBuilder.getParameters().toArray());
+
+        long totalRecords = getViewRecordCount(validatedSchemaName, validatedViewName, false, false);
+        int totalPages = (int) Math.ceil((double) filteredRecords / searchRequest.getSize());
+
+        return AdvancedSearchResponseDto.builder()
+                .records(records)
+                .totalRecords(totalRecords)
+                .filteredRecords(filteredRecords)
+                .currentPage(searchRequest.getPage())
+                .pageSize(searchRequest.getSize())
+                .totalPages(totalPages)
+                .objectName(validatedViewName)
                 .schemaName(validatedSchemaName)
                 .hasFilters(searchRequest.getFilters() != null && !searchRequest.getFilters().isEmpty())
                 .hasGlobalSearch(searchRequest.getGlobalSearch() != null && !searchRequest.getGlobalSearch().isBlank())

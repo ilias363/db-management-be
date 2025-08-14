@@ -1,6 +1,6 @@
 package ma.ilias.dbmanagementbe.record.service;
 
-import ma.ilias.dbmanagementbe.metadata.dto.column.BaseColumnMetadataDto;
+import ma.ilias.dbmanagementbe.metadata.dto.column.BaseTableColumnMetadataDto;
 import ma.ilias.dbmanagementbe.record.dto.*;
 
 import java.util.List;
@@ -56,7 +56,9 @@ public interface RecordService {
     long getViewRecordCount(String schemaName, String viewName, boolean checkViewExists, boolean checkAuthorization);
 
     void validateRecordData(String schemaName, String tableName, Map<String, Object> data,
-                            List<BaseColumnMetadataDto> columns, boolean isUpdate);
+                            List<BaseTableColumnMetadataDto> columns, boolean isUpdate);
 
     AdvancedSearchResponseDto advancedSearch(AdvancedSearchRequestDto searchRequest);
+
+    AdvancedSearchResponseDto advancedSearchView(AdvancedSearchRequestDto searchRequest);
 }

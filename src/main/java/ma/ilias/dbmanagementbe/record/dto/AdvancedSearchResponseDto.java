@@ -21,7 +21,7 @@ public class AdvancedSearchResponseDto {
     private int currentPage;
     private int pageSize;
     private int totalPages;
-    private String tableName;
+    private String objectName;
     private String schemaName;
 
     // Search metadata
