@@ -15,12 +15,17 @@ import ma.ilias.dbmanagementbe.service.DatabaseAuthorizationService;
 import ma.ilias.dbmanagementbe.util.SqlSecurityUtils;
 import ma.ilias.dbmanagementbe.validation.ValidationUtils;
 import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -50,9 +55,10 @@ public class MySqlRecordManager implements RecordService {
         queryBuilder.append("SELECT * FROM ").append(validatedSchemaName).append(".").append(validatedTableName);
 
         if (sortBy != null && !sortBy.isBlank()) {
-            validateColumnExists(schemaName, tableName, sortBy);
             String validatedSortBy = SqlSecurityUtils.validateColumnName(sortBy);
-            queryBuilder.append(" ORDER BY ").append(validatedSortBy).append(" ").append(sortDirection);
+            validateColumnExists(validatedSchemaName, validatedTableName, validatedSortBy);
+            String validatedSortDirection = validateSortDirection(sortDirection);
+            queryBuilder.append(" ORDER BY ").append(validatedSortBy).append(" ").append(validatedSortDirection);
         }
 
         // Add pagination
@@ -100,9 +106,10 @@ public class MySqlRecordManager implements RecordService {
         queryBuilder.append("SELECT * FROM ").append(validatedSchemaName).append(".").append(validatedViewName);
 
         if (sortBy != null && !sortBy.isBlank()) {
-            validateViewColumnExists(schemaName, viewName, sortBy);
             String validatedSortBy = SqlSecurityUtils.validateColumnName(sortBy);
-            queryBuilder.append(" ORDER BY ").append(validatedSortBy).append(" ").append(sortDirection);
+            validateViewColumnExists(validatedSchemaName, validatedViewName, validatedSortBy);
+            String validatedSortDirection = validateSortDirection(sortDirection);
+            queryBuilder.append(" ORDER BY ").append(validatedSortBy).append(" ").append(validatedSortDirection);
         }
 
         // Add pagination
@@ -230,7 +237,15 @@ public class MySqlRecordManager implements RecordService {
                 String.join(", ", placeholders) + ")";
 
         try {
-            jdbcTemplate.update(query, values.toArray());
+            KeyHolder keyHolder = new GeneratedKeyHolder();
+
+            jdbcTemplate.update(connection -> {
+                PreparedStatement ps = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
+                for (int i = 0; i < values.size(); i++) {
+                    ps.setObject(i + 1, values.get(i));
+                }
+                return ps;
+            }, keyHolder);
 
             // For tables with auto-increment primary key, get the generated key
             List<BaseTableColumnMetadataDto> primaryKeyColumns = columns.stream()
@@ -245,9 +260,12 @@ public class MySqlRecordManager implements RecordService {
                 }
                 return getRecordByValues(validatedSchemaName, validatedTableName, identifyingValues);
             } else if (primaryKeyColumns.size() == 1 && primaryKeyColumns.get(0).getAutoIncrement()) {
-                Long generatedId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+                Number generatedId = keyHolder.getKey();
+                if (generatedId == null) {
+                    throw new RuntimeException("Failed to retrieve generated key");
+                }
                 Map<String, Object> pkValues = new HashMap<>();
-                pkValues.put(primaryKeyColumns.get(0).getColumnName(), generatedId);
+                pkValues.put(primaryKeyColumns.get(0).getColumnName(), generatedId.longValue());
                 return getRecord(validatedSchemaName, validatedTableName, pkValues);
             } else {
                 // Build primary key values from the inserted data
@@ -520,8 +538,10 @@ public class MySqlRecordManager implements RecordService {
 
         // Add sorting if specified
         if (sortBy != null && !sortBy.isBlank()) {
-            validateColumnExists(schemaName, tableName, sortBy);
-            queryBuilder.append(" ORDER BY ").append(sortBy.toLowerCase()).append(" ").append(sortDirection);
+            String validatedSortBy = SqlSecurityUtils.validateColumnName(sortBy);
+            validateColumnExists(validatedSchemaName, validatedTableName, validatedSortBy);
+            String validatedSortDirection = validateSortDirection(sortDirection);
+            queryBuilder.append(" ORDER BY ").append(validatedSortBy).append(" ").append(validatedSortDirection);
         }
 
         int offset = page * size;
@@ -580,8 +600,8 @@ public class MySqlRecordManager implements RecordService {
         }
 
         List<String> columnNames = metadataProviderService.getColumnsByView(
-                        validatedSchemaName, validatedViewName, false, false).stream()
-                .map(ViewColumnMetadataDto::getColumnName)
+                        validatedSchemaName, validatedViewName, false, false)
+                .stream().map(ViewColumnMetadataDto::getColumnName)
                 .toList();
 
         // Build WHERE clause
@@ -606,8 +626,10 @@ public class MySqlRecordManager implements RecordService {
                 .append(" WHERE ").append(String.join(" AND ", whereClauses));
 
         if (sortBy != null && !sortBy.isBlank()) {
-            validateViewColumnExists(schemaName, viewName, sortBy);
-            queryBuilder.append(" ORDER BY ").append(sortBy.toLowerCase()).append(" ").append(sortDirection);
+            String validatedSortBy = SqlSecurityUtils.validateColumnName(sortBy);
+            validateViewColumnExists(validatedSchemaName, validatedViewName, validatedSortBy);
+            String validatedSortDirection = validateSortDirection(sortDirection);
+            queryBuilder.append(" ORDER BY ").append(validatedSortBy).append(" ").append(validatedSortDirection);
         }
 
         int offset = page * size;
@@ -764,18 +786,16 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public List<RecordDto> createRecords(BatchNewRecordsDto batchNewRecords) {
-        if (batchNewRecords != null) {
-            databaseAuthorizationService.checkCreatePermission(batchNewRecords.getSchemaName(), batchNewRecords.getTableName());
-        }
-
         if (batchNewRecords == null || batchNewRecords.getRecords() == null || batchNewRecords.getRecords().isEmpty()) {
             throw new InvalidRecordDataException("No records provided for batch creation");
         }
 
-        validateTableExists(batchNewRecords.getSchemaName(), batchNewRecords.getTableName());
-
         String validatedSchemaName = batchNewRecords.getSchemaName().trim().toLowerCase();
         String validatedTableName = batchNewRecords.getTableName().trim().toLowerCase();
+
+        databaseAuthorizationService.checkCreatePermission(validatedSchemaName, validatedTableName);
+
+        validateTableExists(validatedSchemaName, validatedTableName);
 
         List<BaseTableColumnMetadataDto> columns = metadataProviderService.getColumnsByTable(
                 validatedSchemaName, validatedTableName, false, false);
@@ -821,10 +841,34 @@ public class MySqlRecordManager implements RecordService {
         List<RecordDto> createdRecords = new ArrayList<>();
 
         try {
-            for (ValidatedRecordData validatedRecord : validatedRecords) {
-                jdbcTemplate.update(validatedRecord.query, validatedRecord.values);
+            if (validatedRecords.isEmpty()) {
+                return createdRecords;
+            }
+            String query = validatedRecords.get(0).query;
+            KeyHolder keyHolder = new GeneratedKeyHolder();
 
-                // Retrieve the created record
+            jdbcTemplate.batchUpdate(
+                    connection -> connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS),
+                    new BatchPreparedStatementSetter() {
+                        @Override
+                        public void setValues(PreparedStatement ps, int i) throws SQLException {
+                            Object[] values = validatedRecords.get(i).values;
+                            for (int j = 0; j < values.length; j++) {
+                                ps.setObject(j + 1, values[j]);
+                            }
+                        }
+
+                        @Override
+                        public int getBatchSize() {
+                            return validatedRecords.size();
+                        }
+                    },
+                    keyHolder
+            );
+
+            List<Map<String, Object>> generatedKeys = keyHolder.getKeyList();
+            for (int i = 0; i < validatedRecords.size(); i++) {
+                ValidatedRecordData validatedRecord = validatedRecords.get(i);
                 RecordDto createdRecord;
                 if (primaryKeyColumns.isEmpty()) {
                     Map<String, Object> identifyingValues = new HashMap<>();
@@ -833,9 +877,13 @@ public class MySqlRecordManager implements RecordService {
                     }
                     createdRecord = getRecordByValues(validatedSchemaName, validatedTableName, identifyingValues);
                 } else if (primaryKeyColumns.size() == 1 && primaryKeyColumns.get(0).getAutoIncrement()) {
-                    Long generatedId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+                    Map<String, Object> generatedKey = generatedKeys.get(i);
+                    Number generatedId = (Number) generatedKey.values().iterator().next();
+                    if (generatedId == null) {
+                        throw new RuntimeException("Failed to retrieve generated key");
+                    }
                     Map<String, Object> pkValues = new HashMap<>();
-                    pkValues.put(primaryKeyColumns.get(0).getColumnName(), generatedId);
+                    pkValues.put(primaryKeyColumns.get(0).getColumnName(), generatedId.longValue());
                     createdRecord = getRecord(validatedSchemaName, validatedTableName, pkValues);
                 } else {
                     // Build primary key values from the inserted data
@@ -848,7 +896,6 @@ public class MySqlRecordManager implements RecordService {
                     }
                     createdRecord = getRecord(validatedSchemaName, validatedTableName, pkValues);
                 }
-
                 createdRecords.add(createdRecord);
             }
         } catch (DataAccessException e) {
@@ -860,18 +907,16 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public List<RecordDto> updateRecords(BatchUpdateRecordsDto batchUpdateRecords) {
-        if (batchUpdateRecords != null) {
-            databaseAuthorizationService.checkWritePermission(batchUpdateRecords.getSchemaName(), batchUpdateRecords.getTableName());
-        }
-
         if (batchUpdateRecords == null || batchUpdateRecords.getUpdates() == null || batchUpdateRecords.getUpdates().isEmpty()) {
             throw new InvalidRecordDataException("No records provided for batch update");
         }
 
-        validateTableExists(batchUpdateRecords.getSchemaName(), batchUpdateRecords.getTableName());
-
         String validatedSchemaName = batchUpdateRecords.getSchemaName().trim().toLowerCase();
         String validatedTableName = batchUpdateRecords.getTableName().trim().toLowerCase();
+
+        databaseAuthorizationService.checkWritePermission(validatedSchemaName, validatedTableName);
+
+        validateTableExists(validatedSchemaName, validatedTableName);
 
         List<BaseTableColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
 
@@ -925,13 +970,15 @@ public class MySqlRecordManager implements RecordService {
         List<RecordDto> updatedRecords = new ArrayList<>();
 
         try {
+            String query = validatedUpdates.get(0).query;
+            List<Object[]> batchArgs = validatedUpdates.stream()
+                    .map(validatedUpdate -> validatedUpdate.values)
+                    .toList();
+
+            jdbcTemplate.batchUpdate(query, batchArgs);
+
+            // Phase 3: Retrieve updated records
             for (ValidatedUpdateData validatedUpdate : validatedUpdates) {
-                int updatedRows = jdbcTemplate.update(validatedUpdate.query, validatedUpdate.values);
-
-                if (updatedRows == 0) {
-                    throw new RecordNotFoundException(validatedTableName, validatedUpdate.primaryKeyValues);
-                }
-
                 RecordDto updated = getRecord(validatedSchemaName, validatedTableName, validatedUpdate.primaryKeyValues);
                 updatedRecords.add(updated);
             }
@@ -944,19 +991,17 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public int deleteRecords(BatchDeleteRecordsDto batchDeleteRecords) {
-        if (batchDeleteRecords != null) {
-            databaseAuthorizationService.checkDeletePermission(batchDeleteRecords.getSchemaName(), batchDeleteRecords.getTableName());
-        }
-
         if (batchDeleteRecords == null || batchDeleteRecords.getPrimaryKeyValuesList() == null ||
                 batchDeleteRecords.getPrimaryKeyValuesList().isEmpty()) {
             return 0;
         }
 
-        validateTableExists(batchDeleteRecords.getSchemaName(), batchDeleteRecords.getTableName());
-
         String validatedSchemaName = batchDeleteRecords.getSchemaName().trim().toLowerCase();
         String validatedTableName = batchDeleteRecords.getTableName().trim().toLowerCase();
+
+        databaseAuthorizationService.checkDeletePermission(validatedSchemaName, validatedTableName);
+
+        validateTableExists(validatedSchemaName, validatedTableName);
 
         List<BaseTableColumnMetadataDto> primaryKeyColumns = getPrimaryKeyColumns(validatedSchemaName, validatedTableName);
 
@@ -1019,15 +1064,16 @@ public class MySqlRecordManager implements RecordService {
         }
 
         // Phase 2: Execute all deletions after validation passes
-        int deletedCount = 0;
+        int deletedCount;
 
         try {
-            for (ValidatedDeleteData validatedDelete : validatedDeletions) {
-                int deletedRows = jdbcTemplate.update(validatedDelete.query, validatedDelete.values);
-                if (deletedRows > 0) {
-                    deletedCount++;
-                }
-            }
+            String query = validatedDeletions.get(0).query;
+            List<Object[]> batchArgs = validatedDeletions.stream()
+                    .map(validatedDelete -> validatedDelete.values)
+                    .toList();
+
+            int[] deletedRows = jdbcTemplate.batchUpdate(query, batchArgs);
+            deletedCount = Arrays.stream(deletedRows).sum();
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to execute record deletions in batch: " + e.getMessage(), e);
         }
@@ -1037,18 +1083,16 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public List<RecordDto> updateRecordsByValues(BatchUpdateRecordsByValuesDto batchUpdateByValues) {
-        if (batchUpdateByValues != null) {
-            databaseAuthorizationService.checkWritePermission(batchUpdateByValues.getSchemaName(), batchUpdateByValues.getTableName());
-        }
-
         if (batchUpdateByValues == null || batchUpdateByValues.getUpdates() == null || batchUpdateByValues.getUpdates().isEmpty()) {
             throw new InvalidRecordDataException("No records provided for batch update by values");
         }
 
-        validateTableExists(batchUpdateByValues.getSchemaName(), batchUpdateByValues.getTableName());
-
         String validatedSchemaName = batchUpdateByValues.getSchemaName().trim().toLowerCase();
         String validatedTableName = batchUpdateByValues.getTableName().trim().toLowerCase();
+
+        databaseAuthorizationService.checkWritePermission(validatedSchemaName, validatedTableName);
+
+        validateTableExists(validatedSchemaName, validatedTableName);
 
         // Phase 1: Validate ALL updates first before any database operations
         List<ValidatedUpdateByValuesData> validatedUpdates = new ArrayList<>();
@@ -1107,14 +1151,15 @@ public class MySqlRecordManager implements RecordService {
         List<RecordDto> updatedRecords = new ArrayList<>();
 
         try {
+            String query = validatedUpdates.get(0).query;
+            List<Object[]> batchArgs = validatedUpdates.stream()
+                    .map(validatedUpdate -> validatedUpdate.values)
+                    .toList();
+
+            jdbcTemplate.batchUpdate(query, batchArgs);
+
+            // Phase 3: Retrieve updated records
             for (ValidatedUpdateByValuesData validatedUpdate : validatedUpdates) {
-                int updatedRows = jdbcTemplate.update(validatedUpdate.query, validatedUpdate.values);
-
-                if (updatedRows == 0) {
-                    throw new RecordNotFoundException("No records found matching the provided identifying values in table: " +
-                            validatedTableName);
-                }
-
                 List<RecordDto> updated = getRecordsByValues(validatedSchemaName, validatedTableName,
                         validatedUpdate.identifyingValues, !validatedUpdate.allowMultiple);
                 updatedRecords.addAll(updated);
@@ -1128,18 +1173,16 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public int deleteRecordsByValues(BatchDeleteRecordsByValuesDto batchDeleteByValues) {
-        if (batchDeleteByValues != null) {
-            databaseAuthorizationService.checkDeletePermission(batchDeleteByValues.getSchemaName(), batchDeleteByValues.getTableName());
-        }
-
         if (batchDeleteByValues == null || batchDeleteByValues.getDeletions() == null || batchDeleteByValues.getDeletions().isEmpty()) {
             return 0;
         }
 
-        validateTableExists(batchDeleteByValues.getSchemaName(), batchDeleteByValues.getTableName());
-
         String validatedSchemaName = batchDeleteByValues.getSchemaName().trim().toLowerCase();
         String validatedTableName = batchDeleteByValues.getTableName().trim().toLowerCase();
+
+        databaseAuthorizationService.checkDeletePermission(validatedSchemaName, validatedTableName);
+
+        validateTableExists(validatedSchemaName, validatedTableName);
 
         // Phase 1: Validate ALL deletions first before any database operations
         List<ValidatedDeleteByValuesData> validatedDeletions = new ArrayList<>();
@@ -1175,13 +1218,16 @@ public class MySqlRecordManager implements RecordService {
         }
 
         // Phase 2: Execute all deletions after validation passes
-        int deletedCount = 0;
+        int deletedCount;
 
         try {
-            for (ValidatedDeleteByValuesData validatedDelete : validatedDeletions) {
-                int deletedRows = jdbcTemplate.update(validatedDelete.query, validatedDelete.values);
-                deletedCount += deletedRows;
-            }
+            String query = validatedDeletions.get(0).query;
+            List<Object[]> batchArgs = validatedDeletions.stream()
+                    .map(validatedDelete -> validatedDelete.values)
+                    .toList();
+
+            int[] deletedRows = jdbcTemplate.batchUpdate(query, batchArgs);
+            deletedCount = Arrays.stream(deletedRows).sum();
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to execute record deletions by values in batch: " + e.getMessage(), e);
         }
@@ -1196,10 +1242,11 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public long getRecordCount(String schemaName, String tableName, boolean checkTableExists, boolean checkAuthorization) {
-        if (checkAuthorization) databaseAuthorizationService.checkReadPermission(schemaName, tableName);
+        String validatedSchemaName = schemaName.trim().toLowerCase();
+        String validatedTableName = tableName.trim().toLowerCase();
 
-        String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
-        String validatedTableName = SqlSecurityUtils.validateTableName(tableName);
+        if (checkAuthorization)
+            databaseAuthorizationService.checkReadPermission(validatedSchemaName, validatedTableName);
 
         if (checkTableExists) validateTableExists(validatedSchemaName, validatedTableName);
 
@@ -1215,10 +1262,11 @@ public class MySqlRecordManager implements RecordService {
 
     @Override
     public long getViewRecordCount(String schemaName, String viewName, boolean checkViewExists, boolean checkAuthorization) {
-        if (checkAuthorization) databaseAuthorizationService.checkReadPermission(schemaName, viewName);
-
         String validatedSchemaName = schemaName.trim().toLowerCase();
         String validatedViewName = viewName.trim().toLowerCase();
+
+        if (checkAuthorization)
+            databaseAuthorizationService.checkReadPermission(validatedSchemaName, validatedViewName);
 
         if (checkViewExists) validateViewExists(validatedSchemaName, validatedViewName);
 
@@ -1399,13 +1447,12 @@ public class MySqlRecordManager implements RecordService {
         Integer count;
         try {
             String checkSql = String.format(
-                    "SELECT COUNT(*) FROM %s.%s WHERE %s = ?",
+                    "SELECT 1 FROM %s.%s WHERE %s = ? LIMIT 1",
                     schemaName, tableName, columnName);
 
             count = jdbcTemplate.queryForObject(checkSql, Integer.class, value);
         } catch (Exception e) {
-            throw new InvalidRecordDataException("Unable to validate column value uniqueness for " + columnName +
-                    ": " + e.getMessage());
+            count = 0;
         }
 
         if (count != null && count > 0) {
@@ -1419,13 +1466,12 @@ public class MySqlRecordManager implements RecordService {
         Integer count;
         try {
             String checkSql = String.format(
-                    "SELECT COUNT(*) FROM %s.%s WHERE %s = ?",
+                    "SELECT 1 FROM %s.%s WHERE %s = ? LIMIT 1",
                     schemaName, tableName, columnName);
 
             count = jdbcTemplate.queryForObject(checkSql, Integer.class, value);
         } catch (Exception e) {
-            throw new InvalidRecordDataException("Unable to validate column '" + columnToValidateFor +
-                    "' value existence in referenced table : " + e.getMessage());
+            count = 0;
         }
 
         if (count == null || count == 0) {
@@ -1486,6 +1532,13 @@ public class MySqlRecordManager implements RecordService {
                     viewName.toLowerCase(),
                     columnName.toLowerCase());
         }
+    }
+
+    private String validateSortDirection(String sortDirection) {
+        if (sortDirection == null || sortDirection.isBlank() || !sortDirection.equalsIgnoreCase("DESC")) {
+            return "ASC";
+        }
+        return "DESC";
     }
 
     @Override
