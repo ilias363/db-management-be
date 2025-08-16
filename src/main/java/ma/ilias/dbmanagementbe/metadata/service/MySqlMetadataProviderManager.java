@@ -383,6 +383,7 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
                 FROM INFORMATION_SCHEMA.STATISTICS
                 WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?
                 GROUP BY INDEX_NAME, NON_UNIQUE, INDEX_TYPE
+                LIMIT 1
                 """;
 
         String indexColumnsSql = """
@@ -604,7 +605,7 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
         }
 
         String indexesSql = """
-                SELECT INDEX_NAME
+                SELECT DISTINCT INDEX_NAME
                 FROM INFORMATION_SCHEMA.STATISTICS
                 WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
                 ORDER BY INDEX_NAME
