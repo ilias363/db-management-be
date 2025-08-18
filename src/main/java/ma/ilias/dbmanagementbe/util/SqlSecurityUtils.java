@@ -78,6 +78,17 @@ public class SqlSecurityUtils {
     }
 
     /**
+     * Validates a view name for SQL safety.
+     *
+     * @param viewName the view name to validate
+     * @return the validated view name
+     * @throws IllegalArgumentException if the view name is invalid
+     */
+    public static String validateViewName(String viewName) {
+        return validateIdentifier(viewName, "View name");
+    }
+
+    /**
      * Validates a column name for SQL safety.
      *
      * @param columnName the column name to validate

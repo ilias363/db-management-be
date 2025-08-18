@@ -66,8 +66,8 @@ public class MySqlViewManager implements ViewService {
 
         if (!updateViewDto.getViewName().equalsIgnoreCase(updateViewDto.getUpdatedViewName())) {
             String renameSql = String.format("RENAME TABLE %s.%s TO %s.%s",
-                    validatedSchemaName, SqlSecurityUtils.validateTableName(updateViewDto.getViewName()),
-                    validatedSchemaName, SqlSecurityUtils.validateTableName(updateViewDto.getUpdatedViewName()));
+                    validatedSchemaName, SqlSecurityUtils.validateViewName(updateViewDto.getViewName()),
+                    validatedSchemaName, SqlSecurityUtils.validateViewName(updateViewDto.getUpdatedViewName()));
             jdbcTemplate.execute(renameSql);
         }
 
