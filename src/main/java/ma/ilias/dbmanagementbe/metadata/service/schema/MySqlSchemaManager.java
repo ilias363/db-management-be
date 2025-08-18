@@ -48,10 +48,11 @@ public class MySqlSchemaManager implements SchemaService {
 
         // Check if user has schema-level read permission
         boolean hasSchemaPermission = AuthorizationUtils.hasPermission(PermissionType.READ, normalizedSchemaName, null);
+        List<String> accessibleTables = null;
 
         if (!hasSchemaPermission) {
             // If no schema-level permission, check if user has permission on any tables in this schema
-            List<String> accessibleTables = getUserAccessibleTablesInSchema(normalizedSchemaName);
+            accessibleTables = getUserAccessibleTablesInSchema(normalizedSchemaName);
             if (accessibleTables.isEmpty()) {
                 // User has no access to this schema or any tables within it
                 databaseAuthorizationService.checkReadPermission(schemaName, null); // This will throw an exception
@@ -63,9 +64,12 @@ public class MySqlSchemaManager implements SchemaService {
 
         // If user doesn't have schema-level permission, filter the tables to only show accessible ones
         if (!hasSchemaPermission && schema.getTables() != null) {
-            List<String> accessibleTables = getUserAccessibleTablesInSchema(normalizedSchemaName);
+            if (accessibleTables == null) {
+                accessibleTables = getUserAccessibleTablesInSchema(normalizedSchemaName);
+            }
+            List<String> finalAccessibleTables = accessibleTables;
             schema.setTables(schema.getTables().stream()
-                    .filter(table -> accessibleTables.contains(table.getTableName().toLowerCase()))
+                    .filter(table -> finalAccessibleTables.contains(table.getTableName().toLowerCase()))
                     .toList());
         }
 

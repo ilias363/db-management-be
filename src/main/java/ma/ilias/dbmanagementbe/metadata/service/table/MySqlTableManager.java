@@ -105,7 +105,7 @@ public class MySqlTableManager implements TableService {
                     } else if ("NULL".equalsIgnoreCase(standardCol.getColumnDefault())) {
                         sb.append(" DEFAULT NULL");
                     } else {
-                        sb.append(" DEFAULT '").append(standardCol.getColumnDefault()).append("'");
+                        sb.append(" DEFAULT ").append(SqlSecurityUtils.sanitizeDefaultValue(standardCol.getColumnDefault()));
                     }
                 }
             } else if (col instanceof NewPrimaryKeyColumnDto pkCol) {
@@ -144,7 +144,7 @@ public class MySqlTableManager implements TableService {
 
             if (!foreignKeyColumns.isEmpty()) {
                 createTableSql.append(", ");
-                String fksSql = newTable.getColumns().stream()
+                String fksSql = foreignKeyColumns.stream()
                         .map(col -> {
                             BaseNewForeignKeyColumnDto fk = (BaseNewForeignKeyColumnDto) col;
 

@@ -98,4 +98,18 @@ public class SqlSecurityUtils {
     public static String validateIndexName(String indexName) {
         return validateIdentifier(indexName, "Index name");
     }
+
+    /**
+     * Sanitizes a default value for use in columns.
+     *
+     * @param defaultValue the default value to sanitize
+     * @return the sanitized default value
+     */
+    public static String sanitizeDefaultValue(String defaultValue) {
+        if (defaultValue == null) {
+            return "NULL";
+        }
+        // Escape single quotes to prevent SQL injection
+        return "'" + defaultValue.replace("'", "''") + "'";
+    }
 }
