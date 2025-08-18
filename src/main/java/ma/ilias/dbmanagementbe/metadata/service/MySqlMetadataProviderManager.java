@@ -48,12 +48,12 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
     public Boolean schemaExists(String schemaName) {
         String validatedSchemaName = SqlSecurityUtils.validateSchemaName(schemaName);
 
-        String schemaSql = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?";
+        String schemaSql = "SELECT 1 FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ? LIMIT 1";
 
-        List<String> schemas = jdbcTemplate.query(
+        List<Integer> schemas = jdbcTemplate.query(
                 schemaSql,
                 ps -> ps.setString(1, validatedSchemaName),
-                (rs, rowNum) -> rs.getString("SCHEMA_NAME")
+                (rs, rowNum) -> rs.getInt(1)
         );
 
         return !schemas.isEmpty();
@@ -68,18 +68,19 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
         }
 
         String tableSql = """
-                SELECT TABLE_NAME
+                SELECT 1
                 FROM INFORMATION_SCHEMA.TABLES
                 WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND TABLE_TYPE = 'BASE TABLE'
+                LIMIT 1
                 """;
 
-        List<String> tables = jdbcTemplate.query(
+        List<Integer> tables = jdbcTemplate.query(
                 tableSql,
                 ps -> {
                     ps.setString(1, validatedSchemaName);
                     ps.setString(2, validatedTableName);
                 },
-                (rs, rowNum) -> rs.getString("TABLE_NAME"));
+                (rs, rowNum) -> rs.getInt(1));
 
         return !tables.isEmpty();
     }
@@ -94,11 +95,19 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
         }
 
         String sql = """
-                SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
                 WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
+                LIMIT 1
                 """;
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, validatedSchemaName, validatedTableName, validatedColumnName);
-        return count != null && count > 0;
+        List<Integer> columns = jdbcTemplate.query(
+                sql,
+                ps -> {
+                    ps.setString(1, validatedSchemaName);
+                    ps.setString(2, validatedTableName);
+                    ps.setString(3, validatedColumnName);
+                },
+                (rs, rowNum) -> rs.getInt(1));
+        return !columns.isEmpty();
     }
 
     public Boolean viewColumnExists(String schemaName, String viewColumn, String columnName) {
@@ -111,11 +120,19 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
         }
 
         String sql = """
-                SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
                 WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
+                LIMIT 1
                 """;
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, validatedSchemaName, validatedViewName, validatedColumnName);
-        return count != null && count > 0;
+        List<Integer> columns = jdbcTemplate.query(
+                sql,
+                ps -> {
+                    ps.setString(1, validatedSchemaName);
+                    ps.setString(2, validatedViewName);
+                    ps.setString(3, validatedColumnName);
+                },
+                (rs, rowNum) -> rs.getInt(1));
+        return !columns.isEmpty();
     }
 
     public Boolean indexExists(String schemaName, String tableName, String indexName) {
@@ -124,15 +141,20 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
         }
 
         String sql = """
-                SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
+                SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS
                 WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?
+                LIMIT 1
                 """;
 
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class,
-                SqlSecurityUtils.validateSchemaName(schemaName),
-                SqlSecurityUtils.validateTableName(tableName),
-                SqlSecurityUtils.validateIndexName(indexName));
-        return count != null && count > 0;
+        List<Integer> indexes = jdbcTemplate.query(
+                sql,
+                ps -> {
+                    ps.setString(1, SqlSecurityUtils.validateSchemaName(schemaName));
+                    ps.setString(2, SqlSecurityUtils.validateTableName(tableName));
+                    ps.setString(3, SqlSecurityUtils.validateIndexName(indexName));
+                },
+                (rs, rowNum) -> rs.getInt(1));
+        return !indexes.isEmpty();
     }
 
     public Boolean viewExists(String schemaName, String viewName) {
@@ -145,13 +167,20 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
 
         // information_schema.tables contains all views, including the system ones
         String sql = """
-                SELECT COUNT(*)
+                SELECT 1
                 FROM INFORMATION_SCHEMA.TABLES
                 WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND TABLE_TYPE NOT LIKE 'BASE TABLE'
+                LIMIT 1
                 """;
 
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, validatedSchemaName, validatedViewName);
-        return count != null && count > 0;
+        List<Integer> views = jdbcTemplate.query(
+                sql,
+                ps -> {
+                    ps.setString(1, validatedSchemaName);
+                    ps.setString(2, validatedViewName);
+                },
+                (rs, rowNum) -> rs.getInt(1));
+        return !views.isEmpty();
     }
 
     public Boolean tableOrViewExists(String schemaName, String objectName) {
@@ -164,13 +193,20 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
 
         // information_schema.tables contains all views and tables
         String sql = """
-                SELECT COUNT(*)
+                SELECT 1
                 FROM INFORMATION_SCHEMA.TABLES
                 WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
+                LIMIT 1
                 """;
 
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, validatedSchemaName, validatedObjectName);
-        return count != null && count > 0;
+        List<Integer> objects = jdbcTemplate.query(
+                sql,
+                ps -> {
+                    ps.setString(1, validatedSchemaName);
+                    ps.setString(2, validatedObjectName);
+                },
+                (rs, rowNum) -> rs.getInt(1));
+        return !objects.isEmpty();
     }
 
     public SchemaMetadataDto getSchemaByName(String schemaName, boolean includeTables,
