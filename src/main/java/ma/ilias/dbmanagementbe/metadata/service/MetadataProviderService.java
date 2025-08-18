@@ -8,6 +8,7 @@ import ma.ilias.dbmanagementbe.metadata.dto.view.ViewColumnMetadataDto;
 import ma.ilias.dbmanagementbe.metadata.dto.view.ViewMetadataDto;
 
 import java.util.List;
+import java.util.Map;
 
 public interface MetadataProviderService {
     Boolean isSystemSchemaByName(String schemaName);
@@ -30,6 +31,9 @@ public interface MetadataProviderService {
 
     SchemaMetadataDto getSchemaByName(String schemaName, boolean includeTables, boolean includeViews, boolean checkSchemaExists);
 
+    SchemaMetadataDto getSchemaByName(String schemaName, List<String> tableNames, List<String> viewNames,
+                                      boolean includeTables, boolean includeViews, boolean checkSchemaExists);
+
     TableMetadataDto getTable(String schemaName, String tableName, boolean includeSchema,
                               boolean includeColumns, boolean includeIndexes, boolean checkTableExists);
 
@@ -42,13 +46,22 @@ public interface MetadataProviderService {
     ViewMetadataDto getView(String schemaName, String viewName, boolean includeSchema,
                             boolean includeColumns, boolean checkViewExists);
 
+    List<SchemaMetadataDto> getAllSchemas(Map<String, Map<String, List<String>>> schemasInfo,
+                                          boolean includeSystemSchemas, boolean includeTables, boolean includeViews);
+
     List<SchemaMetadataDto> getAllSchemas(boolean includeSystemSchemas, boolean includeTables, boolean includeViews);
 
     List<TableMetadataDto> getTablesBySchema(String schemaName, boolean includeSchema, boolean includeColumns,
                                              boolean includeIndexes, boolean checkSchemaExists);
 
-    List<ViewMetadataDto> getViewsBySchema(String schemaName, boolean includeSchema, boolean includeColumns,
-                                           boolean checkSchemaExists);
+    List<TableMetadataDto> getTablesBySchema(String schemaName, List<String> tableNames, boolean includeSchema, boolean includeColumns,
+                                             boolean includeIndexes, boolean checkSchemaExists);
+
+    List<ViewMetadataDto> getViewsBySchema(String schemaName,
+                                           boolean includeSchema, boolean includeColumns, boolean checkSchemaExists);
+
+    List<ViewMetadataDto> getViewsBySchema(String schemaName, List<String> viewNames,
+                                           boolean includeSchema, boolean includeColumns, boolean checkSchemaExists);
 
     List<BaseTableColumnMetadataDto> getColumnsByTable(String schemaName, String tableName,
                                                        boolean includeTable, boolean checkTableExists);

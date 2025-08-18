@@ -14,7 +14,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @AllArgsConstructor
@@ -46,70 +48,31 @@ public class MySqlSchemaManager implements SchemaService {
                                              boolean checkSchemaExists, boolean checkAuthorization) {
         String normalizedSchemaName = schemaName != null ? schemaName.trim().toLowerCase() : null;
 
-        // Check if user has schema-level read permission
-        boolean hasSchemaPermission = AuthorizationUtils.hasPermission(PermissionType.READ, normalizedSchemaName, null);
-        List<String> accessibleTables = null;
-
-        if (!hasSchemaPermission) {
-            // If no schema-level permission, check if user has permission on any tables in this schema
-            accessibleTables = getUserAccessibleTablesInSchema(normalizedSchemaName);
-            if (accessibleTables.isEmpty()) {
-                // User has no access to this schema or any tables within it
-                databaseAuthorizationService.checkReadPermission(schemaName, null); // This will throw an exception
-            }
+        if (AuthorizationUtils.hasPermission(PermissionType.READ, normalizedSchemaName, null)) {
+            return metadataProviderService.getSchemaByName(schemaName, includeTables, includeViews, checkSchemaExists);
         }
 
-        SchemaMetadataDto schema = metadataProviderService.getSchemaByName(
-                schemaName, includeTables, includeViews, checkSchemaExists);
+        List<String> accessibleTables = AuthorizationUtils.getAccessibleTablesInSchema(schemaName);
+        List<String> accessibleViews = AuthorizationUtils.getAccessibleViewsInSchema(schemaName);
 
-        // If user doesn't have schema-level permission, filter the tables to only show accessible ones
-        if (!hasSchemaPermission && schema.getTables() != null) {
-            if (accessibleTables == null) {
-                accessibleTables = getUserAccessibleTablesInSchema(normalizedSchemaName);
-            }
-            List<String> finalAccessibleTables = accessibleTables;
-            schema.setTables(schema.getTables().stream()
-                    .filter(table -> finalAccessibleTables.contains(table.getTableName().toLowerCase()))
-                    .toList());
-        }
-
-        return schema;
+        return metadataProviderService.getSchemaByName(schemaName, accessibleTables, accessibleViews,
+                includeTables, includeViews, checkSchemaExists);
     }
 
     @Override
     public List<SchemaMetadataDto> getAllSchemas(Boolean includeSystemSchemas) {
-        List<SchemaMetadataDto> allSchemas = metadataProviderService.getAllSchemas(includeSystemSchemas, false, false);
+        if (AuthorizationUtils.hasPermission(PermissionType.READ, null, null)) {
+            return metadataProviderService.getAllSchemas(includeSystemSchemas, false, false);
+        }
 
-        // Filter schemas based on read permissions and apply table filtering to each schema
-        return allSchemas.stream()
-                .filter(schema -> {
-                    String schemaName = schema.getSchemaName();
+        List<String> accessibleSchemas = AuthorizationUtils.getAccessibleSchemas();
+        Map<String, Map<String, List<String>>> accessibleSchemasInfo = new HashMap<>();
 
-                    // Check if user has schema-level read permission
-                    if (AuthorizationUtils.hasPermission(PermissionType.READ, schemaName, null)) {
-                        return true;
-                    }
+        accessibleSchemas.forEach(schema ->
+                accessibleSchemasInfo.put(schema, Map.of("tables", null, "views", null)));
 
-                    List<String> accessibleTables = getUserAccessibleTablesInSchema(schemaName);
-                    return !accessibleTables.isEmpty(); // Include schema only if user has access to at least one table
-                })
-                .peek(schema -> {
-                    String schemaName = schema.getSchemaName();
-
-                    // Check if user has schema-level read permission
-                    boolean hasSchemaPermission = AuthorizationUtils.hasPermission(
-                            PermissionType.READ, schemaName, null);
-
-                    // If user doesn't have schema-level permission, filter the tables to only show accessible ones
-                    if (!hasSchemaPermission && schema.getTables() != null) {
-                        List<String> accessibleTables = getUserAccessibleTablesInSchema(schemaName);
-                        schema.setTables(schema.getTables().stream()
-                                .filter(table -> accessibleTables.contains(table.getTableName().toLowerCase()))
-                                .toList());
-                    }
-
-                })
-                .toList();
+        return metadataProviderService.getAllSchemas(
+                accessibleSchemasInfo, includeSystemSchemas, false, false);
     }
 
     @Override

@@ -9,6 +9,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 @Component
@@ -219,6 +221,65 @@ public class AuthorizationUtils {
         if (permission.getTableName() != null) return permission.getTableName().equals(requestedObject);
 
         return permission.getViewName().equals(requestedObject);
+    }
+
+    /**
+     * Get accessible schemas based on user permissions
+     */
+    public static List<String> getAccessibleSchemas() {
+        AppUser currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return Collections.emptyList();
+        }
+
+        return currentUser.getRoles().stream()
+                .flatMap(role -> role.getPermissions().stream())
+                .filter(permission ->
+                        permission.getPermissionType() == PermissionType.READ &&
+                                permission.getSchemaName() != null
+                )
+                .map(permission -> permission.getSchemaName().toLowerCase())
+                .toList();
+    }
+
+    /**
+     * Get accessible tables in a schema based on user permissions
+     */
+    public static List<String> getAccessibleTablesInSchema(String schemaName) {
+        AppUser currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return Collections.emptyList();
+        }
+
+        return currentUser.getRoles().stream()
+                .flatMap(role -> role.getPermissions().stream())
+                .filter(permission ->
+                        permission.getPermissionType() == PermissionType.READ &&
+                                permission.getSchemaName().equalsIgnoreCase(schemaName) &&
+                                permission.getTableName() != null
+                )
+                .map(permission -> permission.getTableName().toLowerCase())
+                .toList();
+    }
+
+    /**
+     * Get accessible views in a schema based on user permissions
+     */
+    public static List<String> getAccessibleViewsInSchema(String schemaName) {
+        AppUser currentUser = getCurrentUser();
+        if (currentUser == null) {
+            return Collections.emptyList();
+        }
+
+        return currentUser.getRoles().stream()
+                .flatMap(role -> role.getPermissions().stream())
+                .filter(permission ->
+                        permission.getPermissionType() == PermissionType.READ &&
+                                permission.getSchemaName().equalsIgnoreCase(schemaName) &&
+                                permission.getViewName() != null
+                )
+                .map(permission -> permission.getTableName().toLowerCase())
+                .toList();
     }
 
     // Spring Security Authorization Decision Methods

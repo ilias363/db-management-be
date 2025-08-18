@@ -20,7 +20,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @AllArgsConstructor
@@ -211,6 +213,11 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
 
     public SchemaMetadataDto getSchemaByName(String schemaName, boolean includeTables,
                                              boolean includeViews, boolean checkSchemaExists) {
+        return getSchemaByName(schemaName, null, null, includeTables, includeViews, checkSchemaExists);
+    }
+
+    public SchemaMetadataDto getSchemaByName(String schemaName, List<String> tableNames, List<String> viewNames,
+                                             boolean includeTables, boolean includeViews, boolean checkSchemaExists) {
         if (checkSchemaExists && !schemaExists(schemaName)) {
             throw new SchemaNotFoundException(schemaName);
         }
@@ -220,10 +227,11 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
                 .isSystemSchema(isSystemSchemaByName(schemaName))
                 .creationDate(null)
                 .tables(includeTables ?
-                        getTablesBySchema(schemaName, false, false, false, false)
+                        getTablesBySchema(schemaName, tableNames,
+                                false, false, false, false)
                         : null)
                 .views(includeViews ?
-                        getViewsBySchema(schemaName, false, false, false)
+                        getViewsBySchema(schemaName, viewNames, false, false, false)
                         : null)
                 .build();
     }
@@ -504,9 +512,22 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
     }
 
     public List<SchemaMetadataDto> getAllSchemas(boolean includeSystemSchemas, boolean includeTables, boolean includeViews) {
-        String schemaSql = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA";
+        return getAllSchemas(null, includeSystemSchemas, includeTables, includeViews);
+    }
 
-        return jdbcTemplate.query(schemaSql, (rs) -> {
+    public List<SchemaMetadataDto> getAllSchemas(Map<String, Map<String, List<String>>> schemasInfo,
+                                                 boolean includeSystemSchemas, boolean includeTables, boolean includeViews) {
+        if (schemasInfo != null && schemasInfo.isEmpty()) return Collections.emptyList();
+
+        StringBuilder sql = new StringBuilder("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA");
+
+        if (schemasInfo != null) {
+            sql.append(" AND LOWER(SCHEMA_NAME) IN ('").append(String.join("', '", schemasInfo.keySet())).append("')");
+        }
+
+        sql.append(" ORDER BY SCHEMA_NAME");
+
+        return jdbcTemplate.query(sql.toString(), (rs) -> {
             List<SchemaMetadataDto> result = new ArrayList<>();
 
             while (rs.next()) {
@@ -516,7 +537,15 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
                     continue;
                 }
 
-                result.add(getSchemaByName(schemaName, includeTables, includeViews, false));
+                if (schemasInfo == null) {
+                    result.add(getSchemaByName(schemaName, includeTables, includeViews, false));
+                } else {
+                    result.add(getSchemaByName(
+                            schemaName,
+                            schemasInfo.get(schemaName.toLowerCase()).get("tables"),
+                            schemasInfo.get(schemaName.toLowerCase()).get("views"),
+                            includeTables, includeViews, false));
+                }
             }
 
             return result;
@@ -525,18 +554,28 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
 
     public List<TableMetadataDto> getTablesBySchema(String schemaName, boolean includeSchema, boolean includeColumns,
                                                     boolean includeIndexes, boolean checkSchemaExists) {
+        return getTablesBySchema(schemaName, null, includeSchema, includeColumns, includeIndexes, checkSchemaExists);
+    }
+
+    public List<TableMetadataDto> getTablesBySchema(String schemaName, List<String> tableNames, boolean includeSchema, boolean includeColumns,
+                                                    boolean includeIndexes, boolean checkSchemaExists) {
+        if (tableNames != null && tableNames.isEmpty()) return Collections.emptyList();
+
         if (checkSchemaExists && !schemaExists(schemaName)) {
             throw new SchemaNotFoundException(schemaName.toLowerCase());
         }
 
-        String tableSql = """
-                SELECT TABLE_NAME
-                FROM INFORMATION_SCHEMA.TABLES
-                WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = 'BASE TABLE'
-                """;
+        StringBuilder sql = new StringBuilder("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES");
+        sql.append(" WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = 'BASE TABLE'");
+
+        if (tableNames != null) {
+            sql.append(" AND LOWER(TABLE_NAME) IN ('").append(String.join("', '", tableNames)).append("')");
+        }
+
+        sql.append(" ORDER BY TABLE_NAME");
 
         var tables = jdbcTemplate.query(
-                tableSql,
+                sql.toString(),
                 (rs, rowNum) -> getTable(
                         schemaName, rs.getString("TABLE_NAME"),
                         false, includeColumns, includeIndexes, false),
@@ -552,19 +591,27 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
 
     public List<ViewMetadataDto> getViewsBySchema(String schemaName, boolean includeSchema, boolean includeColumns,
                                                   boolean checkSchemaExists) {
+        return getViewsBySchema(schemaName, null, includeSchema, includeColumns, checkSchemaExists);
+    }
+
+    public List<ViewMetadataDto> getViewsBySchema(String schemaName, List<String> viewNames, boolean includeSchema, boolean includeColumns,
+                                                  boolean checkSchemaExists) {
+        if (viewNames != null && viewNames.isEmpty()) return Collections.emptyList();
+
         if (checkSchemaExists && !schemaExists(schemaName)) {
             throw new SchemaNotFoundException(schemaName.toLowerCase());
         }
 
-        String sql = """
-                SELECT TABLE_NAME as VIEW_NAME
-                FROM INFORMATION_SCHEMA.VIEWS
-                WHERE TABLE_SCHEMA = ?
-                ORDER BY TABLE_NAME
-                """;
+        StringBuilder sql = new StringBuilder("SELECT TABLE_NAME as VIEW_NAME FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = ?");
+
+        if (viewNames != null) {
+            sql.append(" AND LOWER(VIEW_NAME) IN ('").append(String.join("', '", viewNames)).append("')");
+        }
+
+        sql.append(" ORDER BY VIEW_NAME");
 
         var views = jdbcTemplate.query(
-                sql,
+                sql.toString(),
                 (rs, rowNum) -> getView(schemaName, rs.getString("VIEW_NAME"),
                         false, includeColumns, false),
                 schemaName);

@@ -54,15 +54,14 @@ public class MySqlTableManager implements TableService {
     @Override
     public List<TableMetadataDto> getTablesBySchema(String schemaName, boolean includeSchema, boolean includeColumns,
                                                     boolean includeIndexes, boolean checkSchemaExists) {
-        List<TableMetadataDto> allTables = metadataProviderService.getTablesBySchema(schemaName, includeSchema, includeColumns, includeIndexes, checkSchemaExists);
+        if (AuthorizationUtils.hasPermission(PermissionType.READ, schemaName, null)) {
+            return metadataProviderService.getTablesBySchema(schemaName, includeSchema, includeColumns, includeIndexes, checkSchemaExists);
+        }
 
-        // Filter tables based on read permissions
-        return allTables.stream()
-                .filter(table -> AuthorizationUtils.hasPermission(
-                        PermissionType.READ,
-                        schemaName != null ? schemaName.trim().toLowerCase() : null,
-                        table.getTableName() != null ? table.getTableName().trim().toLowerCase() : null))
-                .toList();
+        List<String> accessibleTables = AuthorizationUtils.getAccessibleTablesInSchema(schemaName);
+        return metadataProviderService.getTablesBySchema(schemaName, accessibleTables,
+                includeSchema, includeColumns, includeIndexes, checkSchemaExists);
+
     }
 
     @Override

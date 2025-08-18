@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -47,15 +46,13 @@ public class MySqlViewManager implements ViewService {
     @Override
     public List<ViewMetadataDto> getViewsBySchema(String schemaName, boolean includeSchema,
                                                   boolean includeColumns, boolean checkSchemaExists) {
-        List<ViewMetadataDto> allViews = metadataProviderService.getViewsBySchema(schemaName, includeSchema, includeColumns, checkSchemaExists);
+        if (AuthorizationUtils.hasPermission(PermissionType.READ, schemaName, null)) {
+            return metadataProviderService.getViewsBySchema(schemaName, includeSchema, includeColumns, checkSchemaExists);
+        }
 
-        // Filter views based on read permissions
-        return allViews.stream()
-                .filter(view -> AuthorizationUtils.hasPermission(
-                        PermissionType.READ,
-                        schemaName != null ? schemaName.trim().toLowerCase() : null,
-                        view.getViewName() != null ? view.getViewName().trim().toLowerCase() : null))
-                .collect(Collectors.toList());
+        List<String> accessibleViews = AuthorizationUtils.getAccessibleViewsInSchema(schemaName);
+        return metadataProviderService.getViewsBySchema(schemaName, accessibleViews,
+                includeSchema, includeColumns, checkSchemaExists);
     }
 
     @Override
