@@ -671,7 +671,7 @@ public class MySqlColumnManager implements ColumnService {
                 String addPkSql = String.format("ALTER TABLE %s.%s ADD PRIMARY KEY (%s)",
                         updateColPKDto.getSchemaName(),
                         updateColPKDto.getTableName(),
-                        String.join(", ", currentPkColumns));
+                        String.join(", ", updateColPKDto.getColumnNames().stream().map(String::trim).toList()));
                 jdbcTemplate.execute(addPkSql);
             }
         } else {
