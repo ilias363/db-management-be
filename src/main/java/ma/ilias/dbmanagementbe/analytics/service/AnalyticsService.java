@@ -1,9 +1,6 @@
 package ma.ilias.dbmanagementbe.analytics.service;
 
-import ma.ilias.dbmanagementbe.analytics.dto.AuditActivityDto;
-import ma.ilias.dbmanagementbe.analytics.dto.DashboardStatsDto;
-import ma.ilias.dbmanagementbe.analytics.dto.DatabaseUsageDto;
-import ma.ilias.dbmanagementbe.analytics.dto.UserActivityDto;
+import ma.ilias.dbmanagementbe.analytics.dto.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,4 +13,6 @@ public interface AnalyticsService {
     List<DatabaseUsageDto> getDatabaseUsage(boolean includeSystem);
 
     List<AuditActivityDto> getAuditActivity(LocalDateTime startDate, LocalDateTime endDate, String period);
+
+    List<TopUsersByActivityDto> getTopUsersByActivity(LocalDateTime startDate, LocalDateTime endDate, Integer limit);
 }

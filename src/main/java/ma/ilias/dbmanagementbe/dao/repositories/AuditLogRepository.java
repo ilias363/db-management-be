@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
     Page<AuditLog> findByUser_Id(Long userId, Pageable pageable);
@@ -30,6 +31,19 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
 
     @Query("SELECT COUNT(a) FROM AuditLog a WHERE a.auditTimestamp >= :startDate AND a.auditTimestamp < :endDate AND a.successful = true")
     long countSuccessfulAuditsInPeriod(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    @Query(value = """
+            SELECT u.username, COUNT(a.id) as activity_count, MAX(a.audit_timestamp) as last_active
+            FROM app_users u
+            LEFT JOIN audit_logs a ON u.id = a.user_id
+            WHERE a.audit_timestamp BETWEEN :startDate AND :endDate
+            GROUP BY u.username
+            ORDER BY activity_count DESC
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<Object[]> findTopUsersByActivity(@Param("startDate") LocalDateTime startDate,
+                                          @Param("endDate") LocalDateTime endDate,
+                                          @Param("limit") Integer limit);
 
     @Query(value = """
             SELECT action_type FROM audit_logs

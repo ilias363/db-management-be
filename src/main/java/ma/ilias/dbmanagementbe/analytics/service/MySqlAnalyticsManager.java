@@ -2,10 +2,7 @@ package ma.ilias.dbmanagementbe.analytics.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import ma.ilias.dbmanagementbe.analytics.dto.AuditActivityDto;
-import ma.ilias.dbmanagementbe.analytics.dto.DashboardStatsDto;
-import ma.ilias.dbmanagementbe.analytics.dto.DatabaseUsageDto;
-import ma.ilias.dbmanagementbe.analytics.dto.UserActivityDto;
+import ma.ilias.dbmanagementbe.analytics.dto.*;
 import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.AuditLogRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.RoleRepository;
@@ -123,6 +120,19 @@ public class MySqlAnalyticsManager implements AnalyticsService {
         }
 
         return activity;
+    }
+
+    @Override
+    public List<TopUsersByActivityDto> getTopUsersByActivity(LocalDateTime startDate, LocalDateTime endDate, Integer limit) {
+        List<Object[]> results = auditLogRepository.findTopUsersByActivity(startDate, endDate, limit);
+
+        return results.stream()
+                .map(row -> TopUsersByActivityDto.builder()
+                        .username((String) row[0])
+                        .actionCount(((Number) row[1]).longValue())
+                        .lastActivity(row[2] != null ? row[2].toString() : "unknown")
+                        .build())
+                .toList();
     }
 
     private long getDatabaseSchemaCount(boolean includeSystem) {

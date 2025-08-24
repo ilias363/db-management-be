@@ -1,10 +1,7 @@
 package ma.ilias.dbmanagementbe.controller;
 
 import lombok.AllArgsConstructor;
-import ma.ilias.dbmanagementbe.analytics.dto.AuditActivityDto;
-import ma.ilias.dbmanagementbe.analytics.dto.DashboardStatsDto;
-import ma.ilias.dbmanagementbe.analytics.dto.DatabaseUsageDto;
-import ma.ilias.dbmanagementbe.analytics.dto.UserActivityDto;
+import ma.ilias.dbmanagementbe.analytics.dto.*;
 import ma.ilias.dbmanagementbe.analytics.service.AnalyticsService;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -79,6 +76,24 @@ public class AnalyticsController {
                 .message("Audit activity fetched successfully")
                 .success(true)
                 .data(activity)
+                .build());
+    }
+
+    @GetMapping("/users/top-by-activity")
+    public ResponseEntity<ApiResponse<List<TopUsersByActivityDto>>> getTopUsersByActivity(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(defaultValue = "week") String period,
+            @RequestParam(defaultValue = "10") Integer limit) {
+
+        if (startDate == null) startDate = getStartDateByPeriod(period);
+        if (endDate == null) endDate = LocalDateTime.now();
+
+        List<TopUsersByActivityDto> topUsers = analyticsService.getTopUsersByActivity(startDate, endDate, limit);
+        return ResponseEntity.ok(ApiResponse.<List<TopUsersByActivityDto>>builder()
+                .message("Top users by activity fetched successfully")
+                .success(true)
+                .data(topUsers)
                 .build());
     }
 
