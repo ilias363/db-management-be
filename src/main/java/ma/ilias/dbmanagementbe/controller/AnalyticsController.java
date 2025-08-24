@@ -1,6 +1,7 @@
 package ma.ilias.dbmanagementbe.controller;
 
 import lombok.AllArgsConstructor;
+import ma.ilias.dbmanagementbe.analytics.dto.AuditActivityDto;
 import ma.ilias.dbmanagementbe.analytics.dto.DashboardStatsDto;
 import ma.ilias.dbmanagementbe.analytics.dto.DatabaseUsageDto;
 import ma.ilias.dbmanagementbe.analytics.dto.UserActivityDto;
@@ -61,6 +62,23 @@ public class AnalyticsController {
                 .message("Database usage fetched successfully")
                 .success(true)
                 .data(usage)
+                .build());
+    }
+
+    @GetMapping("/audit/activity")
+    public ResponseEntity<ApiResponse<List<AuditActivityDto>>> getAuditActivity(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(defaultValue = "day") String period) {
+
+        if (startDate == null) startDate = getStartDateByPeriod(period);
+        if (endDate == null) endDate = LocalDateTime.now();
+
+        List<AuditActivityDto> activity = analyticsService.getAuditActivity(startDate, endDate, period);
+        return ResponseEntity.ok(ApiResponse.<List<AuditActivityDto>>builder()
+                .message("Audit activity fetched successfully")
+                .success(true)
+                .data(activity)
                 .build());
     }
 

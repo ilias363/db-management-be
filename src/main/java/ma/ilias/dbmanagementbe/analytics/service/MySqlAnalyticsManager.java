@@ -2,6 +2,7 @@ package ma.ilias.dbmanagementbe.analytics.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import ma.ilias.dbmanagementbe.analytics.dto.AuditActivityDto;
 import ma.ilias.dbmanagementbe.analytics.dto.DashboardStatsDto;
 import ma.ilias.dbmanagementbe.analytics.dto.DatabaseUsageDto;
 import ma.ilias.dbmanagementbe.analytics.dto.UserActivityDto;
@@ -95,6 +96,33 @@ public class MySqlAnalyticsManager implements AnalyticsService {
                                 "unknown")
                         .build()
         );
+    }
+
+    @Override
+    public List<AuditActivityDto> getAuditActivity(LocalDateTime startDate, LocalDateTime endDate, String period) {
+        List<AuditActivityDto> activity = new ArrayList<>();
+        LocalDateTime current = startDate;
+
+        while (current.isBefore(endDate)) {
+            LocalDateTime nextPeriod = incrementPeriod(current, period);
+
+            Long totalActions = auditLogRepository.countAuditsInPeriod(current, nextPeriod);
+            Long successfulActions = auditLogRepository.countSuccessfulAuditsInPeriod(current, nextPeriod);
+            Long failedActions = totalActions - successfulActions;
+            Long activeUsers = auditLogRepository.countUniqueUsersInPeriod(current, nextPeriod);
+
+            activity.add(AuditActivityDto.builder()
+                    .date(current.toString())
+                    .totalActions(totalActions)
+                    .successfulActions(successfulActions)
+                    .failedActions(failedActions)
+                    .activeUsers(activeUsers)
+                    .build());
+
+            current = nextPeriod;
+        }
+
+        return activity;
     }
 
     private long getDatabaseSchemaCount(boolean includeSystem) {

@@ -1,5 +1,6 @@
 package ma.ilias.dbmanagementbe.analytics.service;
 
+import ma.ilias.dbmanagementbe.analytics.dto.AuditActivityDto;
 import ma.ilias.dbmanagementbe.analytics.dto.DashboardStatsDto;
 import ma.ilias.dbmanagementbe.analytics.dto.DatabaseUsageDto;
 import ma.ilias.dbmanagementbe.analytics.dto.UserActivityDto;
@@ -13,4 +14,6 @@ public interface AnalyticsService {
     List<UserActivityDto> getUserActivity(LocalDateTime startDate, LocalDateTime endDate, String period);
 
     List<DatabaseUsageDto> getDatabaseUsage(boolean includeSystem);
+
+    List<AuditActivityDto> getAuditActivity(LocalDateTime startDate, LocalDateTime endDate, String period);
 }
