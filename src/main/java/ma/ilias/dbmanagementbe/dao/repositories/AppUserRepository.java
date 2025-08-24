@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface AppUserRepository extends JpaRepository<AppUser, Long> {
@@ -31,6 +32,12 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
             "WHERE YEAR(u.createdAt) = YEAR(CURRENT_DATE) " +
             "AND MONTH(u.createdAt) = MONTH(CURRENT_DATE)")
     long countUsersCreatedThisMonth();
+
+    @Query("SELECT COUNT(u) FROM AppUser u WHERE u.createdAt >= :startDate AND u.createdAt < :endDate")
+    long countUsersCreatedInPeriod(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    @Query("SELECT COUNT(u) FROM AppUser u WHERE u.createdAt < :date")
+    long countUsersBeforeDate(@Param("date") LocalDateTime date);
 
     @Query("SELECT u FROM AppUser u JOIN u.roles r WHERE r.id = :roleId ")
     Page<AppUser> findByRoleId(@Param("roleId") Long roleId, Pageable pageable);
