@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface RoleRepository extends JpaRepository<Role, Long> {
@@ -23,4 +24,13 @@ public interface RoleRepository extends JpaRepository<Role, Long> {
 
     @Query(value = "SELECT COUNT(*) FROM user_roles", nativeQuery = true)
     long countRoleAssignments();
+
+    @Query(value = """
+            SELECT r.name as role_name, COUNT(ur.user_id) as user_count
+            FROM roles r
+            LEFT JOIN user_roles ur ON r.id = ur.role_id
+            GROUP BY r.name
+            ORDER BY user_count DESC
+            """, nativeQuery = true)
+    List<Object[]> findRoleDistribution();
 }

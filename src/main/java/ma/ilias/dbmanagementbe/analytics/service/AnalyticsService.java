@@ -15,4 +15,6 @@ public interface AnalyticsService {
     List<AuditActivityDto> getAuditActivity(LocalDateTime startDate, LocalDateTime endDate, String period);
 
     List<TopUsersByActivityDto> getTopUsersByActivity(LocalDateTime startDate, LocalDateTime endDate, Integer limit);
+
+    List<RoleDistributionDto> getRoleDistribution();
 }

@@ -97,6 +97,16 @@ public class AnalyticsController {
                 .build());
     }
 
+    @GetMapping("/roles/distribution")
+    public ResponseEntity<ApiResponse<List<RoleDistributionDto>>> getRoleDistribution() {
+        List<RoleDistributionDto> distribution = analyticsService.getRoleDistribution();
+        return ResponseEntity.ok(ApiResponse.<List<RoleDistributionDto>>builder()
+                .message("Role distribution fetched successfully")
+                .success(true)
+                .data(distribution)
+                .build());
+    }
+
     private LocalDateTime getStartDateByPeriod(String period) {
         LocalDateTime now = LocalDateTime.now();
         return switch (period.toLowerCase()) {

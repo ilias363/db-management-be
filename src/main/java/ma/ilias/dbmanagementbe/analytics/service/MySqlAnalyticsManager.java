@@ -135,6 +135,18 @@ public class MySqlAnalyticsManager implements AnalyticsService {
                 .toList();
     }
 
+    @Override
+    public List<RoleDistributionDto> getRoleDistribution() {
+        List<Object[]> results = roleRepository.findRoleDistribution();
+
+        return results.stream()
+                .map(row -> RoleDistributionDto.builder()
+                        .roleName((String) row[0])
+                        .userCount(((Number) row[1]).longValue())
+                        .build())
+                .toList();
+    }
+
     private long getDatabaseSchemaCount(boolean includeSystem) {
         String schemaCountSql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.SCHEMATA" +
                 (includeSystem ? "" : " WHERE SCHEMA_NAME NOT IN ('mysql','sys','information_schema','performance_schema')");
