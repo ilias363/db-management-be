@@ -3,6 +3,7 @@ package ma.ilias.dbmanagementbe.analytics.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ma.ilias.dbmanagementbe.analytics.dto.DashboardStatsDto;
+import ma.ilias.dbmanagementbe.analytics.dto.DatabaseUsageDto;
 import ma.ilias.dbmanagementbe.analytics.dto.UserActivityDto;
 import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.AuditLogRepository;
@@ -68,6 +69,32 @@ public class MySqlAnalyticsManager implements AnalyticsService {
         }
 
         return activity;
+    }
+
+    @Override
+    public List<DatabaseUsageDto> getDatabaseUsage(boolean includeSystem) {
+        String sql = "SELECT " +
+                "table_schema as schema_name, " +
+                "COUNT(*) as table_count, " +
+                "IFNULL(SUM(table_rows), 0) as record_count, " +
+                "IFNULL(SUM(data_length + index_length) / 1024 / 1024, 0) as size_mb, " +
+                "MAX(update_time) as last_accessed " +
+                "FROM information_schema.tables WHERE table_type = 'BASE TABLE'" +
+                (includeSystem ? "table_schema NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys') " : "") +
+                "GROUP BY table_schema " +
+                "ORDER BY size_mb DESC";
+
+        return jdbcTemplate.query(sql,
+                (rs, rowNum) -> DatabaseUsageDto.builder()
+                        .schemaName(rs.getString("schema_name"))
+                        .tableCount((long) rs.getInt("table_count"))
+                        .recordCount(rs.getLong("record_count"))
+                        .size((long) rs.getDouble("size_mb"))
+                        .lastModified(rs.getTimestamp("last_accessed") != null ?
+                                rs.getTimestamp("last_accessed").toString() :
+                                "unknown")
+                        .build()
+        );
     }
 
     private long getDatabaseSchemaCount(boolean includeSystem) {

@@ -2,6 +2,7 @@ package ma.ilias.dbmanagementbe.controller;
 
 import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.analytics.dto.DashboardStatsDto;
+import ma.ilias.dbmanagementbe.analytics.dto.DatabaseUsageDto;
 import ma.ilias.dbmanagementbe.analytics.dto.UserActivityDto;
 import ma.ilias.dbmanagementbe.analytics.service.AnalyticsService;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
@@ -48,6 +49,18 @@ public class AnalyticsController {
                 .message("User activity fetched successfully")
                 .success(true)
                 .data(activity)
+                .build());
+    }
+
+    @GetMapping("/database/usage")
+    public ResponseEntity<ApiResponse<List<DatabaseUsageDto>>> getDatabaseUsage(
+            @RequestParam(defaultValue = "false") boolean includeSystem
+    ) {
+        List<DatabaseUsageDto> usage = analyticsService.getDatabaseUsage(includeSystem);
+        return ResponseEntity.ok(ApiResponse.<List<DatabaseUsageDto>>builder()
+                .message("Database usage fetched successfully")
+                .success(true)
+                .data(usage)
                 .build());
     }
 
