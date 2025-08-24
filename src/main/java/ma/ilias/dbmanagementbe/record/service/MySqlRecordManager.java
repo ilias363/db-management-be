@@ -1319,7 +1319,7 @@ public class MySqlRecordManager implements RecordService {
                 validateValueDatatype(tableName, columnName, value, column);
             }
 
-            if (column.getIsUnique()) {
+            if (column.getIsUnique() && !isUpdate) {
                 validateValueUniqueness(schemaName, tableName, columnName, value);
             }
 
@@ -1439,7 +1439,6 @@ public class MySqlRecordManager implements RecordService {
                             " must be a string representing a timestamp (yyyy-MM-dd HH:mm:ss)");
                 }
             }
-            default -> throw new InvalidRecordDataException(tableName, "Invalid data type for column" + columnName);
         }
     }
 
