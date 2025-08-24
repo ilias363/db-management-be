@@ -522,7 +522,7 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
         StringBuilder sql = new StringBuilder("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA");
 
         if (schemasInfo != null) {
-            sql.append(" AND LOWER(SCHEMA_NAME) IN ('").append(String.join("', '", schemasInfo.keySet())).append("')");
+            sql.append(" WHERE LOWER(SCHEMA_NAME) IN ('").append(String.join("', '", schemasInfo.keySet())).append("')");
         }
 
         sql.append(" ORDER BY SCHEMA_NAME");
@@ -540,10 +540,12 @@ public class MySqlMetadataProviderManager implements MetadataProviderService {
                 if (schemasInfo == null) {
                     result.add(getSchemaByName(schemaName, includeTables, includeViews, false));
                 } else {
+                    var tableNames = schemasInfo.get(schemaName.toLowerCase()).get("tables");
+                    var viewNames = schemasInfo.get(schemaName.toLowerCase()).get("views");
                     result.add(getSchemaByName(
                             schemaName,
-                            schemasInfo.get(schemaName.toLowerCase()).get("tables"),
-                            schemasInfo.get(schemaName.toLowerCase()).get("views"),
+                            tableNames.isEmpty() ? null : tableNames,
+                            viewNames.isEmpty() ? null : viewNames,
                             includeTables, includeViews, false));
                 }
             }

@@ -14,6 +14,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,7 +70,10 @@ public class MySqlSchemaManager implements SchemaService {
         Map<String, Map<String, List<String>>> accessibleSchemasInfo = new HashMap<>();
 
         accessibleSchemas.forEach(schema ->
-                accessibleSchemasInfo.put(schema, Map.of("tables", null, "views", null)));
+                accessibleSchemasInfo.put(schema, Map.of(
+                        "tables", Collections.emptyList(),
+                        "views", Collections.emptyList()
+                )));
 
         return metadataProviderService.getAllSchemas(
                 accessibleSchemasInfo, includeSystemSchemas, false, false);
