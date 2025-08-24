@@ -77,8 +77,8 @@ public class MySqlAnalyticsManager implements AnalyticsService {
                 "IFNULL(SUM(table_rows), 0) as record_count, " +
                 "IFNULL(SUM(data_length + index_length) / 1024 / 1024, 0) as size_mb, " +
                 "MAX(update_time) as last_accessed " +
-                "FROM information_schema.tables WHERE table_type = 'BASE TABLE'" +
-                (includeSystem ? "table_schema NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys') " : "") +
+                "FROM information_schema.tables WHERE table_type = 'BASE TABLE' " +
+                (includeSystem ? "" : "AND table_schema NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys') ") +
                 "GROUP BY table_schema " +
                 "ORDER BY size_mb DESC";
 
