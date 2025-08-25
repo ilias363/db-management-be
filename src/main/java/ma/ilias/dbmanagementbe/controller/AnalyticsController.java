@@ -49,7 +49,7 @@ public class AnalyticsController {
     public ResponseEntity<ApiResponse<DatabaseStatsDto>> getDatabaseStats(
             @RequestParam(defaultValue = "false") boolean includeSystem
     ) {
-        DatabaseStatsDto stats = analyticsService.getStats(includeSystem);
+        DatabaseStatsDto stats = analyticsService.getDatabaseStats(includeSystem);
         return ResponseEntity.ok(ApiResponse.<DatabaseStatsDto>builder()
                 .message("Database stats fetched successfully")
                 .success(true)

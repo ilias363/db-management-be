@@ -62,7 +62,7 @@ public class MySqlAnalyticsManager implements AnalyticsService {
     }
 
     @Override
-    public DatabaseStatsDto getStats(boolean includeSystem) {
+    public DatabaseStatsDto getDatabaseStats(boolean includeSystem) {
         return DatabaseStatsDto.builder()
                 .totalSchemas(getDatabaseSchemaCount(includeSystem))
                 .totalTables(getDatabaseTableCount(includeSystem))

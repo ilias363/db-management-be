@@ -11,7 +11,7 @@ public interface AnalyticsService {
 
     DatabaseType getDatabaseType();
 
-    DatabaseStatsDto getStats(boolean includeSystem);
+    DatabaseStatsDto getDatabaseStats(boolean includeSystem);
 
     DashboardStatsDto getDashboardStats(boolean includeSystem);
 
@@ -24,6 +24,6 @@ public interface AnalyticsService {
     List<AuditActivityDto> getAuditActivity(LocalDateTime startDate, LocalDateTime endDate, String period);
 
     List<AuditHeatmapDto> getAuditHeatmap(LocalDateTime startDate, LocalDateTime endDate);
-    
+
     List<AuditHeatmapDto> getAuditHeatmapAllTime();
 }
