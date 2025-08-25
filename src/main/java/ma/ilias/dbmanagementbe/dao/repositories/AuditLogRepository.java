@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
     Page<AuditLog> findByUser_Id(Long userId, Pageable pageable);
@@ -98,4 +99,83 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
                                       @Param("after") LocalDateTime after,
                                       @Param("before") LocalDateTime before,
                                       Pageable pageable);
+
+    long countByUser_Id(Long userId);
+
+    long countByUser_IdAndSuccessful(Long userId, Boolean successful);
+
+    long countByUserIdAndAuditTimestampAfter(Long userId, LocalDateTime auditTimestampAfter);
+
+    @Query("""
+            SELECT a.actionType
+            FROM AuditLog a
+            WHERE a.user.id = :userId
+            GROUP BY a.actionType
+            ORDER BY COUNT(a.actionType) DESC
+            """)
+    List<ActionType> findTopActionTypeByUserId(@Param("userId") Long userId, Pageable pageable);
+
+    default Optional<String> findTopActionTypeByUserId(Long userId) {
+        List<ActionType> result = findTopActionTypeByUserId(userId, Pageable.ofSize(1));
+        return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0).name());
+    }
+
+    @Query("""
+            SELECT a.schemaName
+            FROM AuditLog a
+            WHERE a.user.id = :userId AND a.schemaName IS NOT NULL
+            GROUP BY a.schemaName
+            ORDER BY COUNT(a.schemaName) DESC
+            """)
+    List<String> findTopSchemaByUserId(@Param("userId") Long userId, Pageable pageable);
+
+    default Optional<String> findTopSchemaByUserId(Long userId) {
+        List<String> result = findTopSchemaByUserId(userId, Pageable.ofSize(1));
+        return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
+    }
+
+    @Query("""
+            SELECT a.tableName
+            FROM AuditLog a
+            WHERE a.user.id = :userId AND a.tableName IS NOT NULL
+            GROUP BY a.tableName
+            ORDER BY COUNT(a.tableName) DESC
+            """)
+    List<String> findTopTableByUserId(@Param("userId") Long userId, Pageable pageable);
+
+    default java.util.Optional<String> findTopTableByUserId(Long userId) {
+        List<String> result = findTopTableByUserId(userId, Pageable.ofSize(1));
+        return result.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(result.get(0));
+    }
+
+    @Query("SELECT COUNT(DISTINCT a.schemaName) FROM AuditLog a WHERE a.user.id = :userId AND a.schemaName IS NOT NULL")
+    long countUniqueSchemasByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT COUNT(DISTINCT a.tableName) FROM AuditLog a WHERE a.user.id = :userId AND a.tableName IS NOT NULL")
+    long countUniqueTablesByUserId(@Param("userId") Long userId);
+
+    @Query("""
+            SELECT a.actionType, COUNT(a.actionType)
+            FROM AuditLog a
+            WHERE a.user.id = :userId
+            GROUP BY a.actionType
+            ORDER BY COUNT(a.actionType) DESC
+            """)
+    List<Object[]> findUserActionBreakdown(@Param("userId") Long userId);
+
+    @Query("""
+            SELECT a.schemaName, COUNT(a.schemaName), MAX(a.auditTimestamp)
+            FROM AuditLog a
+            WHERE a.user.id = :userId AND a.schemaName IS NOT NULL
+            GROUP BY a.schemaName
+            ORDER BY COUNT(a.schemaName) DESC
+            """)
+    List<Object[]> findUserDatabaseAccess(@Param("userId") Long userId);
+
+    @Query("""
+            SELECT a.auditTimestamp, EXTRACT(HOUR FROM a.auditTimestamp)
+            FROM AuditLog a
+            WHERE a.user.id = :userId AND a.auditTimestamp IS NOT NULL
+            """)
+    List<Object[]> findUserAuditHeatmapData(@Param("userId") Long userId);
 }
