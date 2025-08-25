@@ -30,20 +30,21 @@ public class MySqlAnalyticsManager implements AnalyticsService {
         String sql = "SELECT " +
                 "table_schema as schema_name, " +
                 "COUNT(*) as table_count, " +
-                "IFNULL(SUM(table_rows), 0) as record_count, " +
-                "IFNULL(SUM(data_length + index_length) / 1024 / 1024, 0) as size_mb, " +
+                "SUM(table_rows) as record_count, " +
+                "SUM(data_length) as data_size_bytes, " +
+                "SUM(index_length) as index_size_bytes, " +
                 "MAX(update_time) as last_accessed " +
                 "FROM information_schema.tables WHERE table_type = 'BASE TABLE' " +
                 (includeSystem ? "" : "AND table_schema NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys') ") +
                 "GROUP BY table_schema " +
-                "ORDER BY size_mb DESC";
+                "ORDER BY data_size_bytes + index_size_bytes DESC";
 
         return jdbcTemplate.query(sql,
                 (rs, rowNum) -> DatabaseUsageDto.builder()
                         .schemaName(rs.getString("schema_name"))
                         .tableCount((long) rs.getInt("table_count"))
                         .recordCount(rs.getLong("record_count"))
-                        .size((long) rs.getDouble("size_mb"))
+                        .size((long) rs.getDouble("data_size_bytes") + (long) rs.getDouble("index_size_bytes"))
                         .lastModified(rs.getTimestamp("last_accessed") != null ?
                                 rs.getTimestamp("last_accessed").toString() :
                                 "unknown")
