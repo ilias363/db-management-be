@@ -163,4 +163,14 @@ public class AnalyticsController {
             default -> now.minusDays(7);
         };
     }
+
+    @GetMapping("/user/dashboard/stats")
+    public ResponseEntity<ApiResponse<UserDashboardStatsDto>> getUserDashboardStats() {
+        UserDashboardStatsDto stats = analyticsService.getUserDashboardStats();
+        return ResponseEntity.ok(ApiResponse.<UserDashboardStatsDto>builder()
+                .message("User dashboard stats fetched successfully")
+                .success(true)
+                .data(stats)
+                .build());
+    }
 }

@@ -26,4 +26,6 @@ public interface AnalyticsService {
     List<AuditHeatmapDto> getAuditHeatmap(LocalDateTime startDate, LocalDateTime endDate);
 
     List<AuditHeatmapDto> getAuditHeatmapAllTime();
+
+    UserDashboardStatsDto getUserDashboardStats();
 }

@@ -3,10 +3,13 @@ package ma.ilias.dbmanagementbe.analytics.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ma.ilias.dbmanagementbe.analytics.dto.*;
+import ma.ilias.dbmanagementbe.dao.entities.AppUser;
 import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.AuditLogRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.RoleRepository;
 import ma.ilias.dbmanagementbe.enums.DatabaseType;
+import ma.ilias.dbmanagementbe.mapper.AuditLogMapper;
+import ma.ilias.dbmanagementbe.util.AuthorizationUtils;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -28,6 +31,7 @@ public class MySqlAnalyticsManager implements AnalyticsService {
     private final RoleRepository roleRepository;
     private final JdbcTemplate jdbcTemplate;
     private final DatabaseType databaseType;
+    private final AuditLogMapper auditLogMapper;
 
     @Override
     public List<DatabaseUsageDto> getDatabaseUsage(boolean includeSystem) {
@@ -245,5 +249,48 @@ public class MySqlAnalyticsManager implements AnalyticsService {
             case "month" -> dateTime.plusMonths(1);
             default -> dateTime.plusDays(1);
         };
+    }
+
+    @Override
+    public UserDashboardStatsDto getUserDashboardStats() {
+        AppUser currentUser = AuthorizationUtils.getCurrentUser();
+        if (currentUser == null) {
+            return UserDashboardStatsDto.builder().build();
+        }
+        long userId = currentUser.getId();
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime sevenDaysAgo = now.minusDays(7);
+        LocalDateTime oneDayAgo = now.minusDays(1);
+
+        long totalActions = auditLogRepository.countByUser_Id(userId);
+        long successfulActions = auditLogRepository.countByUser_IdAndSuccessful(userId, true);
+        long failedActions = totalActions - successfulActions;
+        double successRate = totalActions > 0 ? (double) successfulActions / totalActions * 100 : 0.0;
+
+        long last7DaysActions = auditLogRepository.countByUserIdAndAuditTimestampAfter(userId, sevenDaysAgo);
+        long last24HoursActions = auditLogRepository.countByUserIdAndAuditTimestampAfter(userId, oneDayAgo);
+
+        String mostUsedAction = auditLogRepository.findTopActionTypeByUserId(userId).orElse("N/A");
+
+        String mostAccessedSchema = auditLogRepository.findTopSchemaByUserId(userId).orElse("N/A");
+        String mostAccessedTable = auditLogRepository.findTopTableByUserId(userId).orElse("N/A");
+
+        long uniqueSchemas = auditLogRepository.countUniqueSchemasByUserId(userId);
+        long uniqueTables = auditLogRepository.countUniqueTablesByUserId(userId);
+
+        return UserDashboardStatsDto.builder()
+                .totalActions(totalActions)
+                .totalSuccessfulActions(successfulActions)
+                .totalFailedActions(failedActions)
+                .successRate(successRate)
+                .last7DaysActions(last7DaysActions)
+                .last24HoursActions(last24HoursActions)
+                .mostUsedAction(mostUsedAction)
+                .mostAccessedSchema(mostAccessedSchema)
+                .mostAccessedTable(mostAccessedTable)
+                .uniqueSchemasAccessed(uniqueSchemas)
+                .uniqueTablesAccessed(uniqueTables)
+                .build();
     }
 }
