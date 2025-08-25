@@ -22,15 +22,15 @@ public interface RoleRepository extends JpaRepository<Role, Long> {
     @Query("SELECT COUNT(r) FROM Role r WHERE r.isSystemRole = true")
     long countSystemRoles();
 
-    @Query(value = "SELECT COUNT(*) FROM user_roles", nativeQuery = true)
+    @Query("SELECT COUNT(r) FROM AppUser u JOIN u.roles r")
     long countRoleAssignments();
 
-    @Query(value = """
-            SELECT r.name as role_name, COUNT(ur.user_id) as user_count
-            FROM roles r
-            LEFT JOIN user_roles ur ON r.id = ur.role_id
+    @Query("""
+            SELECT r.name, COUNT(u)
+            FROM AppUser u
+            JOIN u.roles r
             GROUP BY r.name
-            ORDER BY user_count DESC
-            """, nativeQuery = true)
+            ORDER BY COUNT(u) DESC
+            """)
     List<Object[]> findRoleDistribution();
 }
