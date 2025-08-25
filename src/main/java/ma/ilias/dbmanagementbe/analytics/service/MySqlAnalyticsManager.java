@@ -334,6 +334,7 @@ public class MySqlAnalyticsManager implements AnalyticsService {
         Page<AuditLog> auditLogs = auditLogRepository.findByUser_Id(userId, pageable);
 
         return auditLogs.getContent().stream()
+                .peek(audit -> audit.setUser(null))
                 .map(auditLogMapper::toDto)
                 .toList();
     }
