@@ -15,6 +15,8 @@ import java.util.Optional;
 public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
     Page<AuditLog> findByUser_Id(Long userId, Pageable pageable);
 
+    Page<AuditLog> findByUser_IdOrderByAuditTimestampDesc(Long userId, Pageable pageable);
+
     @Query("SELECT COUNT(a) FROM AuditLog a WHERE a.successful = true")
     long countSuccessfulAudits();
 

@@ -331,7 +331,7 @@ public class MySqlAnalyticsManager implements AnalyticsService {
         long userId = currentUser.getId();
 
         Pageable pageable = PageRequest.of(0, limit != null ? limit : 10);
-        Page<AuditLog> auditLogs = auditLogRepository.findByUser_Id(userId, pageable);
+        Page<AuditLog> auditLogs = auditLogRepository.findByUser_IdOrderByAuditTimestampDesc(userId, pageable);
 
         return auditLogs.getContent().stream()
                 .peek(audit -> audit.setUser(null))
