@@ -7,6 +7,7 @@ import ma.ilias.dbmanagementbe.dao.entities.AppUser;
 import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.AuditLogRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.RoleRepository;
+import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.enums.DatabaseType;
 import ma.ilias.dbmanagementbe.mapper.AuditLogMapper;
 import ma.ilias.dbmanagementbe.util.AuthorizationUtils;
@@ -292,5 +293,29 @@ public class MySqlAnalyticsManager implements AnalyticsService {
                 .uniqueSchemasAccessed(uniqueSchemas)
                 .uniqueTablesAccessed(uniqueTables)
                 .build();
+    }
+
+    @Override
+    public List<UserActionBreakdownDto> getUserActionBreakdown() {
+        AppUser currentUser = AuthorizationUtils.getCurrentUser();
+        if (currentUser == null) {
+            return List.of(UserActionBreakdownDto.builder().build());
+        }
+        long userId = currentUser.getId();
+
+        List<Object[]> results = auditLogRepository.findUserActionBreakdown(userId);
+        long totalActions = results.stream().mapToLong(row -> (Long) row[1]).sum();
+
+        return results.stream()
+                .map(row -> {
+                    long count = (Long) row[1];
+                    double percentage = totalActions > 0 ? (double) count / totalActions * 100 : 0.0;
+                    return UserActionBreakdownDto.builder()
+                            .actionType((ActionType) row[0])
+                            .actionCount(count)
+                            .percentage(percentage)
+                            .build();
+                })
+                .toList();
     }
 }

@@ -28,4 +28,6 @@ public interface AnalyticsService {
     List<AuditHeatmapDto> getAuditHeatmapAllTime();
 
     UserDashboardStatsDto getUserDashboardStats();
+
+    List<UserActionBreakdownDto> getUserActionBreakdown();
 }

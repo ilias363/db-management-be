@@ -173,4 +173,14 @@ public class AnalyticsController {
                 .data(stats)
                 .build());
     }
+
+    @GetMapping("/user/action-breakdown")
+    public ResponseEntity<ApiResponse<List<UserActionBreakdownDto>>> getUserActionBreakdown() {
+        List<UserActionBreakdownDto> breakdown = analyticsService.getUserActionBreakdown();
+        return ResponseEntity.ok(ApiResponse.<List<UserActionBreakdownDto>>builder()
+                .message("User action breakdown fetched successfully")
+                .success(true)
+                .data(breakdown)
+                .build());
+    }
 }
