@@ -175,7 +175,7 @@ public class AnalyticsController {
                 .build());
     }
 
-    @GetMapping("/user/action-breakdown")
+    @GetMapping("/user/audit/action-breakdown")
     public ResponseEntity<ApiResponse<List<UserActionBreakdownDto>>> getUserActionBreakdown() {
         List<UserActionBreakdownDto> breakdown = analyticsService.getUserActionBreakdown();
         return ResponseEntity.ok(ApiResponse.<List<UserActionBreakdownDto>>builder()
@@ -185,7 +185,7 @@ public class AnalyticsController {
                 .build());
     }
 
-    @GetMapping("/user/recent-activity")
+    @GetMapping("/user/audit/recent-activity")
     public ResponseEntity<ApiResponse<List<AuditLogDto>>> getUserRecentActivity(
             @RequestParam(defaultValue = "10") Integer limit
     ) {
@@ -197,7 +197,7 @@ public class AnalyticsController {
                 .build());
     }
 
-    @GetMapping("/user/database-access")
+    @GetMapping("/user/database/access")
     public ResponseEntity<ApiResponse<List<UserDatabaseAccessDto>>> getUserDatabaseAccess() {
         List<UserDatabaseAccessDto> access = analyticsService.getUserDatabaseAccess();
         return ResponseEntity.ok(ApiResponse.<List<UserDatabaseAccessDto>>builder()
