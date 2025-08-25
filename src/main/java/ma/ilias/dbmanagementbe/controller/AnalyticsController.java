@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.analytics.dto.*;
 import ma.ilias.dbmanagementbe.analytics.service.AnalyticsService;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
+import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogDto;
 import ma.ilias.dbmanagementbe.enums.DatabaseType;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -181,6 +182,18 @@ public class AnalyticsController {
                 .message("User action breakdown fetched successfully")
                 .success(true)
                 .data(breakdown)
+                .build());
+    }
+
+    @GetMapping("/user/recent-activity")
+    public ResponseEntity<ApiResponse<List<AuditLogDto>>> getUserRecentActivity(
+            @RequestParam(defaultValue = "10") Integer limit
+    ) {
+        List<AuditLogDto> activity = analyticsService.getUserRecentActivity(limit);
+        return ResponseEntity.ok(ApiResponse.<List<AuditLogDto>>builder()
+                .message("User recent activity fetched successfully")
+                .success(true)
+                .data(activity)
                 .build());
     }
 }

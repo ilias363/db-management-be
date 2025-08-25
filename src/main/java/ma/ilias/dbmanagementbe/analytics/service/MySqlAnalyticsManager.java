@@ -4,13 +4,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ma.ilias.dbmanagementbe.analytics.dto.*;
 import ma.ilias.dbmanagementbe.dao.entities.AppUser;
+import ma.ilias.dbmanagementbe.dao.entities.AuditLog;
 import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.AuditLogRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.RoleRepository;
+import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogDto;
 import ma.ilias.dbmanagementbe.enums.ActionType;
 import ma.ilias.dbmanagementbe.enums.DatabaseType;
 import ma.ilias.dbmanagementbe.mapper.AuditLogMapper;
 import ma.ilias.dbmanagementbe.util.AuthorizationUtils;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -316,6 +319,22 @@ public class MySqlAnalyticsManager implements AnalyticsService {
                             .percentage(percentage)
                             .build();
                 })
+                .toList();
+    }
+
+    @Override
+    public List<AuditLogDto> getUserRecentActivity(Integer limit) {
+        AppUser currentUser = AuthorizationUtils.getCurrentUser();
+        if (currentUser == null) {
+            return List.of(AuditLogDto.builder().build());
+        }
+        long userId = currentUser.getId();
+
+        Pageable pageable = PageRequest.of(0, limit != null ? limit : 10);
+        Page<AuditLog> auditLogs = auditLogRepository.findByUser_Id(userId, pageable);
+
+        return auditLogs.getContent().stream()
+                .map(auditLogMapper::toDto)
                 .toList();
     }
 }

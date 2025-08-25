@@ -1,6 +1,7 @@
 package ma.ilias.dbmanagementbe.analytics.service;
 
 import ma.ilias.dbmanagementbe.analytics.dto.*;
+import ma.ilias.dbmanagementbe.dto.auditlog.AuditLogDto;
 import ma.ilias.dbmanagementbe.enums.DatabaseType;
 
 import java.time.LocalDateTime;
@@ -30,4 +31,6 @@ public interface AnalyticsService {
     UserDashboardStatsDto getUserDashboardStats();
 
     List<UserActionBreakdownDto> getUserActionBreakdown();
+
+    List<AuditLogDto> getUserRecentActivity(Integer limit);
 }
