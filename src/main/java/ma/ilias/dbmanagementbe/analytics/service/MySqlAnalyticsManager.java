@@ -337,4 +337,35 @@ public class MySqlAnalyticsManager implements AnalyticsService {
                 .map(auditLogMapper::toDto)
                 .toList();
     }
+
+    @Override
+    public List<UserDatabaseAccessDto> getUserDatabaseAccess() {
+        AppUser currentUser = AuthorizationUtils.getCurrentUser();
+        if (currentUser == null) {
+            return List.of(UserDatabaseAccessDto.builder().build());
+        }
+        long userId = currentUser.getId();
+
+        List<Object[]> results = auditLogRepository.findUserDatabaseAccess(userId);
+
+        return results.stream()
+                .map(row -> UserDatabaseAccessDto.builder()
+                        .schemaName((String) row[0])
+                        .accessCount((Long) row[1])
+                        .lastAccessed((LocalDateTime) row[2])
+                        .build())
+                .toList();
+    }
+
+    @Override
+    public List<AuditHeatmapDto> getUserAuditHeatmapAllTime() {
+        AppUser currentUser = AuthorizationUtils.getCurrentUser();
+        if (currentUser == null) {
+            return List.of(AuditHeatmapDto.builder().build());
+        }
+        long userId = currentUser.getId();
+
+        List<Object[]> rawData = auditLogRepository.findUserAuditHeatmapData(userId);
+        return processHeatmapResults(rawData);
+    }
 }

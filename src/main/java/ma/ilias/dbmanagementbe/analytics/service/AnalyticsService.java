@@ -33,4 +33,8 @@ public interface AnalyticsService {
     List<UserActionBreakdownDto> getUserActionBreakdown();
 
     List<AuditLogDto> getUserRecentActivity(Integer limit);
+
+    List<UserDatabaseAccessDto> getUserDatabaseAccess();
+
+    List<AuditHeatmapDto> getUserAuditHeatmapAllTime();
 }

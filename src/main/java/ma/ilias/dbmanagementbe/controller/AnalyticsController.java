@@ -196,4 +196,24 @@ public class AnalyticsController {
                 .data(activity)
                 .build());
     }
+
+    @GetMapping("/user/database-access")
+    public ResponseEntity<ApiResponse<List<UserDatabaseAccessDto>>> getUserDatabaseAccess() {
+        List<UserDatabaseAccessDto> access = analyticsService.getUserDatabaseAccess();
+        return ResponseEntity.ok(ApiResponse.<List<UserDatabaseAccessDto>>builder()
+                .message("User database access fetched successfully")
+                .success(true)
+                .data(access)
+                .build());
+    }
+
+    @GetMapping("/user/audit/heatmap")
+    public ResponseEntity<ApiResponse<List<AuditHeatmapDto>>> getUserAuditHeatmap() {
+        List<AuditHeatmapDto> heatmap = analyticsService.getUserAuditHeatmapAllTime();
+        return ResponseEntity.ok(ApiResponse.<List<AuditHeatmapDto>>builder()
+                .message("User audit heatmap fetched successfully")
+                .success(true)
+                .data(heatmap)
+                .build());
+    }
 }
