@@ -22,4 +22,8 @@ public interface AnalyticsService {
     List<RoleDistributionDto> getRoleDistribution();
 
     List<AuditActivityDto> getAuditActivity(LocalDateTime startDate, LocalDateTime endDate, String period);
+
+    List<AuditHeatmapDto> getAuditHeatmap(LocalDateTime startDate, LocalDateTime endDate);
+    
+    List<AuditHeatmapDto> getAuditHeatmapAllTime();
 }

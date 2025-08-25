@@ -7,12 +7,16 @@ import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.AuditLogRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.RoleRepository;
 import ma.ilias.dbmanagementbe.enums.DatabaseType;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -115,7 +119,8 @@ public class MySqlAnalyticsManager implements AnalyticsService {
 
     @Override
     public List<TopUsersByActivityDto> getTopUsersByActivity(LocalDateTime startDate, LocalDateTime endDate, Integer limit) {
-        List<Object[]> results = auditLogRepository.findTopUsersByActivity(startDate, endDate, limit);
+        Pageable pageable = PageRequest.of(0, limit != null ? limit : 10);
+        List<Object[]> results = auditLogRepository.findTopUsersByActivity(startDate, endDate, pageable);
 
         return results.stream()
                 .map(row -> TopUsersByActivityDto.builder()
@@ -163,6 +168,45 @@ public class MySqlAnalyticsManager implements AnalyticsService {
         }
 
         return activity;
+    }
+
+    @Override
+    public List<AuditHeatmapDto> getAuditHeatmap(LocalDateTime startDate, LocalDateTime endDate) {
+        List<Object[]> results = auditLogRepository.findAuditHeatmapData(startDate, endDate);
+
+        return processHeatmapResults(results);
+    }
+
+    @Override
+    public List<AuditHeatmapDto> getAuditHeatmapAllTime() {
+        List<Object[]> results = auditLogRepository.findAuditHeatmapDataAllTime();
+
+        return processHeatmapResults(results);
+    }
+
+    private List<AuditHeatmapDto> processHeatmapResults(List<Object[]> results) {
+        // Group by day of week and hour, counting occurrences
+        Map<String, Long> groupedData = results.stream()
+                .collect(Collectors.groupingBy(
+                        row -> {
+                            LocalDateTime timestamp = (LocalDateTime) row[0];
+                            int hour = ((Number) row[1]).intValue();
+                            Integer dayOfWeek = timestamp.getDayOfWeek().getValue(); // Monday=1, Sunday=7
+                            return dayOfWeek + "-" + hour;
+                        },
+                        Collectors.counting()
+                ));
+
+        return groupedData.entrySet().stream()
+                .map(entry -> {
+                    String[] parts = entry.getKey().split("-");
+                    return AuditHeatmapDto.builder()
+                            .dayOfWeek(Integer.parseInt(parts[0]))
+                            .hourOfDay(Integer.parseInt(parts[1]))
+                            .activityCount(entry.getValue())
+                            .build();
+                })
+                .toList();
     }
 
     private long getDatabaseSchemaCount(boolean includeSystem) {

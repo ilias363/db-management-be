@@ -131,6 +131,28 @@ public class AnalyticsController {
                 .build());
     }
 
+    @GetMapping("/audit/heatmap")
+    public ResponseEntity<ApiResponse<List<AuditHeatmapDto>>> getAuditHeatmap(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+
+        List<AuditHeatmapDto> heatmap;
+
+        if (startDate == null && endDate == null) {
+            heatmap = analyticsService.getAuditHeatmapAllTime();
+        } else {
+            if (startDate == null) startDate = LocalDateTime.now().minusDays(30);
+            if (endDate == null) endDate = LocalDateTime.now();
+            heatmap = analyticsService.getAuditHeatmap(startDate, endDate);
+        }
+
+        return ResponseEntity.ok(ApiResponse.<List<AuditHeatmapDto>>builder()
+                .message("Audit heatmap fetched successfully")
+                .success(true)
+                .data(heatmap)
+                .build());
+    }
+
     private LocalDateTime getStartDateByPeriod(String period) {
         LocalDateTime now = LocalDateTime.now();
         return switch (period.toLowerCase()) {
