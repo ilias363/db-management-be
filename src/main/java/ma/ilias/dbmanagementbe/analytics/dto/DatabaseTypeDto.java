@@ -1,4 +1,4 @@
-package ma.ilias.dbmanagementbe.database.dto;
+package ma.ilias.dbmanagementbe.analytics.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

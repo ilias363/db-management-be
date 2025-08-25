@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import ma.ilias.dbmanagementbe.analytics.dto.*;
 import ma.ilias.dbmanagementbe.analytics.service.AnalyticsService;
 import ma.ilias.dbmanagementbe.dto.ApiResponse;
+import ma.ilias.dbmanagementbe.enums.DatabaseType;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +21,41 @@ import java.util.List;
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
+
+    @GetMapping("/database/usage")
+    public ResponseEntity<ApiResponse<List<DatabaseUsageDto>>> getDatabaseUsage(
+            @RequestParam(defaultValue = "false") boolean includeSystem
+    ) {
+        List<DatabaseUsageDto> usage = analyticsService.getDatabaseUsage(includeSystem);
+        return ResponseEntity.ok(ApiResponse.<List<DatabaseUsageDto>>builder()
+                .message("Database usage fetched successfully")
+                .success(true)
+                .data(usage)
+                .build());
+    }
+
+    @GetMapping("/database/type")
+    public ResponseEntity<ApiResponse<DatabaseTypeDto>> getDatabaseType() {
+        DatabaseType type = analyticsService.getDatabaseType();
+        DatabaseTypeDto dto = new DatabaseTypeDto(type.name(), type.getDisplayName());
+        return ResponseEntity.ok(ApiResponse.<DatabaseTypeDto>builder()
+                .message("Database type fetched successfully")
+                .success(true)
+                .data(dto)
+                .build());
+    }
+
+    @GetMapping("/database/stats")
+    public ResponseEntity<ApiResponse<DatabaseStatsDto>> getDatabaseStats(
+            @RequestParam(defaultValue = "false") boolean includeSystem
+    ) {
+        DatabaseStatsDto stats = analyticsService.getStats(includeSystem);
+        return ResponseEntity.ok(ApiResponse.<DatabaseStatsDto>builder()
+                .message("Database stats fetched successfully")
+                .success(true)
+                .data(stats)
+                .build());
+    }
 
     @GetMapping("/dashboard/stats")
     public ResponseEntity<ApiResponse<DashboardStatsDto>> getDashboardStats(
@@ -50,35 +86,6 @@ public class AnalyticsController {
                 .build());
     }
 
-    @GetMapping("/database/usage")
-    public ResponseEntity<ApiResponse<List<DatabaseUsageDto>>> getDatabaseUsage(
-            @RequestParam(defaultValue = "false") boolean includeSystem
-    ) {
-        List<DatabaseUsageDto> usage = analyticsService.getDatabaseUsage(includeSystem);
-        return ResponseEntity.ok(ApiResponse.<List<DatabaseUsageDto>>builder()
-                .message("Database usage fetched successfully")
-                .success(true)
-                .data(usage)
-                .build());
-    }
-
-    @GetMapping("/audit/activity")
-    public ResponseEntity<ApiResponse<List<AuditActivityDto>>> getAuditActivity(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
-            @RequestParam(defaultValue = "day") String period) {
-
-        if (startDate == null) startDate = getStartDateByPeriod(period);
-        if (endDate == null) endDate = LocalDateTime.now();
-
-        List<AuditActivityDto> activity = analyticsService.getAuditActivity(startDate, endDate, period);
-        return ResponseEntity.ok(ApiResponse.<List<AuditActivityDto>>builder()
-                .message("Audit activity fetched successfully")
-                .success(true)
-                .data(activity)
-                .build());
-    }
-
     @GetMapping("/users/top-by-activity")
     public ResponseEntity<ApiResponse<List<TopUsersByActivityDto>>> getTopUsersByActivity(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
@@ -104,6 +111,23 @@ public class AnalyticsController {
                 .message("Role distribution fetched successfully")
                 .success(true)
                 .data(distribution)
+                .build());
+    }
+
+    @GetMapping("/audit/activity")
+    public ResponseEntity<ApiResponse<List<AuditActivityDto>>> getAuditActivity(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(defaultValue = "day") String period) {
+
+        if (startDate == null) startDate = getStartDateByPeriod(period);
+        if (endDate == null) endDate = LocalDateTime.now();
+
+        List<AuditActivityDto> activity = analyticsService.getAuditActivity(startDate, endDate, period);
+        return ResponseEntity.ok(ApiResponse.<List<AuditActivityDto>>builder()
+                .message("Audit activity fetched successfully")
+                .success(true)
+                .data(activity)
                 .build());
     }
 

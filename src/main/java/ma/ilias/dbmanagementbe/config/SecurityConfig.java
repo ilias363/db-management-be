@@ -61,8 +61,8 @@ public class SecurityConfig {
                                 AuthorizationUtils.createDbReadDecision())
                         .requestMatchers(HttpMethod.GET, "/api/records/**").access((authentication, context) ->
                                 AuthorizationUtils.createDbReadDecision())
-                        .requestMatchers(HttpMethod.GET, "/api/database/**").access((authentication, context) ->
-                                AuthorizationUtils.createDbReadDecision())
+                        .requestMatchers(HttpMethod.GET, "/api/analytics/**").access((authentication, context) ->
+                                AuthorizationUtils.createDbAccessDecision())
 
                         // Database write operations - ADMIN or any custom role with DB write access
                         .requestMatchers("/api/schemas/**").access((authentication, context) ->

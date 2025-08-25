@@ -6,6 +6,7 @@ import ma.ilias.dbmanagementbe.analytics.dto.*;
 import ma.ilias.dbmanagementbe.dao.repositories.AppUserRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.AuditLogRepository;
 import ma.ilias.dbmanagementbe.dao.repositories.RoleRepository;
+import ma.ilias.dbmanagementbe.enums.DatabaseType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,48 @@ public class MySqlAnalyticsManager implements AnalyticsService {
     private final AuditLogRepository auditLogRepository;
     private final RoleRepository roleRepository;
     private final JdbcTemplate jdbcTemplate;
+    private final DatabaseType databaseType;
+
+    @Override
+    public List<DatabaseUsageDto> getDatabaseUsage(boolean includeSystem) {
+        String sql = "SELECT " +
+                "table_schema as schema_name, " +
+                "COUNT(*) as table_count, " +
+                "IFNULL(SUM(table_rows), 0) as record_count, " +
+                "IFNULL(SUM(data_length + index_length) / 1024 / 1024, 0) as size_mb, " +
+                "MAX(update_time) as last_accessed " +
+                "FROM information_schema.tables WHERE table_type = 'BASE TABLE' " +
+                (includeSystem ? "" : "AND table_schema NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys') ") +
+                "GROUP BY table_schema " +
+                "ORDER BY size_mb DESC";
+
+        return jdbcTemplate.query(sql,
+                (rs, rowNum) -> DatabaseUsageDto.builder()
+                        .schemaName(rs.getString("schema_name"))
+                        .tableCount((long) rs.getInt("table_count"))
+                        .recordCount(rs.getLong("record_count"))
+                        .size((long) rs.getDouble("size_mb"))
+                        .lastModified(rs.getTimestamp("last_accessed") != null ?
+                                rs.getTimestamp("last_accessed").toString() :
+                                "unknown")
+                        .build()
+        );
+    }
+
+    @Override
+    public DatabaseType getDatabaseType() {
+        return databaseType;
+    }
+
+    @Override
+    public DatabaseStatsDto getStats(boolean includeSystem) {
+        return DatabaseStatsDto.builder()
+                .totalSchemas(getDatabaseSchemaCount(includeSystem))
+                .totalTables(getDatabaseTableCount(includeSystem))
+                .totalViews(getDatabaseViewCount(includeSystem))
+                .totalRecords(getDatabaseRecordCount(includeSystem))
+                .build();
+    }
 
     @Override
     public DashboardStatsDto getDashboardStats(boolean includeSystem) {
@@ -70,29 +113,28 @@ public class MySqlAnalyticsManager implements AnalyticsService {
     }
 
     @Override
-    public List<DatabaseUsageDto> getDatabaseUsage(boolean includeSystem) {
-        String sql = "SELECT " +
-                "table_schema as schema_name, " +
-                "COUNT(*) as table_count, " +
-                "IFNULL(SUM(table_rows), 0) as record_count, " +
-                "IFNULL(SUM(data_length + index_length) / 1024 / 1024, 0) as size_mb, " +
-                "MAX(update_time) as last_accessed " +
-                "FROM information_schema.tables WHERE table_type = 'BASE TABLE' " +
-                (includeSystem ? "" : "AND table_schema NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys') ") +
-                "GROUP BY table_schema " +
-                "ORDER BY size_mb DESC";
+    public List<TopUsersByActivityDto> getTopUsersByActivity(LocalDateTime startDate, LocalDateTime endDate, Integer limit) {
+        List<Object[]> results = auditLogRepository.findTopUsersByActivity(startDate, endDate, limit);
 
-        return jdbcTemplate.query(sql,
-                (rs, rowNum) -> DatabaseUsageDto.builder()
-                        .schemaName(rs.getString("schema_name"))
-                        .tableCount((long) rs.getInt("table_count"))
-                        .recordCount(rs.getLong("record_count"))
-                        .size((long) rs.getDouble("size_mb"))
-                        .lastModified(rs.getTimestamp("last_accessed") != null ?
-                                rs.getTimestamp("last_accessed").toString() :
-                                "unknown")
-                        .build()
-        );
+        return results.stream()
+                .map(row -> TopUsersByActivityDto.builder()
+                        .username((String) row[0])
+                        .actionCount(((Number) row[1]).longValue())
+                        .lastActivity(row[2] != null ? row[2].toString() : "unknown")
+                        .build())
+                .toList();
+    }
+
+    @Override
+    public List<RoleDistributionDto> getRoleDistribution() {
+        List<Object[]> results = roleRepository.findRoleDistribution();
+
+        return results.stream()
+                .map(row -> RoleDistributionDto.builder()
+                        .roleName((String) row[0])
+                        .userCount(((Number) row[1]).longValue())
+                        .build())
+                .toList();
     }
 
     @Override
@@ -120,31 +162,6 @@ public class MySqlAnalyticsManager implements AnalyticsService {
         }
 
         return activity;
-    }
-
-    @Override
-    public List<TopUsersByActivityDto> getTopUsersByActivity(LocalDateTime startDate, LocalDateTime endDate, Integer limit) {
-        List<Object[]> results = auditLogRepository.findTopUsersByActivity(startDate, endDate, limit);
-
-        return results.stream()
-                .map(row -> TopUsersByActivityDto.builder()
-                        .username((String) row[0])
-                        .actionCount(((Number) row[1]).longValue())
-                        .lastActivity(row[2] != null ? row[2].toString() : "unknown")
-                        .build())
-                .toList();
-    }
-
-    @Override
-    public List<RoleDistributionDto> getRoleDistribution() {
-        List<Object[]> results = roleRepository.findRoleDistribution();
-
-        return results.stream()
-                .map(row -> RoleDistributionDto.builder()
-                        .roleName((String) row[0])
-                        .userCount(((Number) row[1]).longValue())
-                        .build())
-                .toList();
     }
 
     private long getDatabaseSchemaCount(boolean includeSystem) {

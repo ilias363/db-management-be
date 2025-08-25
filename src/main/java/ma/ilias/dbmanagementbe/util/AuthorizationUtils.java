@@ -293,6 +293,13 @@ public class AuthorizationUtils {
     }
 
     /**
+     * Create authorization decision for general database access
+     */
+    public static AuthorizationDecision createDbAccessDecision() {
+        return new AuthorizationDecision(hasDbAccess());
+    }
+
+    /**
      * Create authorization decision for database read access
      */
     public static AuthorizationDecision createDbReadDecision() {
