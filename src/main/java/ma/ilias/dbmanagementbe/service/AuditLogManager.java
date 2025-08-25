@@ -155,15 +155,27 @@ public class AuditLogManager implements AuditLogService {
         long totalSuccessful = auditLogRepository.countSuccessfulAudits();
         long totalFailed = auditLogRepository.countFailedAudits();
         long last24hActivityCount = auditLogRepository.countAuditsSince(LocalDateTime.now().minusDays(1));
-        String mostCommonActionString = auditLogRepository.findMostCommonActionString();
+
         ActionType mostCommonAction = null;
-        if (mostCommonActionString != null) {
-            try {
-                mostCommonAction = ActionType.valueOf(mostCommonActionString);
-            } catch (IllegalArgumentException ignored) {
+        List<ActionType> actions = auditLogRepository.findMostCommonAction(PageRequest.of(0, 1));
+        if (!actions.isEmpty()) {
+            mostCommonAction = actions.get(0);
+        }
+
+        double averageActionsPerDay = 0.0;
+        Object[] countAndDateRange = auditLogRepository.findAuditCountAndDateRange();
+        if (countAndDateRange != null && countAndDateRange.length >= 3) {
+            long totalCount = ((Number) countAndDateRange[0]).longValue();
+            LocalDateTime minDate = (LocalDateTime) countAndDateRange[1];
+            LocalDateTime maxDate = (LocalDateTime) countAndDateRange[2];
+
+            if (minDate != null && maxDate != null && totalCount > 0) {
+                long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(minDate.toLocalDate(), maxDate.toLocalDate()) + 1;
+                if (daysBetween > 0) {
+                    averageActionsPerDay = (double) totalCount / daysBetween;
+                }
             }
         }
-        Double averageActionsPerDay = auditLogRepository.calculateAverageActionsPerDay();
 
         double failedPercentage = totalAudits > 0 ? (double) totalFailed / totalAudits * 100 : 0.0;
 
@@ -174,7 +186,7 @@ public class AuditLogManager implements AuditLogService {
                 .failedPercentage(Math.round(failedPercentage * 100.0) / 100.0)
                 .last24hActivityCount(last24hActivityCount)
                 .mostCommonAction(mostCommonAction)
-                .averageActionsPerDay(averageActionsPerDay != null ? Math.round(averageActionsPerDay * 100.0) / 100.0 : 0.0)
+                .averageActionsPerDay(Math.round(averageActionsPerDay * 100.0) / 100.0)
                 .build();
     }
 

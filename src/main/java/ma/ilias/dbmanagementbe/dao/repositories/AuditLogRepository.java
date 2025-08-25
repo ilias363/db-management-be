@@ -32,32 +32,51 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
     @Query("SELECT COUNT(a) FROM AuditLog a WHERE a.auditTimestamp >= :startDate AND a.auditTimestamp < :endDate AND a.successful = true")
     long countSuccessfulAuditsInPeriod(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
-    @Query(value = """
-            SELECT u.username, COUNT(a.id) as activity_count, MAX(a.audit_timestamp) as last_active
-            FROM app_users u
-            LEFT JOIN audit_logs a ON u.id = a.user_id
-            WHERE a.audit_timestamp BETWEEN :startDate AND :endDate
+    @Query("""
+            SELECT u.username, COUNT(a.id), MAX(a.auditTimestamp)
+            FROM AuditLog a
+            JOIN a.user u
+            WHERE a.auditTimestamp BETWEEN :startDate AND :endDate
             GROUP BY u.username
-            ORDER BY activity_count DESC
-            LIMIT :limit
-            """, nativeQuery = true)
+            ORDER BY COUNT(a.id) DESC
+            """)
     List<Object[]> findTopUsersByActivity(@Param("startDate") LocalDateTime startDate,
                                           @Param("endDate") LocalDateTime endDate,
-                                          @Param("limit") Integer limit);
+                                          Pageable pageable);
 
-    @Query(value = """
-            SELECT action_type FROM audit_logs
-            GROUP BY action_type
-            ORDER BY COUNT(action_type) DESC LIMIT 1
-            """, nativeQuery = true)
-    String findMostCommonActionString();
+    @Query("""
+            SELECT a.actionType
+            FROM AuditLog a
+            GROUP BY a.actionType
+            ORDER BY COUNT(a.actionType) DESC
+            """)
+    List<ActionType> findMostCommonAction(Pageable pageable);
 
-    @Query(value = """
-            SELECT COUNT(*) / (DATEDIFF(CURDATE(), MIN(DATE(audit_timestamp))) + 1.0)
-            FROM audit_logs
-            WHERE audit_timestamp IS NOT NULL
-            """, nativeQuery = true)
-    Double calculateAverageActionsPerDay();
+    @Query("""
+            SELECT COUNT(a), MIN(a.auditTimestamp), MAX(a.auditTimestamp)
+            FROM AuditLog a
+            WHERE a.auditTimestamp IS NOT NULL
+            """)
+    Object[] findAuditCountAndDateRange();
+
+    @Query("""
+            SELECT
+                a.auditTimestamp,
+                EXTRACT(HOUR FROM a.auditTimestamp)
+            FROM AuditLog a
+            WHERE a.auditTimestamp BETWEEN :startDate AND :endDate
+            """)
+    List<Object[]> findAuditHeatmapData(@Param("startDate") LocalDateTime startDate,
+                                        @Param("endDate") LocalDateTime endDate);
+
+    @Query("""
+            SELECT
+                a.auditTimestamp,
+                EXTRACT(HOUR FROM a.auditTimestamp)
+            FROM AuditLog a
+            WHERE a.auditTimestamp IS NOT NULL
+            """)
+    List<Object[]> findAuditHeatmapDataAllTime();
 
     @Query("""
             SELECT a FROM AuditLog a LEFT JOIN FETCH a.user WHERE
