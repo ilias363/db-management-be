@@ -54,6 +54,8 @@ public class AuditDescriptionBuilder {
         DESCRIPTION_TEMPLATES.put(ActionType.CREATE_PERMISSION, "Created permission ''{0}''");
         DESCRIPTION_TEMPLATES.put(ActionType.UPDATE_PERMISSION, "Updated permission ''{0}''");
         DESCRIPTION_TEMPLATES.put(ActionType.DELETE_PERMISSION, "Deleted permission ''{0}''");
+
+        DESCRIPTION_TEMPLATES.put(ActionType.EXECUTE_SQL, "Executed SQL ''{0}''");
     }
 
     public static String build(ActionType actionType, Object... params) {
