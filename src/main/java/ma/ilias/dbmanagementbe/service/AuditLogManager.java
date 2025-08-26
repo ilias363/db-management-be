@@ -137,9 +137,17 @@ public class AuditLogManager implements AuditLogService {
                 .schemaName(schemaName)
                 .tableName(tableName)
                 .objectName(objectName)
-                .actionDetails(finalActionDetails)
+                .actionDetails(
+                        finalActionDetails.length() > 1000 ?
+                                finalActionDetails.substring(0, 996) + "..." :
+                                finalActionDetails
+                )
                 .successful(successful)
-                .errorMessage(errorMessage)
+                .errorMessage(
+                        errorMessage.length() > 1000 ?
+                                errorMessage.substring(0, 996) + "..." :
+                                errorMessage
+                )
                 .build();
 
         auditLogRepository.save(auditLog);

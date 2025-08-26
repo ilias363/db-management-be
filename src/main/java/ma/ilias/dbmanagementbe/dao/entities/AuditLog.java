@@ -32,11 +32,13 @@ public class AuditLog {
     private String tableName;
     private String objectName;
 
+    @Column(length = 1000)
     private String actionDetails;
 
     @Column(nullable = false)
     private Boolean successful;
 
+    @Column(length = 1000)
     private String errorMessage;
 
     @CreationTimestamp
