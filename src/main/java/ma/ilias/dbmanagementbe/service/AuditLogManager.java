@@ -136,7 +136,11 @@ public class AuditLogManager implements AuditLogService {
                 .actionType(actionType)
                 .schemaName(schemaName)
                 .tableName(tableName)
-                .objectName(objectName)
+                .objectName(
+                        objectName.length() > 255 ?
+                                objectName.substring(0, 222) + "..." :
+                                objectName
+                )
                 .actionDetails(
                         finalActionDetails.length() > 1000 ?
                                 finalActionDetails.substring(0, 996) + "..." :
