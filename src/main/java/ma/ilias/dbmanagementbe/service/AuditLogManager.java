@@ -137,20 +137,25 @@ public class AuditLogManager implements AuditLogService {
                 .schemaName(schemaName)
                 .tableName(tableName)
                 .objectName(
-                        objectName.length() > 255 ?
-                                objectName.substring(0, 222) + "..." :
-                                objectName
+                        objectName != null ?
+                                objectName.length() > 255 ?
+                                        objectName.substring(0, 222) + "..." :
+                                        objectName : null
                 )
                 .actionDetails(
-                        finalActionDetails.length() > 1000 ?
-                                finalActionDetails.substring(0, 996) + "..." :
-                                finalActionDetails
+                        actionDetails != null ?
+                                finalActionDetails.length() > 1000 ?
+                                        finalActionDetails.substring(0, 996) + "..." :
+                                        finalActionDetails
+                                : null
                 )
                 .successful(successful)
                 .errorMessage(
-                        errorMessage.length() > 1000 ?
-                                errorMessage.substring(0, 996) + "..." :
-                                errorMessage
+                        errorMessage != null ?
+                                errorMessage.length() > 1000 ?
+                                        errorMessage.substring(0, 996) + "..." :
+                                        errorMessage
+                                : null
                 )
                 .build();
 
