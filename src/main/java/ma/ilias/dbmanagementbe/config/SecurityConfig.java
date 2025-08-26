@@ -80,6 +80,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/analytics/**").access((authentication, context) ->
                                 AuthorizationUtils.createDbAccessDecision())
 
+                        // Raw SQL execution - restrict to system admin only
+                        .requestMatchers("/api/sql/**").access((authentication, context) ->
+                                AuthorizationUtils.createSystemAdminDecision())
+
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )

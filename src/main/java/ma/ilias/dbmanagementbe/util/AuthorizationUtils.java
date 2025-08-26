@@ -293,6 +293,13 @@ public class AuthorizationUtils {
     }
 
     /**
+     * Create authorization decision for system admin only operations
+     */
+    public static AuthorizationDecision createSystemAdminDecision() {
+        return new AuthorizationDecision(isSystemAdmin());
+    }
+
+    /**
      * Create authorization decision for general database access
      */
     public static AuthorizationDecision createDbAccessDecision() {
