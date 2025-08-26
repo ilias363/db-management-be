@@ -342,7 +342,7 @@ public class MySqlRecordManager implements RecordService {
                 throw new RecordNotFoundException(validatedTableName, updateRecordDto.getPrimaryKeyValues());
             }
 
-            return getRecord(validatedSchemaName, validatedTableName, updateRecordDto.getPrimaryKeyValues());
+            return getRecord(validatedSchemaName, validatedTableName, updateRecordDto.getData());
 
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to update record: " + e.getMessage(), e);
@@ -734,7 +734,7 @@ public class MySqlRecordManager implements RecordService {
             }
 
             return getRecordsByValues(validatedSchemaName, validatedTableName,
-                    updateDto.getIdentifyingValues(), !updateDto.isAllowMultiple());
+                    updateDto.getNewData(), !updateDto.isAllowMultiple());
 
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to update record by values: " + e.getMessage(), e);
@@ -978,8 +978,8 @@ public class MySqlRecordManager implements RecordService {
             jdbcTemplate.batchUpdate(query, batchArgs);
 
             // Phase 3: Retrieve updated records
-            for (ValidatedUpdateData validatedUpdate : validatedUpdates) {
-                RecordDto updated = getRecord(validatedSchemaName, validatedTableName, validatedUpdate.primaryKeyValues);
+            for (BatchUpdateRecordsDto.SingleUpdateRecordDto updateRecord : batchUpdateRecords.getUpdates()) {
+                RecordDto updated = getRecord(validatedSchemaName, validatedTableName, updateRecord.getData());
                 updatedRecords.add(updated);
             }
         } catch (DataAccessException e) {
@@ -1151,17 +1151,28 @@ public class MySqlRecordManager implements RecordService {
         List<RecordDto> updatedRecords = new ArrayList<>();
 
         try {
-            String query = validatedUpdates.get(0).query;
-            List<Object[]> batchArgs = validatedUpdates.stream()
-                    .map(validatedUpdate -> validatedUpdate.values)
-                    .toList();
+            // IMPORTANT: Queries may differ between updates because identifying values that are null
+            // generate 'IS NULL' (no placeholder) while non-null values generate '= ?'. Reusing the
+            // first query for all updates (previous implementation) causes a mismatch between the
+            // number of placeholders and the number of bound parameters leading to
+            // 'Parameter index out of range' errors. We group updates by their exact SQL so each
+            // batch only contains argument lists matching the placeholder pattern of that SQL.
 
-            jdbcTemplate.batchUpdate(query, batchArgs);
+            Map<String, List<ValidatedUpdateByValuesData>> grouped = validatedUpdates.stream()
+                    .collect(Collectors.groupingBy(ValidatedUpdateByValuesData::query));
+
+            for (Map.Entry<String, List<ValidatedUpdateByValuesData>> entry : grouped.entrySet()) {
+                String sql = entry.getKey();
+                List<Object[]> args = entry.getValue().stream()
+                        .map(v -> v.values)
+                        .toList();
+                jdbcTemplate.batchUpdate(sql, args);
+            }
 
             // Phase 3: Retrieve updated records
-            for (ValidatedUpdateByValuesData validatedUpdate : validatedUpdates) {
+            for (BatchUpdateRecordsByValuesDto.SingleUpdateRecordByValuesDto updateRecord : batchUpdateByValues.getUpdates()) {
                 List<RecordDto> updated = getRecordsByValues(validatedSchemaName, validatedTableName,
-                        validatedUpdate.identifyingValues, !validatedUpdate.allowMultiple);
+                        updateRecord.getNewData(), !updateRecord.isAllowMultiple());
                 updatedRecords.addAll(updated);
             }
         } catch (DataAccessException e) {
@@ -1221,13 +1232,22 @@ public class MySqlRecordManager implements RecordService {
         int deletedCount;
 
         try {
-            String query = validatedDeletions.get(0).query;
-            List<Object[]> batchArgs = validatedDeletions.stream()
-                    .map(validatedDelete -> validatedDelete.values)
-                    .toList();
+            // IMPORTANT: Similar to updateRecordsByValues, different deletions may have
+            // different SQL due to null identifying values producing 'IS NULL' (no placeholder)
+            // versus '= ?'. We must execute batches grouped by their exact SQL to align
+            // placeholder counts with provided parameters.
+            Map<String, List<ValidatedDeleteByValuesData>> grouped = validatedDeletions.stream()
+                    .collect(Collectors.groupingBy(ValidatedDeleteByValuesData::query));
 
-            int[] deletedRows = jdbcTemplate.batchUpdate(query, batchArgs);
-            deletedCount = Arrays.stream(deletedRows).sum();
+            deletedCount = 0;
+            for (Map.Entry<String, List<ValidatedDeleteByValuesData>> entry : grouped.entrySet()) {
+                String sql = entry.getKey();
+                List<Object[]> args = entry.getValue().stream()
+                        .map(v -> v.values)
+                        .toList();
+                int[] batchResults = jdbcTemplate.batchUpdate(sql, args);
+                deletedCount += Arrays.stream(batchResults).sum();
+            }
         } catch (DataAccessException e) {
             throw new RuntimeException("Failed to execute record deletions by values in batch: " + e.getMessage(), e);
         }
