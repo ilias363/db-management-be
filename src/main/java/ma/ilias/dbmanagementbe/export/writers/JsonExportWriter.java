@@ -34,6 +34,7 @@ public class JsonExportWriter implements ExportWriter {
         }
 
         while (rows.hasNext()) {
+            writer.append(',');
             Map<String, Object> row = rows.next();
             writer.append('{');
             boolean firstField = true;
