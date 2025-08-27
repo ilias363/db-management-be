@@ -84,6 +84,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/sql/**").access((authentication, context) ->
                                 AuthorizationUtils.createSystemAdminDecision())
 
+                        // Data export endpoints - restrict to system admin only for now
+                        .requestMatchers("/api/export/**").access((authentication, context) ->
+                                AuthorizationUtils.createSystemAdminDecision())
+
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )
