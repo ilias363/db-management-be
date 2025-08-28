@@ -60,7 +60,7 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
             FROM AuditLog a
             WHERE a.auditTimestamp IS NOT NULL
             """)
-    Object[] findAuditCountAndDateRange();
+    List<Object[]> findAuditCountAndDateRange();
 
     @Query("""
             SELECT

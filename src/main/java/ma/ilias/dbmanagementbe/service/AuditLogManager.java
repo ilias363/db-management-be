@@ -180,11 +180,11 @@ public class AuditLogManager implements AuditLogService {
         }
 
         double averageActionsPerDay = 0.0;
-        Object[] countAndDateRange = auditLogRepository.findAuditCountAndDateRange();
-        if (countAndDateRange != null && countAndDateRange.length >= 3) {
-            long totalCount = ((Number) countAndDateRange[0]).longValue();
-            LocalDateTime minDate = (LocalDateTime) countAndDateRange[1];
-            LocalDateTime maxDate = (LocalDateTime) countAndDateRange[2];
+        List<Object[]> countAndDateRange = auditLogRepository.findAuditCountAndDateRange();
+        if (countAndDateRange != null && countAndDateRange.get(0).length >= 3) {
+            long totalCount = ((Number) countAndDateRange.get(0)[0]).longValue();
+            LocalDateTime minDate = (LocalDateTime) countAndDateRange.get(0)[1];
+            LocalDateTime maxDate = (LocalDateTime) countAndDateRange.get(0)[2];
 
             if (minDate != null && maxDate != null && totalCount > 0) {
                 long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(minDate.toLocalDate(), maxDate.toLocalDate()) + 1;
