@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>ma.ilias</groupId>
-    <artifactId>db-management-BE</artifactId>
+    <artifactId>db-management-be</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>db-management-BE</name>
-    <description>db-management-BE</description>
+    <name>db-management-be</name>
+    <description>db-management-be</description>
     <url/>
     <licenses>
         <license/>
