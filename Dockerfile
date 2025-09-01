@@ -14,8 +14,8 @@ RUN mvn -q -DskipTests package && \
 FROM eclipse-temurin:17-jre-alpine AS runtime
 WORKDIR /app
 
-ENV JAVA_OPTS=""
-ENV TZ=UTC
+ENV JAVA_OPTS=${JAVA_OPTS}
+ENV TZ=${TZ}
 
 RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
