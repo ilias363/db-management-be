@@ -44,12 +44,13 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponseDto>> login(@Valid @RequestBody LoginRequestDto loginRequestDto) {
         try {
-            authenticationManager.authenticate(
+            Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequestDto.getUsername(),
                             loginRequestDto.getPassword()
                     )
             );
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
             AppUserDto user = appUserService.findByUsername(loginRequestDto.getUsername(), false);
 
